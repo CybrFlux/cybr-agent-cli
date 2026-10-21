@@ -13,9 +13,9 @@
 # re-exec and continue directly.
 #
 # Routing:
-#   no args                       → exec `hermes` (the default)
+#   no args                       → exec `cybr` (the default)
 #   first arg is an executable    → exec it directly (sleep, bash, sh, …)
-#   first arg is anything else    → exec `hermes <args>` (subcommand passthrough)
+#   first arg is anything else    → exec `cybr <args>` (subcommand passthrough)
 #
 # Drop to hermes via s6-setuidgid, but skip it when already non-root.
 set -e
@@ -72,7 +72,7 @@ _hermes_orig_cwd="${HERMES_ORIG_CWD:-$PWD}"
 cd /opt/data
 
 # Restore the original working directory before handing off to
-# the user's command so `hermes chat` starts in the Docker -w
+# the user's command so `cybr chat` starts in the Docker -w
 # directory, not /opt/data.
 cd "$_hermes_orig_cwd"
 
@@ -93,5 +93,5 @@ case "$1" in
         ;;
 esac
 
-# Hermes subcommand pass-through.
+# Cybr Agent subcommand pass-through.
 drop hermes "$@"

@@ -645,7 +645,7 @@ async def _standalone_send(
     thread_id: Optional[str] = None, media_files: Optional[list[str]] = None, force_document: bool = False,
 ) -> dict[str, Any]:
     """Ephemeral WebSocket send for ``tools/send_message_tool`` when the gateway runner is not in
-    this process (``hermes cron``). ``thread_id``/``force_document`` are signature parity only;
+    this process (``cybr cron``). ``thread_id``/``force_document`` are signature parity only;
     ``media_files`` is accepted but only the text body is delivered — SimpleX file transfers need
     the daemon's filesystem-backed flow, which an ephemeral connection cannot drive safely."""
     try:
@@ -677,7 +677,7 @@ _SETUP_PROMPTS = (
 
 
 def interactive_setup() -> None:
-    """``hermes setup gateway`` → SimpleX wizard (writes ``~/.hermes/.env``); CLI helpers are lazy-imported."""
+    """``cybr setup gateway`` → SimpleX wizard (writes ``~/.hermes/.env``); CLI helpers are lazy-imported."""
     from hermes_cli.config import get_env_value, save_env_value
     from hermes_cli.cli_output import print_header, print_info, prompt
     from hermes_cli.setup_platforms import declines_reconfigure
@@ -698,7 +698,7 @@ def interactive_setup() -> None:
 def register(ctx) -> None:
     ctx.register_platform(
         name="simplex", label="SimpleX Chat", adapter_factory=lambda cfg: SimplexAdapter(cfg),
-        dashboard_description="Talk to Hermes over SimpleX Chat via a local simplex-chat daemon.",
+        dashboard_description="Talk to Cybr Agent over SimpleX Chat via a local simplex-chat daemon.",
         docs_url="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/simplex",
         check_fn=check_requirements, validate_config=validate_config, is_connected=is_connected,
         required_env=["SIMPLEX_WS_URL"],

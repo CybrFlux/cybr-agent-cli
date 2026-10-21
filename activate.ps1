@@ -1,5 +1,5 @@
 # Source this file to sync and apply the PM environment; deactivate restores it.
-# Trusts the recorded tool digest. `hermes pm install` re-checks the bytes.
+# Trusts the recorded tool digest. `cybr pm install` re-checks the bytes.
 # -TestExtras a,b selects runtime extras in the test environment (default: [all]).
 param([string]$TestExtras = '')
 $ErrorActionPreference = 'Stop'
@@ -70,7 +70,7 @@ foreach ($key in $global:_hermesKeys) {
 foreach ($property in $composed.PSObject.Properties) {
     Set-Item -Path "env:$($property.Name)" -Value ([string]$property.Value)
 }
-# This checkout, not whichever `hermes` PATH finds. A function beats PATH,
+# This checkout, not whichever `cybr` PATH finds. A function beats PATH,
 # an alias, and the MSIX execution alias. It runs only while the shell is
 # inside this worktree.
 $global:_hermesWorktree = $repo
@@ -102,7 +102,7 @@ function global:_hermesWorktreeHere {
     return $here.Equals($root, [System.StringComparison]::OrdinalIgnoreCase)
 }
 
-function global:hermes {
+function global:cybr {
     if (-not (_hermesWorktreeHere)) {
         $here = (Get-Location).Path
         Write-Error "hermes: $here is outside $($global:_hermesWorktree); refusing (the installed command is hidden while this checkout is active)" -ErrorAction Continue

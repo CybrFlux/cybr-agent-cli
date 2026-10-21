@@ -1,1 +1,1 @@
-# Hermes plugins package
+# Cybr Agent plugins package

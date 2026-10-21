@@ -28,7 +28,7 @@ it('shows manual recovery guidance without claiming the help command installs an
   const message: string = 'Choose the intended branch or channel before updating this older checkout.'
   window.hermesDesktop = {
     updates: {
-      apply: async (): Promise<unknown> => ({ ok: true, manual: true, command: 'hermes update --help', message })
+      apply: async (): Promise<unknown> => ({ ok: true, manual: true, command: 'cybr update --help', message })
     }
   } as unknown as Window['hermesDesktop']
   $updateOverlayTarget.set('client')
@@ -44,12 +44,12 @@ it('shows manual recovery guidance without claiming the help command installs an
     )
   })
   expect(screen.getByText(message)).toBeTruthy()
-  expect(screen.getByText('hermes update --help')).toBeTruthy()
+  expect(screen.getByText('cybr update --help')).toBeTruthy()
   expect(screen.queryByText(en.updates.manualPickedUp)).toBeNull()
 })
 
 it('titles a command-less backend refusal honestly and offers nothing to copy', async (): Promise<void> => {
-  const message: string = 'Hermes updates are managed outside this dashboard in containerized environments.'
+  const message: string = 'Cybr Agent updates are managed outside this dashboard in containerized environments.'
   $updateOverlayTarget.set('backend')
   $updateOverlayOpen.set(true)
   $backendUpdateApply.set({
@@ -105,7 +105,7 @@ it('keeps the client title for a command-less client manual stage', async (): Pr
   $updateApply.set({
     applying: false,
     stage: 'manual',
-    message: 'Hermes will pick up the new version next time you launch it.',
+    message: 'Cybr Agent will pick up the new version next time you launch it.',
     percent: null,
     error: null,
     command: null,

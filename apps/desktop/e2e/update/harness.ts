@@ -1,12 +1,12 @@
 /**
  * Harness for the Desktop install/update suite: a REAL local install (made by
- * scripts/install.sh + `hermes desktop --build-only` in the upgrade suite's
+ * scripts/install.sh + `cybr desktop --build-only` in the upgrade suite's
  * sandbox, see seed.py), a local bare origin standing in for GitHub, the
  * packaged app that install built, and the core suite's scripted provider.
  *
  * The one fake per external edge: the git server (a local bare repo behind a
  * url.insteadOf rewrite) and the LLM provider (e2e/core/provider.ts). Nothing
- * inside Hermes is mocked.
+ * inside Cybr Agent is mocked.
  *
  * Synchronisation rule (same as e2e/core): wait on an observable fact — a log
  * line, a pid, a file, a DOM state — with a deadline, never a fixed sleep.
@@ -144,13 +144,13 @@ export function releaseDir(facts: InstallFacts): string {
   return path.join(facts.checkout, 'apps', 'desktop', 'release', 'linux-unpacked')
 }
 
-/** The packaged executable `hermes desktop` built into the install (electron-builder names it after productName). */
+/** The packaged executable `cybr desktop` built into the install (electron-builder names it after productName). */
 export function packagedExe(facts: InstallFacts): string {
   const dir = releaseDir(facts)
   const name = fs.readdirSync(dir).find(entry => /^hermes$/i.test(entry))
 
   if (!name) {
-    throw new Error(`no packaged Hermes executable in ${dir}: ${fs.readdirSync(dir).join(', ')}`)
+    throw new Error(`no packaged Cybr Agent executable in ${dir}: ${fs.readdirSync(dir).join(', ')}`)
   }
 
   return path.join(dir, name)
@@ -276,9 +276,9 @@ export function desktopMainProcesses(facts: InstallFacts): ProcInfo[] {
   )
 }
 
-/** The `hermes serve` backend(s) of this install (children of the backend excluded). */
+/** The `cybr serve` backend(s) of this install (children of the backend excluded). */
 export function backendServeProcesses(facts: InstallFacts): ProcInfo[] {
-  // The local backend is the gateway `hermes gateway ensure` attached to or started
+  // The local backend is the gateway `cybr gateway ensure` attached to or started
   // (`hermes_cli.main [--profile X] gateway run --quiet`); `serve` covers a pool backend.
   const serve = installProcesses(facts).filter(
     proc =>
@@ -299,7 +299,7 @@ export function nonGatewayProcesses(facts: InstallFacts): ProcInfo[] {
   return installProcesses(facts).filter(proc => !gateways.has(proc.pid) && !gateways.has(proc.ppid))
 }
 
-/** `hermes gateway stop` with the install's own CLI: attach-mode Desktop never owns the gateway. */
+/** `cybr gateway stop` with the install's own CLI: attach-mode Desktop never owns the gateway. */
 export function stopInstallGateway(facts: InstallFacts): { code: number | null; output: string } {
   const result = spawnSync(facts.hermes, ['gateway', 'stop'], { env: facts.env, encoding: 'utf8', timeout: 90_000 })
 
@@ -402,11 +402,11 @@ export async function waitFor<T>(
 
 /** Copy of the first-run chooser / bootstrap installer overlay (the screens a healthy install must never show). */
 export const FIRST_RUN_SCREENS = [
-  'Set up Hermes Desktop',
-  'Hermes needs a one-time install',
-  'Setting up Hermes Agent',
-  'Install Hermes locally',
-  'Use Hermes on this computer'
+  'Set up Cybr Agent Desktop',
+  'Cybr Agent needs a one-time install',
+  'Setting up Cybr Agent',
+  'Install Cybr Agent locally',
+  'Use Cybr Agent on this computer'
 ]
 
 /**

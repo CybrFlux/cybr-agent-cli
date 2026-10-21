@@ -200,7 +200,7 @@ def collect_directory_manifests() -> list[PluginManifest]:
 
     # Excluded bundled top-level categories have their own discovery. ``platforms/`` is an ordinary category
     # dir: the recursion keys its adapters ``platforms/<dir>`` like every other category (``web/firecrawl``),
-    # which is the key `hermes plugins enable/disable` and the dashboard write (#27548); the manifest name
+    # which is the key `cybr plugins enable/disable` and the dashboard write (#27548); the manifest name
     # (``photon-platform``) stays an accepted alias through ``gate_manifest``.
     repo_plugins = _origin.get_bundled_plugins_dir()
     logger.debug("Scanning bundled plugins: %s", repo_plugins)
@@ -223,7 +223,7 @@ def resolve_manifest_winners(manifests: list[PluginManifest]) -> dict[str, Plugi
     ``~/.hermes/plugins/<name>`` is the documented way to override a bundled plugin, and is logged. A flat
     user/project manifest that claims a bundled key from a *differently named* directory is an impostor, not
     an override (``impostor_dir/plugin.yaml`` with ``name: kanban``): it is skipped with a warning so
-    ``hermes plugins enable kanban`` never activates unrelated code under the bundled name."""
+    ``cybr plugins enable kanban`` never activates unrelated code under the bundled name."""
     winners: dict[str, PluginManifest] = {}
     for manifest in manifests:
         key = manifest_key(manifest)
@@ -271,10 +271,10 @@ def gate_manifest(
     # Relay lifecycle is core-owned; an old plugin copy would compete for its registries.
     if names & LEGACY_RELAY_PLUGIN_KEYS:
         error = (
-            "removed — Relay lifecycle is owned by Hermes core; configure a standard user or system Relay "
+            "removed — Relay lifecycle is owned by Cybr Agent core; configure a standard user or system Relay "
             f"plugins.toml, or use {RELAY_PLUGINS_CONFIG_ENV} for an explicit user-file override"
         )
-        return _placeholder(error, logging.WARNING, "Refusing to load removed Hermes Relay plugin '%s'; %s", error)
+        return _placeholder(error, logging.WARNING, "Refusing to load removed Cybr Agent Relay plugin '%s'; %s", error)
     if names & disabled:
         return _placeholder("disabled via config", logging.DEBUG, "Skipping disabled plugin '%s'")
     # Exclusive plugins (memory providers) have their own activation path; record only.
@@ -292,13 +292,13 @@ def gate_manifest(
         # Bundled backends auto-load; selection among them is ``<category>.provider`` config.
         if manifest.kind == "backend":
             return ManifestGate("load_now")
-        # Bundled platforms register LAZILY: eagerly importing ~20 heavy SDKs added seconds to every `hermes`
+        # Bundled platforms register LAZILY: eagerly importing ~20 heavy SDKs added seconds to every `cybr`
         # invocation. A deferred loader keeps every platform available on first use.
         if manifest.kind == "platform":
             return ManifestGate("defer")
     if enabled is None or not names & enabled:
         return _placeholder(
-            f"not enabled in config (run `hermes plugins enable {lookup_key}` to activate)", logging.DEBUG,
+            f"not enabled in config (run `cybr plugins enable {lookup_key}` to activate)", logging.DEBUG,
             "Skipping '%s' (not in plugins.enabled)",
         )
     if manifest.source != "bundled":
@@ -307,7 +307,7 @@ def gate_manifest(
         from hermes_cli.plugins_cmd_catalog import installed_plugin_removal
         removed = installed_plugin_removal(manifest.name, manifest.path)
         if removed is not None:
-            error = f"removed from the Hermes plugin catalog: {removed.reason or 'no reason recorded'}"
-            return _placeholder(error, logging.WARNING, "Refusing to load plugin '%s' — %s; run `hermes plugins remove`",
+            error = f"removed from the Cybr Agent plugin catalog: {removed.reason or 'no reason recorded'}"
+            return _placeholder(error, logging.WARNING, "Refusing to load plugin '%s' — %s; run `cybr plugins remove`",
                                 error)
     return ManifestGate("load")

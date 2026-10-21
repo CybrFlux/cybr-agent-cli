@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run a Hermes instance in an isolated sandbox — separate HERMES_HOME,
+# Run a Cybr Agent instance in an isolated sandbox — separate HERMES_HOME,
 # separate Electron userData, and a distinct Desktop app name so it doesn't compete
 # with your main desktop instance's single-instance lock.
 #
@@ -9,21 +9,21 @@
 #
 # Usage:
 #   scripts/dev-sandbox.sh python -m hermes_cli.main
-#   scripts/dev-sandbox.sh hermes desktop
+#   scripts/dev-sandbox.sh cybr desktop
 #   scripts/dev-sandbox.sh electron .
 #   scripts/dev-sandbox.sh -- npm run dev   # from apps/desktop/
-#   scripts/dev-sandbox.sh --persistent hermes desktop
+#   scripts/dev-sandbox.sh --persistent cybr desktop
 #   scripts/dev-sandbox.sh --persistent -- npm run dev
 #
 # Seed the sandbox HERMES_HOME from an existing directory (e.g. your main
 # ~/.hermes) so config, sessions, skills, etc. are pre-populated:
-#   scripts/dev-sandbox.sh --from ~/.hermes hermes desktop
+#   scripts/dev-sandbox.sh --from ~/.hermes cybr desktop
 #
 # Override the app name (default: HermesSandbox):
-#   HERMES_DEV_SANDBOX_NAME=Staging scripts/dev-sandbox.sh hermes desktop
+#   HERMES_DEV_SANDBOX_NAME=Staging scripts/dev-sandbox.sh cybr desktop
 #
 # Override the persistent sandbox dir name (default: .hermes-sandbox):
-#   HERMES_DEV_SANDBOX_DIR=.staging-sandbox scripts/dev-sandbox.sh --persistent hermes desktop
+#   HERMES_DEV_SANDBOX_DIR=.staging-sandbox scripts/dev-sandbox.sh --persistent cybr desktop
 
 set -euo pipefail
 
@@ -44,7 +44,7 @@ print_help() {
   cat <<EOF
 Usage: $ENTRYPOINT [--persistent] [--from DIR] [--] <command...>
 
-Run a Hermes instance in an isolated sandbox.
+Run a Cybr Agent instance in an isolated sandbox.
 
 Options:
   --persistent    Keep the sandbox dir across restarts (under the worktree
@@ -62,9 +62,9 @@ Environment:
   HERMES_DEV_SANDBOX_DIR   Override the persistent dir name (default: $DEFAULT_DIR)
 
 Examples:
-  $ENTRYPOINT hermes desktop
-  $ENTRYPOINT --persistent hermes desktop
-  $ENTRYPOINT --from ~/.hermes hermes desktop
+  $ENTRYPOINT cybr desktop
+  $ENTRYPOINT --persistent cybr desktop
+  $ENTRYPOINT --from ~/.hermes cybr desktop
   $ENTRYPOINT -- npm run dev
 EOF
 }

@@ -1,4 +1,4 @@
-"""``hermes chat -q … --format stream-json`` emits a parseable JSONL event stream and nothing else on stdout."""
+"""``cybr chat -q … --format stream-json`` emits a parseable JSONL event stream and nothing else on stdout."""
 
 import json
 

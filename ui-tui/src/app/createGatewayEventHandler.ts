@@ -932,7 +932,7 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
       }
 
       // Startup queries are arbitrary launcher/script text (Omarchy prompted
-      // launches, `hermes --tui -q "…"`) — submit LITERALLY, bypassing the
+      // launches, `cybr --tui -q "…"`) — submit LITERALLY, bypassing the
       // slash/!/interpolation dispatcher, matching one-shot's semantics.
       if (!isCurrentDestination(destination)) {
         return sys(t('canonical.submit.startupQuerySwitched'))
@@ -963,7 +963,7 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
     // "too many re-renders" guard in embedded dashboard PTYs.
     ensureAgentsNudgeConfig()
 
-    // Arm "Hey Hermes" if this surface owns it (server gates on config).
+    // Arm "Hey Cybr Agent" if this surface owns it (server gates on config).
     // Fire-and-forget + idempotent server-side, so reconnects are harmless.
     // Skipped when the user explicitly ran `/wake off` this session — an
     // explicit opt-out must survive gateway reconnects (see wakeState.ts).
@@ -1004,8 +1004,8 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
 
     // Opt-in: when `display.tui_auto_resume_recent` is true, look up
     // the most recent human-facing session and resume it instead of
-    // forging a brand-new one.  Mirrors classic CLI's `hermes -c` /
-    // `hermes --tui` muscle memory and addresses the audit's "session
+    // forging a brand-new one.  Mirrors classic CLI's `cybr -c` /
+    // `cybr --tui` muscle memory and addresses the audit's "session
     // unrecoverable after disconnection" gap.  Default off so existing
     // users aren't surprised.  (Shares the memoized full-config read.)
     getFullConfigOnce()
@@ -1309,7 +1309,7 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
 
         return
       case 'wake.detected': {
-        // "Hey Hermes": optionally open a fresh session (start_new_session),
+        // "Hey Cybr Agent": optionally open a fresh session (start_new_session),
         // then arm voice capture so the user can speak hands-free. Mirrors CLI.
         void (async () => {
           // Multi-profile routing: the TUI is a single-profile process, so a

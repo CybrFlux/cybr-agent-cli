@@ -1,7 +1,7 @@
-# nix/desktop.nix — Hermes Desktop (Electron) app build + wrapper
+# nix/desktop.nix — Cybr Agent Desktop (Electron) app build + wrapper
 #
 # `hermesAgent` is the fully-built `.#default` package — it ships the
-# `hermes` binary with the venv, runtime PATH, bundled skills/plugins, etc.
+# `cybr` binary with the venv, runtime PATH, bundled skills/plugins, etc.
 # already wired up.  We point the desktop at it via the existing
 # `HERMES_DESKTOP_HERMES` override env var, so the desktop's resolver
 # uses our fully wrapped binary before the mutable managed install.
@@ -32,8 +32,8 @@
 }:
 let
   wrapperEnv = {
-    # set HERMES_DESKTOP_HERMES to the absolute path of the nix-built `hermes`
-    # binary so the deployment override selects our fully wrapped hermes install.
+    # set HERMES_DESKTOP_HERMES to the absolute path of the nix-built `cybr`
+    # binary so the deployment override selects our fully wrapped cybr install.
     HERMES_DESKTOP_HERMES = lib.getExe hermesAgent;
     ELECTRON_IS_DEV = "0";
   }
@@ -211,7 +211,7 @@ stdenv.mkDerivation {
   };
 
   meta = with lib; {
-    description = "Native Electron desktop shell for Hermes Agent";
+    description = "Native Electron desktop shell for Cybr Agent";
     homepage = "https://github.com/NousResearch/hermes-agent";
     license = licenses.mit;
     platforms = platforms.unix;

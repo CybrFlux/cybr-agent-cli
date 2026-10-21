@@ -61,7 +61,7 @@ export function createCoreSandbox(label: string): CoreSandbox {
   // token` for GitHub credentials; with a sandbox HOME a real gh can block on
   // the desktop keyring for ~60 s, and a probe in flight at quit outlives the
   // backend (reported as a finding) — which would make the orphan census
-  // depend on the runner's keyring rather than on Hermes.
+  // depend on the runner's keyring rather than on Cybr Agent.
   const bin = path.join(root, 'bin')
   fs.mkdirSync(bin, { recursive: true })
   fs.writeFileSync(path.join(bin, 'gh'), '#!/bin/sh\necho "no oauth token found for github.com" >&2\nexit 1\n', {
@@ -155,7 +155,7 @@ function stopSandboxGatewayDaemons(root: string, hermesHome: string): void {
 
 /**
  * Sandbox config: only the scripted provider. The approval prompts under test
- * come from Hermes's own detector.
+ * come from Cybr Agent's own detector.
  */
 export function providerConfigYaml(providerUrl: string, extra = '', approvals: 'manual' | 'off' = 'off'): string {
   return `model:
@@ -277,7 +277,7 @@ export function sandboxProcesses(sandbox: CoreSandbox): ProcInfo[] {
 }
 
 /**
- * The `hermes serve` backend(s) spawned for this sandbox.
+ * The `cybr serve` backend(s) spawned for this sandbox.
  *
  * A child of the backend still shows the backend's argv and environ between
  * fork and exec, and the backend forks ~40 probes per boot (git, ps,
@@ -288,7 +288,7 @@ export function sandboxProcesses(sandbox: CoreSandbox): ProcInfo[] {
  * dead backend is reparented away and still counted.
  */
 export function backendProcesses(sandbox: CoreSandbox): ProcInfo[] {
-  // The local backend is the gateway `hermes gateway ensure` attached to or started
+  // The local backend is the gateway `cybr gateway ensure` attached to or started
   // (`hermes_cli.main [--profile X] gateway run --quiet`); `serve` covers a pool backend.
   const serve = sandboxProcesses(sandbox).filter(
     proc => (/ serve( |$)/.test(proc.cmdline) || / gateway run( |$)/.test(proc.cmdline))
@@ -302,7 +302,7 @@ export function backendProcesses(sandbox: CoreSandbox): ProcInfo[] {
 
 
 /**
- * `hermes gateway stop` for the sandbox profile, run with the backend's own
+ * `cybr gateway stop` for the sandbox profile, run with the backend's own
  * interpreter (argv[0] of the live `gateway run`). Attach-mode Desktop never
  * owns the gateway, so this is how a test proves teardown works when asked.
  * `interrupt` passes `--yes`: stop refuses while a turn is live unless told to

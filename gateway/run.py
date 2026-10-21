@@ -6,7 +6,7 @@ Run via ``python -m gateway.run`` or ``python cli.py --gateway``."""
 # hermes_bootstrap must be the very first import (UTF-8 stdio on Windows; no-op on POSIX).
 try:
     import hermes_bootstrap
-except ModuleNotFoundError as exc:  # a partial ``hermes update`` can leave the bootstrap unregistered
+except ModuleNotFoundError as exc:  # a partial ``cybr update`` can leave the bootstrap unregistered
     if exc.name != "hermes_bootstrap":
         raise  # the bootstrap exists but cannot load: skipping it would skip PM activation
 
@@ -198,7 +198,7 @@ def hygiene_compaction_recovered(
 def _hygiene_compression_timeout_message(
     *, total_exhausted: bool, elapsed: float, idle_timeout: float, progress_observed: bool) -> str:
     """Describe the host timeout that actually ended hygiene compression. Chat users cannot edit
-    model config, so the copy names /compress, /new and `hermes doctor`, never a config key or the
+    model config, so the copy names /compress, /new and `cybr doctor`, never a config key or the
     raw second counts (those stay in the gateway log)."""
     lead = t("gateway.compress.hygiene_timeout")
     if total_exhausted:
@@ -232,7 +232,7 @@ async def run_codex_hygiene_compaction(
 
     See #73503.
     * Evicting the cached live agent afterwards destroys the only real context: the next turn spawns an
-    EMPTY thread and the model starts blank while Hermes still mirrors a full history (abrupt amnesia — the
+    EMPTY thread and the model starts blank while Cybr Agent still mirrors a full history (abrupt amnesia — the
     user-facing damage documented on #73503).
     """
     mode = str(auto_mode or "native").lower()
@@ -420,7 +420,7 @@ _GATEWAY_ENDPOINT_UNREACHABLE_RE = re.compile(
     "(" + "|".join(_ENDPOINT_UNREACHABLE_MARKERS) + ")", re.IGNORECASE)
 
 def _ensure_windows_gateway_venv_imports() -> None:
-    """Make detached Windows gateway runs see the Hermes venv packages.
+    """Make detached Windows gateway runs see the Cybr Agent venv packages.
 
     Patched before MCP discovery so tool injection does not depend on launchers preserving PYTHONPATH."""
     if sys.platform != "win32":
@@ -912,7 +912,7 @@ def _coerce_gateway_timestamp(value: Any) -> Optional[float]:
     if isinstance(value, bool):  # bool is a subclass of int — skip it
         return None
     if isinstance(value, (int, float)):
-        # Some platform events use milliseconds; Hermes state rows use seconds.
+        # Some platform events use milliseconds; Cybr Agent state rows use seconds.
         return float(value) / 1000.0 if float(value) > 10_000_000_000 else float(value)
     if isinstance(value, str):
         text = value.strip()
@@ -1573,7 +1573,7 @@ os.environ["_HERMES_GATEWAY"] = "1"
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from hermes_constants import get_hermes_home, get_hermes_home_override, get_process_hermes_home
-# The PROCESS's own home, never an import-time ContextVar: a multiplexed backend (``hermes serve``)
+# The PROCESS's own home, never an import-time ContextVar: a multiplexed backend (``cybr serve``)
 # first imports this module lazily from a session's agent build, under that session's routed profile
 # override, and the import-time config bridge below would then latch the secondary's terminal.* and
 # settings into the launch process env for every later launch-profile turn.
@@ -1681,7 +1681,7 @@ def _cron_profile_gate(name: str, home: Path) -> bool:
     """Tick ``home`` this cycle unless ANOTHER gateway process owns it.
 
     Same stand-down the serve/Desktop ticker applies (``hermes_cli/web_server.py``): a host that
-    has not finished converging onto the one host gateway (``hermes gateway migrate --multiplex``)
+    has not finished converging onto the one host gateway (``cybr gateway migrate --multiplex``)
     may still run profile B's own gateway, and without this both it and this process race B's
     ``cron/.tick.lock``. The lock stops a simultaneous double-run but not the race: when this
     process wins, B's delivery leaves through ``SharedRouteAdapters``/fail-closed instead of B's
@@ -1896,7 +1896,7 @@ async def _discover_gateway_mcp_tools(config: object) -> None:
     No gateway run can complete a browser OAuth flow (nobody watches its stdout; on Windows its
     DEVNULL stdin even passes ``isatty``), so discovery runs with interactive OAuth suppressed — the
     same gate the CLI's background discovery uses. An expired token then parks the server with an
-    actionable ``hermes mcp login`` warning instead of opening an authorize tab.
+    actionable ``cybr mcp login`` warning instead of opening an authorize tab.
     """
     from tools.mcp_oauth import suppress_interactive_oauth
     from tools.mcp_tool_discovery import discover_mcp_tools
@@ -2083,7 +2083,7 @@ def _bridge_config_to_env(_cfg: dict) -> None:
         _bridge_auxiliary_config_to_env(_auxiliary_cfg)
     # config.yaml is the documented, authoritative source for these settings — it unconditionally wins over
     # .env values. Previously the guards below read `if X not in os.environ` and let stale .env entries
-    # (e.g. HERMES_MAX_ITERATIONS=60 written by an old `hermes setup` run) silently shadow the user's
+    # (e.g. HERMES_MAX_ITERATIONS=60 written by an old `cybr setup` run) silently shadow the user's
     # current config. See PR #18413 / the 60-vs-500 max_turns incident.
     _agent_cfg = _cfg.get("agent", {})
     _bridge_max_turns_to_env(_agent_cfg)
@@ -2101,7 +2101,7 @@ def _bridge_config_to_env(_cfg: dict) -> None:
     _security_cfg = _cfg.get("security", {})
     if isinstance(_security_cfg, dict) and _security_cfg.get("redact_secrets") is not None:
         os.environ["HERMES_REDACT_SECRETS"] = str(_security_cfg["redact_secrets"]).lower()
-    # Media policy uses the shared bridge so standalone entrypoints (`hermes cron run`) match.
+    # Media policy uses the shared bridge so standalone entrypoints (`cybr cron run`) match.
     _gateway_cfg = _cfg.get("gateway", {})
     if isinstance(_gateway_cfg, dict):
         from gateway.media_policy import apply_media_policy_env
@@ -2140,7 +2140,7 @@ if _config_path.exists():
             file=sys.stderr)
         print(
             "  Gateway will fall back to .env values, which may not match "
-            "your current config.yaml. Run `hermes doctor` to investigate.",
+            "your current config.yaml. Run `cybr doctor` to investigate.",
             file=sys.stderr)
 
 # IPv4 preference must apply before any HTTP clients are created.
@@ -2874,7 +2874,7 @@ def _teams_pipeline_plugin_enabled() -> bool:
 
 
 def _gateway_config_home() -> Path:
-    """Return the Hermes home that gateway config reads should use."""
+    """Return the Cybr Agent home that gateway config reads should use."""
     override = get_hermes_home_override()
     return Path(override) if override else _hermes_home
 
@@ -2935,9 +2935,9 @@ def _get_channel_override(
 
 
 def _resolve_hermes_bin() -> Optional[list[str]]:
-    """Hermes update/restart argv: the running interpreter's ``python -m hermes_cli.main``
-    (exactly this install), else ``hermes`` on PATH, else None. The module argv must win: a
-    PATH-first lookup lets an attacker-planted ``hermes`` shadow the running install when
+    """Cybr Agent update/restart argv: the running interpreter's ``python -m hermes_cli.main``
+    (exactly this install), else ``cybr`` on PATH, else None. The module argv must win: a
+    PATH-first lookup lets an attacker-planted ``cybr`` shadow the running install when
     /update or /restart re-execs it (#111569)."""
     try:
         import importlib.util
@@ -4289,11 +4289,11 @@ def _run_planned_stop_watcher(
     stop_event: threading.Event, runner, loop: asyncio.AbstractEventLoop, shutdown_handler, *,
     poll_interval: float = 0.5) -> None:
     """Poll for the planned-stop marker and trigger graceful shutdown (Windows lacks
-    ``add_signal_handler``, so ``hermes gateway stop`` would never drain). Runs everywhere; on POSIX
+    ``add_signal_handler``, so ``cybr gateway stop`` would never drain). Runs everywhere; on POSIX
     the signal handler consumes the marker first and ``_running``/``_draining`` guard re-triggers.
 
     On Windows, ``asyncio.add_signal_handler`` raises NotImplementedError for SIGTERM/SIGINT, so the
-    standard signal-driven shutdown path never runs when ``hermes gateway stop`` signals the gateway. The
+    standard signal-driven shutdown path never runs when ``cybr gateway stop`` signals the gateway. The
     consequence is that the drain loop is skipped — in-flight agent sessions are killed mid-turn and
     ``resume_pending`` is never set, so the next gateway boot has no idea those sessions need to be
     auto-resumed (issue #33778, v0.13.0 session-resume feature broken on native Windows).
@@ -4509,7 +4509,7 @@ def _start_gateway_housekeeping(
     from gateway.run_housekeeping_disk import housekeeping_media_caches, maybe_post_auto_prune_prompt
     chores: list[tuple[int, str, Any]] = [
         # First every tick: re-stamp ``updated_at`` in gateway_state.json so it is a real heartbeat.
-        # ``hermes gateway status`` / ``/api/status`` warn when it ages past 2x ``interval`` with the
+        # ``cybr gateway status`` / ``/api/status`` warn when it ages past 2x ``interval`` with the
         # PID alive — the thread (or a chore blocked on the loop) wedged (#113372). Runs first so a
         # wedged chore stops the NEXT stamp instead of a slow one delaying this tick's.
         (1, "Runtime heartbeat", _write_runtime_status_quiet)]
@@ -4691,7 +4691,7 @@ def _replace_target_belongs_to_other_profile(existing_pid: int) -> bool:
     by exact PID + start-time; live argv can never PROVE ownership (no HERMES_HOME), it is only a
     consistency check. Missing, legacy, conflicting or unprovable identity → refuse (fail closed)."""
     # Multiplex-only: the ONE host gateway serving this profile IS this profile's gateway, whatever
-    # home launched it — `hermes -p X gateway run --replace` means "replace the process serving X".
+    # home launched it — `cybr -p X gateway run --replace` means "replace the process serving X".
     # Argv and HERMES_HOME can never prove that (the host singleton runs one home's argv while
     # serving every profile), so the live served set answers first; everything below stays the
     # fail-closed rule for a host with no usable record.
@@ -4718,7 +4718,7 @@ def _replace_target_belongs_to_other_profile(existing_pid: int) -> bool:
     # Exclusion evidence comes from the RAW registration record, not the liveness-validated probe.
     # ``get_running_pid`` (any flags) returns None whenever a record fails validation — start-time mismatch
     # after PID-reuse checks, argv drift, lock hiccups — which is exactly when a healthy standalone gateway
-    # (no service supervisor — e.g. `hermes gateway run` on Windows) is at risk: its PID never joins the
+    # (no service supervisor — e.g. `cybr gateway run` on Windows) is at risk: its PID never joins the
     # exclusion set and the sweep hard-kills it. On Windows SIGTERM is TerminateProcess, so the gateway's
     # planned-stop watcher never gets a chance to drain. Reading the raw pidfile + lock records (no
     # validation, no unlink side effects) is strictly safer for a KILL exclusion list: a stale recorded PID
@@ -4844,7 +4844,7 @@ def _start_gateway_make_restart_signal_handler(runner):
         # systemd's `reload` verb (ExecReload=kill -USR1) lands here too; say so, because operators
         # expect `reload` to mean an in-process config reload, not a drain-and-relaunch (#117267).
         logger.info(
-            "SIGUSR1 received (systemctl reload / hermes gateway restart): performing a graceful "
+            "SIGUSR1 received (systemctl reload / cybr gateway restart): performing a graceful "
             "gateway restart — drain active turns, exit, supervisor relaunches. Not an in-process "
             "config reload.")
         runner.request_restart(detached=False, via_service=True)
@@ -4920,7 +4920,7 @@ def _claim_host_gateway_role(force: bool = False) -> None:
         # The lock is per OS user, so a second tenant root can never win it against the first:
         # refusing 75 here would retry forever and its gateway would never start (#121352).
         logger.warning(
-            "Another Hermes home's gateway owns this host (%s); starting this home's gateway beside it.",
+            "Another Cybr Agent home's gateway owns this host (%s); starting this home's gateway beside it.",
             hr.describe(owner))
         return
     if profile_is_standalone(get_hermes_home()):
@@ -4994,7 +4994,7 @@ def _refuse_second_host_gateway(owner) -> None:
         f"   second one (it would double-bind this profile's platforms).\n"
         f"   Fold every profile onto the owner:  {_migrate_command()}\n"
         f"   Or stop the other gateway first, then start this one.\n"
-        f"   Or start one anyway (skips the host-lock check):  hermes gateway run --force\n"
+        f"   Or start one anyway (skips the host-lock check):  cybr gateway run --force\n"
         f"   (--replace does not skip this check; it only replaces an owner that serves this profile.)")
     logger.error("Refusing to start a second gateway on this host: %s", who)
     print(message)
@@ -5160,7 +5160,7 @@ def main():
         logger.debug("boot bootstrap failed", exc_info=True)
 
     import argparse
-    parser = argparse.ArgumentParser(description="Hermes Gateway - Multi-platform messaging")
+    parser = argparse.ArgumentParser(description="Cybr Agent Gateway - Multi-platform messaging")
     parser.add_argument("--config", "-c", help="Path to gateway config file")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
     args = parser.parse_args()

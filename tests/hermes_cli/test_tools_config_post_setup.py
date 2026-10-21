@@ -110,7 +110,7 @@ def test_importable_sdk_does_not_bypass_pm_constraints(monkeypatch, capsys, key,
     output = capsys.readouterr().out
     if refused:
         assert "outside frozen feature set" in output
-        assert "Retry with: hermes tools" in output
-        assert "Restart Hermes" not in output
+        assert "Retry with: cybr tools" in output
+        assert "Restart Cybr Agent" not in output
     else:
-        assert "Restart Hermes" in output
+        assert "Restart Cybr Agent" in output

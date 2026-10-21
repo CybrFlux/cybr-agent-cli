@@ -54,7 +54,7 @@ export const enCatalog: CatalogTranslations = {
   retry: 'Try again',
   more: 'Show more',
   pinned: 'Reviewed commit',
-  snapshotHint: 'From the Hermes catalog. Browsing never contacts source repositories.',
+  snapshotHint: 'From the Cybr Agent catalog. Browsing never contacts source repositories.',
   installHint: 'Review the source before installing. Changes apply to new sessions.',
   results: (count: number) => `${count.toLocaleString()} result${count === 1 ? '' : 's'}`,
   back: 'Back to results',
@@ -64,7 +64,7 @@ export const enCatalog: CatalogTranslations = {
   slideOf: (index: number, count: number) => `${index} of ${count}`,
   tierLabels: { official: 'Official', verified: 'Verified', community: 'Community' },
   tiers: {
-    official: { title: 'Official Plugins', blurb: 'Built and maintained by Nous Research.' },
+    official: { title: 'Official Plugins', blurb: 'Built and maintained by CybrFlux.' },
     verified: { title: 'Verified Plugins', blurb: 'From the company behind the integration, verified by Nous.' }
   },
   moreToExplore: 'More to explore',
@@ -73,7 +73,7 @@ export const enCatalog: CatalogTranslations = {
   discoverKind: (kind: string) => `Discover ${kind}`,
   developer: {
     heading: 'Developer Mode',
-    title: 'Build for Hermes',
+    title: 'Build for Cybr Agent',
     pitch: 'Built a tool, connector, plugin, or Mod?',
     pitchFollowUp: 'Want to but don’t know how?',
     submit: 'Submit Mod',
@@ -81,15 +81,15 @@ export const enCatalog: CatalogTranslations = {
   },
   toolsets: {
     mostUsed: 'Most used',
-    mostUsedBlurb: 'The toolsets Hermes reaches for most on this profile.',
+    mostUsedBlurb: 'The toolsets Cybr Agent reaches for most on this profile.',
     essentials: 'Essentials',
-    essentialsBlurb: 'What most Hermes work runs on.',
+    essentialsBlurb: 'What most Cybr Agent work runs on.',
     toolCount: (count: number) => `${count} ${count === 1 ? 'tool' : 'tools'}`,
     callCount: (count: string, calls: number) => `${count} ${calls === 1 ? 'call' : 'calls'}`,
     themes: {
       work: { label: 'Browse, work and automate', blurb: 'Drive the browser and desktop, edit files, run code and schedule work.' },
       create: { label: 'See, hear and create', blurb: 'Look at images and video, transcribe voice and generate media.' },
-      recall: { label: 'Memory and knowledge', blurb: 'What Hermes remembers, and the skills and history it can search.' },
+      recall: { label: 'Memory and knowledge', blurb: 'What Cybr Agent remembers, and the skills and history it can search.' },
       connect: { label: 'Connect and reach out', blurb: 'Accounts, other agents, the smart home and search beyond the web.' },
       more: { label: 'More tools', blurb: 'Everything else this profile can switch on.' }
     }

@@ -10,7 +10,7 @@
 #   container.enable = false (default) → native systemd service
 #   container.enable = true            → OCI container (persistent writable layer)
 #
-# Container mode: hermes runs from /nix/store bind-mounted read-only into a
+# Container mode: cybr runs from /nix/store bind-mounted read-only into a
 # plain Ubuntu container. The writable layer (apt/pip/npm installs) persists
 # across restarts and agent updates. Only image/volume/options changes trigger
 # container recreation. Environment variables are written to $HERMES_HOME/.env
@@ -433,7 +433,7 @@
                   services.hermes-agent: container.enable is true and container.hostUsers
                   is set, but addToSystemPackages is false. Without a host-installed hermes
                   binary, container routing will not work for interactive users.
-                  Set addToSystemPackages = true or ensure hermes is on PATH.
+                  Set addToSystemPackages = true or ensure Cybr Agent is on PATH.
                 ''
               ];
             }
@@ -564,7 +564,7 @@
           # ══════════════════════════════════════════════════════════════════
           (lib.mkIf (!cfg.container.enable) {
             systemd.services.hermes-agent = {
-              description = "Hermes Agent Gateway";
+              description = "Cybr Agent Gateway";
               wantedBy = [ "multi-user.target" ];
               # linger-users.service is the unit that runs `loginctl
               # enable-linger` for a declared `users.users.<name>.linger`.
@@ -610,7 +610,7 @@
             };
           })
 
-          # ── The backend: hermes serve or hermes dashboard ─────────────────
+          # ── The backend: cybr serve or cybr dashboard ─────────────────
           # This is a different process from the gateway. Both use one
           # HERMES_HOME.
           (lib.mkIf (!cfg.container.enable && cfg.backend.mode != "none") {
@@ -638,7 +638,7 @@
             virtualisation.docker.enable = lib.mkDefault (cfg.container.backend == "docker");
 
             systemd.services.hermes-agent = {
-              description = "Hermes Agent Gateway (container)";
+              description = "Cybr Agent Gateway (container)";
               wantedBy = [ "multi-user.target" ];
               after = [
                 "network-online.target"

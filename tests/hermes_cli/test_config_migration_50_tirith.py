@@ -1,4 +1,4 @@
-"""Config v50: the bundled tirith scanner left Hermes."""
+"""Config v50: the bundled tirith scanner left Cybr Agent."""
 
 import hermes_yaml as yaml
 

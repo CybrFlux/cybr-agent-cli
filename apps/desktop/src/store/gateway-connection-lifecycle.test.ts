@@ -692,7 +692,7 @@ describe('reconnect fail-stop on a removed connection', () => {
     // path (wake sweep, agent activation) used to make ensureActiveGatewayOpen
     // return null immediately: reconnectSecondary early-returns on
     // `reconnecting`, the socket is still closed, and the caller surfaced
-    // "Hermes gateway is not connected" on the Sessions + action. The drive
+    // "Cybr Agent gateway is not connected" on the Sessions + action. The drive
     // must ride out the in-flight activation and hand back the opened socket.
     let releaseDial: (() => void) | undefined
 
@@ -779,10 +779,10 @@ describe('secondary stalled-dial budget', () => {
     vi.useFakeTimers()
 
     // What main's ensureLocalGateway / parseGatewayEnsureOutput / assertLocalGatewayEndpoint throw,
-    // as they cross the IPC boundary. Each re-dial spawns another `hermes gateway ensure`.
+    // as they cross the IPC boundary. Each re-dial spawns another `cybr gateway ensure`.
     for (const permanent of [
-      "Error invoking remote method 'hermes:connection:get-for': Error: Gateway incompatible (runtime_protocol). Use hermes gateway status for recovery.",
-      'hermes gateway ensure produced no result (exit 2): invalid choice. Update Hermes or check the profile, then retry.',
+      "Error invoking remote method 'hermes:connection:get-for': Error: Gateway incompatible (runtime_protocol). Use cybr gateway status for recovery.",
+      'cybr gateway ensure produced no result (exit 2): invalid choice. Update Cybr Agent or check the profile, then retry.',
       'Invalid local gateway endpoint'
     ]) {
       closeSecondaryGateways()
@@ -816,9 +816,9 @@ describe('secondary stalled-dial budget', () => {
       .fn()
       .mockResolvedValueOnce(descriptorFor('homelab', 'bot-a'))
       .mockRejectedValueOnce(stalled)
-      .mockRejectedValueOnce(new Error('Failed to connect to Hermes gateway'))
+      .mockRejectedValueOnce(new Error('Failed to connect to Cybr Agent gateway'))
       .mockRejectedValueOnce(stalled)
-      .mockRejectedValueOnce(new Error('Failed to connect to Hermes gateway'))
+      .mockRejectedValueOnce(new Error('Failed to connect to Cybr Agent gateway'))
       .mockRejectedValue(stalled)
 
     installDesktop({ getConnectionFor })
@@ -887,7 +887,7 @@ describe('secondary stalled-dial budget', () => {
     const getConnectionFor = vi
       .fn()
       .mockResolvedValueOnce(descriptorFor('homelab', 'bot-a'))
-      .mockRejectedValueOnce(new Error('Failed to connect to Hermes gateway'))
+      .mockRejectedValueOnce(new Error('Failed to connect to Cybr Agent gateway'))
 
     installDesktop({ getConnectionFor })
 

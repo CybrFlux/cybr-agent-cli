@@ -100,7 +100,7 @@ def _systemd(home: Path, deadline: float) -> ExistingService | None:
     paths = (Path.home() / ".config/systemd/user" / unit, Path("/etc/systemd/system") / unit)
     # On non-systemd hosts there is no manager to own transient units. Installed
     # definitions still count: a broken manager is not permission to bypass one.
-    # Every Hermes entrypoint ensures the gateway, so a host with no installed unit must not
+    # Every Cybr Agent entrypoint ensures the gateway, so a host with no installed unit must not
     # touch the service manager at all (a headless runner has no user bus to answer it).
     # With a unit installed anywhere, both scopes are asked: two claiming the name is a conflict.
     installed = (*paths, Path("/usr/lib/systemd/system") / unit, Path("/lib/systemd/system") / unit)
@@ -245,7 +245,7 @@ def _windows(home: Path, deadline: float) -> ExistingService | None:
         return ExistingService("windows", ("schtasks.exe", "/Run", "/TN", name))
     # A Startup-folder entry (the fallback when Scheduled Task install was declined/blocked) is login
     # persistence only, with no start verb or identity to verify. Starting a stopped owner is the
-    # same detached direct spawn manual `hermes gateway start` uses beside it; the unmanaged path
+    # same detached direct spawn manual `cybr gateway start` uses beside it; the unmanaged path
     # pins the explicit home and refuses a job-bound (no-breakaway) child, and the runtime lock
     # plus host attach arbitrate against the entry firing again at the next login.
     return None
@@ -253,7 +253,7 @@ def _windows(home: Path, deadline: float) -> ExistingService | None:
 
 def _no_supervisor(home: Path, deadline: float) -> None:
     """Android/Termux has no service manager (main refuses `gateway install/start` there and says
-    "Run manually: hermes gateway"): an unmanaged detached start is its only owner. Python 3.13+
+    "Run manually: cybr gateway"): an unmanaged detached start is its only owner. Python 3.13+
     reports ``sys.platform == "android"``; older Termux interpreters report linux and reach the
     systemd probe, which finds no unit and lands on the same unmanaged start."""
 

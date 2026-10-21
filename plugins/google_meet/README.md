@@ -14,7 +14,7 @@ in it, and do the followup work afterwards.
 ## Architecture
 
 ```
-┌─ gateway (Linux box, where hermes runs) ────────────────────────────┐
+┌─ gateway (Linux box, where cybr runs) ────────────────────────────┐
 │                                                                      │
 │   agent → meet_join(url, mode='realtime', node='my-mac')             │
 │         │                                                            │
@@ -25,7 +25,7 @@ in it, and do the followup work afterwards.
                                    ▼
 ┌─ node host (user's Mac, signed-in Chrome lives here) ───────────────┐
 │                                                                      │
-│   NodeServer (from `hermes meet node run`)                           │
+│   NodeServer (from `cybr meet node run`)                           │
 │     │                                                                │
 │     ├─ start_bot → process_manager.start() → spawns meet_bot         │
 │     │                                                                │
@@ -49,24 +49,24 @@ Without v2: the "realtime" path is skipped; transcribe runs alone.
 | Path | Purpose |
 |---|---|
 | `plugin.yaml` | manifest |
-| `__init__.py` | `register(ctx)` — registers 5 tools + `on_session_end` hook + `hermes meet` CLI |
+| `__init__.py` | `register(ctx)` — registers 5 tools + `on_session_end` hook + `cybr meet` CLI |
 | `meet_bot.py` | Playwright bot subprocess (standalone, `python -m plugins.google_meet.meet_bot`) |
 | `process_manager.py` | local bot lifecycle + `enqueue_say` |
 | `tools.py` | agent-facing tools + node-routing helper |
-| `cli.py` | `hermes meet setup / auth / join / status / transcript / say / stop / node ...` |
+| `cli.py` | `cybr meet setup / auth / join / status / transcript / say / stop / node ...` |
 | `audio_bridge.py` | v2: PulseAudio null-sink (Linux) + BlackHole probe (macOS) |
 | `realtime/openai_client.py` | v2: `RealtimeSession` + `RealtimeSpeaker` (file-queue → OpenAI Realtime WS → PCM) |
 | `node/protocol.py` | v3: message envelope + validation |
 | `node/registry.py` | v3: `$HERMES_HOME/workspace/meetings/nodes.json` |
 | `node/server.py` | v3: `NodeServer` (runs on host machine) |
 | `node/client.py` | v3: `NodeClient` (used by tool handlers + CLI on gateway) |
-| `node/cli.py` | v3: `hermes meet node {run,list,approve,remove,status,ping}` |
+| `node/cli.py` | v3: `cybr meet node {run,list,approve,remove,status,ping}` |
 | `SKILL.md` | agent usage guide |
 
 ## Local quick start
 
 ```bash
-hermes plugins enable google_meet
+cybr plugins enable google_meet
 hermes meet install                                      # pip + Chromium
 hermes meet setup                                        # preflight
 hermes meet auth                                         # optional
@@ -92,7 +92,7 @@ echo 'OPENAI_API_KEY=sk-...' >> ~/.hermes/.env
 hermes meet join https://meet.google.com/abc-defg-hij --mode realtime
 ```
 
-On macOS, hermes will **not** switch your system audio input automatically — the
+On macOS, Cybr Agent will **not** switch your system audio input automatically — the
 user has to do it. This is deliberate: switching default input on a whim would
 be a surprising side effect.
 
@@ -100,14 +100,14 @@ Realtime mode is **speak-only**: `speaker.pcm` is streamed into the virtual mic 
 stdin-fed `paplay` / `ffmpeg` pump that follows the file as Realtime appends audio.
 Incoming speech is still the caption scrape (v1) — meeting audio is never sent to the
 Realtime session, so there is no barge-in on raw audio and no STT billing. After
-admission the bot unmutes itself if Meet seated it muted; `status.json` / `hermes meet
+admission the bot unmutes itself if Meet seated it muted; `status.json` / `cybr meet
 status` report the result as `micState` (`unmuted`, `unmuted_clicked`, `unknown`).
 
 ## Remote node host
 
 On the node machine (e.g. user's Mac with a signed-in Chrome):
 ```bash
-hermes plugins enable google_meet
+cybr plugins enable google_meet
 hermes meet install
 hermes meet node run --display-name my-mac --host 0.0.0.0 --port 18789
 # prints the bearer token on first run; copy it

@@ -186,7 +186,7 @@ class TestAuditVerdicts:
     def test_live_locked_tree_keeps(self, repo):
         tree, _ = _add_worktree(repo, "hermes-live")
         _git(["worktree", "lock", str(tree),
-              "--reason", f"hermes pid={os.getpid()}"], repo)
+              "--reason", f"cybr pid={os.getpid()}"], repo)
         records = worktree_gc.audit_worktrees(str(repo), with_sizes=False)
         record = _verdict(records, "hermes-live")
         assert record.verdict == "keep"
@@ -215,7 +215,7 @@ class TestReclaim:
         assert probe.returncode != 0, "branch should be gone with its tree"
 
     def test_untracked_files_archived_under_the_active_profile_home(self, repo, tmp_path, monkeypatch):
-        """The archive follows the active Hermes home (a named profile here), never ~/.hermes."""
+        """The archive follows the active Cybr Agent home (a named profile here), never ~/.hermes."""
         native_home = tmp_path / "native"
         profile_home = tmp_path / "root" / "profiles" / "work"
         profile_home.mkdir(parents=True)
@@ -252,7 +252,7 @@ class TestReclaim:
     def test_dead_locked_tree_is_unlocked_and_reaped(self, repo):
         tree, _ = _add_worktree(repo, "hermes-zombie")
         _git(["worktree", "lock", str(tree),
-              "--reason", "hermes pid=999999999"], repo)
+              "--reason", "cybr pid=999999999"], repo)
         records = worktree_gc.audit_worktrees(str(repo), with_sizes=False)
         assert _verdict(records, "hermes-zombie").verdict == "reap"
         worktree_gc.reclaim_worktrees(str(repo), records=records)

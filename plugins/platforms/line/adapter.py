@@ -918,12 +918,12 @@ def validate_config(config) -> bool:
 
 
 def is_connected(config) -> bool:
-    """Surface in ``hermes status`` even before the adapter is instantiated."""
+    """Surface in ``cybr status`` even before the adapter is instantiated."""
     return validate_config(config)
 
 
 def _env_enablement() -> Optional[dict[str, Any]]:
-    """``env_enablement_fn``: seed ``PlatformConfig.extra`` from env-only setups so ``hermes status`` sees them."""
+    """``env_enablement_fn``: seed ``PlatformConfig.extra`` from env-only setups so ``cybr status`` sees them."""
     if not _env_credentials_present():
         return None
     return _seed_extra_from_env(_ENV_SEED_KEYS, home_env="LINE_HOME_CHANNEL")
@@ -959,7 +959,7 @@ _SETUP_PROMPTS = (  # (env var, prompt, masked)
 
 
 def interactive_setup() -> None:
-    """``hermes setup line`` wizard (writes ``~/.hermes/.env``); CLI helpers are lazy-imported."""
+    """``cybr setup line`` wizard (writes ``~/.hermes/.env``); CLI helpers are lazy-imported."""
     from hermes_cli.config import get_env_value, save_env_value
     from hermes_cli.cli_output import print_header, print_info, prompt
     from hermes_cli.setup_platforms import declines_reconfigure
@@ -978,7 +978,7 @@ def interactive_setup() -> None:
 def register(ctx) -> None:
     ctx.register_platform(
         name="line", label="LINE", adapter_factory=lambda cfg: LineAdapter(cfg), check_fn=check_requirements,
-        dashboard_description="Use Hermes from LINE via the LINE Messaging API webhook.",
+        dashboard_description="Use Cybr Agent from LINE via the LINE Messaging API webhook.",
         docs_url="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/line",
         validate_config=validate_config, is_connected=is_connected,
         required_env=["LINE_CHANNEL_ACCESS_TOKEN", "LINE_CHANNEL_SECRET"], install_hint="pip install aiohttp",

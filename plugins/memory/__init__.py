@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 _MEMORY_PLUGINS_DIR = Path(__file__).parent
 ENTRY_POINTS_GROUP = "hermes_agent.memory_providers"
-# Per Hermes home (plugin managers are per home too): pruning under one multiplexed profile must
+# Per Cybr Agent home (plugin managers are per home too): pruning under one multiplexed profile must
 # only retract that profile's provider skills, never a sibling profile's.
 _REGISTERED_MEMORY_PROVIDER_SKILLS: dict[str, dict[str, Path]] = {}
 # Native extensions whose first import must not race another thread (#58083 warm-up).
@@ -148,7 +148,7 @@ def find_provider_dir(name: str) -> Optional[Path]:
     """Provider name -> directory: bundled, user, project, then a pip entry point's
     package dir. The entry-point case matters because ``config_schema.py`` and
     ``cli.py`` are read from disk, not imported; without a directory a pip-installed
-    provider silently loses its dashboard panel and ``hermes <provider>`` commands."""
+    provider silently loses its dashboard panel and ``cybr <provider>`` commands."""
     bundled = _MEMORY_PLUGINS_DIR / name
     if bundled.is_dir() and (bundled / "__init__.py").exists():
         return bundled
@@ -226,9 +226,9 @@ def load_memory_provider(name: str, *, register_skills: Optional[bool] = None) -
         logger.debug("Memory provider '%s' not found in bundled, user plugins, or entry points", name)
         return None
     if provider_dir is not None and _explicitly_disabled(name, provider_dir):
-        # The Plugins hub / `hermes plugins disable` park a user-installed provider in
+        # The Plugins hub / `cybr plugins disable` park a user-installed provider in
         # ``plugins.disabled``; the loader must honour it or "disabled" is a lie in the UI.
-        logger.warning("Memory provider '%s' is disabled via plugins.disabled; run `hermes plugins enable %s` "
+        logger.warning("Memory provider '%s' is disabled via plugins.disabled; run `cybr plugins enable %s` "
                        "or change memory.provider.", name, name)
         return None
 
@@ -248,7 +248,7 @@ def load_memory_provider(name: str, *, register_skills: Optional[bool] = None) -
 def import_memory_provider_module(name: Optional[str] = None) -> bool:
     """Import the provider's module (default: the configured ``memory.provider``) WITHOUT
     constructing a provider — the later ``load_memory_provider`` then hits ``sys.modules``
-    instead of a fresh native extension load. Exists so ``hermes acp`` can pay the heavy
+    instead of a fresh native extension load. Exists so ``cybr acp`` can pay the heavy
     import (numpy / ML stack) on the main thread before any other thread starts: on Windows
     a first-time native import racing another thread's import chain deadlocked
     ``session/new`` (#58083). False when no provider is configured, the provider is

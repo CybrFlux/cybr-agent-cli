@@ -35,7 +35,7 @@ _DESCENDANTS_SQL = f"""
 # Desktop 0.22.2's ``readableError`` keeps the HTTP ``detail`` and shows its "app and backend are
 # on different versions" toast (with an Update action) for "out of sync (different versions)".
 CLIENT_UPGRADE_REQUIRED = ('client_upgrade_required: this app is out of sync (different versions) '
-                           'with the Hermes backend; update the app to edit sessions')
+                           'with the Cybr Agent backend; update the app to edit sessions')
 
 
 def _session_latest_descendant(session_id: str, db):
@@ -390,7 +390,7 @@ def _open_session_db_at_path(db_path: Path, *, read_only: bool):
         from hermes_state_errors import is_malformed_db_error
         if isinstance(exc, sqlite3.DatabaseError) and is_malformed_db_error(exc):
             # Same structured 503 the analytics routers publish (``corrupt_store_as_status``): a
-            # corrupt image names the repair (`hermes doctor`), never a generic "schema unavailable".
+            # corrupt image names the repair (`cybr doctor`), never a generic "schema unavailable".
             from hermes_cli.web_routers._common import corrupt_store_status
             raise corrupt_store_status(db_path, exc) from exc
         if isinstance(exc, sqlite3.OperationalError) and is_transient_sqlite_error(exc):
@@ -398,7 +398,7 @@ def _open_session_db_at_path(db_path: Path, *, read_only: bool):
         else:
             detail = (
                 "Session store schema is unavailable or corrupt. Start or restart this profile's "
-                "gateway to reconcile it; if it persists, run `hermes doctor` for diagnosis. "
+                "gateway to reconcile it; if it persists, run `cybr doctor` for diagnosis. "
                 "Browsing does not repair the store.")
         raise HTTPException(status_code=503, detail=detail) from exc
 

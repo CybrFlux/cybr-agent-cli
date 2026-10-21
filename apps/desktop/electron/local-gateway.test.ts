@@ -178,7 +178,7 @@ test('a restart-wait owner is attached to answer a parked prompt; a plain drain 
 })
 
 test('a stale owner this window restarts is attached in its restart wait before the restart finishes (#139041)', async () => {
-  // `hermes gateway restart` waits for the old owner to exit; a turn parked on approval/clarify
+  // `cybr gateway restart` waits for the old owner to exit; a turn parked on approval/clarify
   // there waits for an answer only this window can give. Awaiting the restart first deadlocked both.
   const { createStaleGatewayRestarter } = await import('./local-gateway')
   const endpoint = { profile_id: '/h', instance_id: 'old', authority_epoch: 1, runtime_protocol: 1, api_origin: 'http://127.0.0.1:1234', capabilities: ['session-authority-v1'], supervisor: 'none', code_sha: 'old' }
@@ -199,14 +199,14 @@ test('a stale owner this window restarts is attached in its restart wait before 
 })
 
 test('an ensure child that never reached the protocol boundary is diagnosed from stderr, not as a JSON parse error', async () => {
-  // `main`'s hermes has no `gateway ensure` subcommand: argparse usage on stderr, nothing on stdout.
-  const legacy = { code: 2, stdout: '', stderr: "usage: hermes gateway [-h] ...\nhermes gateway: 'ensure' is not a `hermes gateway` command.\nRun `hermes gateway --help` to see all commands.\n" }
-  await expect(ensureLocalGateway(async () => legacy)).rejects.toThrow(/produced no result \(exit 2\): Run `hermes gateway --help`/)
+  // `main`'s Cybr Agent has no `gateway ensure` subcommand: argparse usage on stderr, nothing on stdout.
+  const legacy = { code: 2, stdout: '', stderr: "usage: cybr gateway [-h] ...\nhermes gateway: 'ensure' is not a `cybr gateway` command.\nRun `cybr gateway --help` to see all commands.\n" }
+  await expect(ensureLocalGateway(async () => legacy)).rejects.toThrow(/produced no result \(exit 2\): Run `cybr gateway --help`/)
   // A missing profile: the CLI exits 1 before the ensure command runs.
   await expect(ensureLocalGateway(async () => ({ code: 1, stdout: '', stderr: "Error: Profile 'gone' does not exist.\n" }))).rejects.toThrow(/exit 1\): Error: Profile 'gone' does not exist\./)
   // A protocol outcome is never re-diagnosed: `incompatible` stays the gateway's own verdict.
   await expect(ensureLocalGateway(async () => ({ code: 3, stdout: '{"endpoint":null,"reason_code":"runtime_protocol","state":"incompatible"}', stderr: 'noise' }))).rejects.toThrow('Gateway incompatible (runtime_protocol)')
-  await expect(ensureLocalGateway(async () => ({ code: 0, stdout: '', stderr: '' }))).rejects.toThrow(/produced no result \(exit 0\)\. Update Hermes/)
+  await expect(ensureLocalGateway(async () => ({ code: 0, stdout: '', stderr: '' }))).rejects.toThrow(/produced no result \(exit 0\)\. Update Cybr Agent/)
 })
 
 test('private dial credential is one-use and bound to the requesting native window', () => {
@@ -260,8 +260,8 @@ test('a redial whose re-ensure comes back without a gateway endpoint names that,
   expect(mint).toHaveBeenCalledTimes(1)
 })
 
-test('a ready owner running other code than this Hermes is restarted once, then re-ensured', async () => {
-  // After `hermes update` the live gateway still serves the old code and answers model calls
+test('a ready owner running other code than this Cybr Agent is restarted once, then re-ensured', async () => {
+  // After `cybr update` the live gateway still serves the old code and answers model calls
   // 503 "Restart required"; attaching to it on every dial pinned the user to it forever.
   const { createStaleGatewayRestarter } = await import('./local-gateway')
   const endpoint = { profile_id: '/h/profiles/w', control_home: '/h', instance_id: 'old', authority_epoch: 1, runtime_protocol: 1, api_origin: 'http://127.0.0.1:1234', capabilities: ['session-authority-v1'], supervisor: 'none', code_sha: 'OLD' }
@@ -601,17 +601,17 @@ test('a session write that names its owner only in the body gets a grant for tha
 
 test('an ensure refusal names its remedy instead of only a status pointer', async () => {
   // A gateway another install owns is refused, not replaced; ensure says what to do in `detail`.
-  const detail = "another Hermes install's gateway owns this profile; stop it there: hermes gateway stop"
+  const detail = "another Cybr Agent install's gateway owns this profile; stop it there: cybr gateway stop"
 
   await expect(ensureLocalGateway(async () => ({
     code: 3, stdout: JSON.stringify({ state: 'incompatible', reason_code: 'runtime_protocol', detail, endpoint: null })
-  }))).rejects.toThrow(`Gateway incompatible (runtime_protocol). ${detail}. Use hermes gateway status for recovery.`)
+  }))).rejects.toThrow(`Gateway incompatible (runtime_protocol). ${detail}. Use cybr gateway status for recovery.`)
 })
 
 test('an elevated or other-session gateway is named with its remedy, not as authorization (#139845, #140252)', async () => {
   const cases = [
-    ['gateway_elevated', 'The running gateway (PID 23460) was started as administrator, so this non-elevated app cannot reach it. Stop it from an administrator prompt (hermes gateway stop), then start Hermes without elevation'],
-    ['gateway_other_session', 'The running gateway (PID 23460) runs in another Windows logon session (session 0, e.g. a boot-time scheduled task), so this app cannot reach it. Stop it (hermes gateway stop from an administrator prompt) and let only one auto-start task launch the gateway']
+    ['gateway_elevated', 'The running gateway (PID 23460) was started as administrator, so this non-elevated app cannot reach it. Stop it from an administrator prompt (cybr gateway stop), then start Cybr Agent without elevation'],
+    ['gateway_other_session', 'The running gateway (PID 23460) runs in another Windows logon session (session 0, e.g. a boot-time scheduled task), so this app cannot reach it. Stop it (cybr gateway stop from an administrator prompt) and let only one auto-start task launch the gateway']
   ]
 
   for (const [reason_code, detail] of cases) {
@@ -627,5 +627,5 @@ test('an elevated or other-session gateway is named with its remedy, not as auth
 test('an update-paused ensure refusal points to the restart that completes its tail', async () => {
   await expect(ensureLocalGateway(async () => ({
     code: 6, stdout: JSON.stringify({ state: 'draining', reason_code: 'update_paused', endpoint: null })
-  }))).rejects.toThrow('Gateway draining (update_paused). Use hermes gateway restart for recovery.')
+  }))).rejects.toThrow('Gateway draining (update_paused). Use cybr gateway restart for recovery.')
 })

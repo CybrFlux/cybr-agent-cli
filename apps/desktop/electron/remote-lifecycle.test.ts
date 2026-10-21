@@ -140,7 +140,7 @@ function fakeSsh(rules: any[] = []) {
   }
 }
 
-test('POSIX relaunch gate refuses live and uncertain install markers without executing Hermes', async () => {
+test('POSIX relaunch gate refuses live and uncertain install markers without executing Cybr Agent', async () => {
   for (const observation of ['LIVE:4242', 'UNCERTAIN']) {
     const calls: string[] = []
 
@@ -630,12 +630,12 @@ test.skipIf(process.platform === 'win32')(
   'pidIsOurDashboard recognizes an installer wrapper after it execs python + entrypoint',
   async (): Promise<void> => {
     const shell: string = (await exec('command -v bash', { shell: 'bash' })).stdout.trim()
-    const temp: string = await mkdtemp(path.join(os.tmpdir(), 'hermes wrapper ownership '))
+    const temp: string = await mkdtemp(path.join(os.tmpdir(), 'cybr wrapper ownership '))
     const installDir = path.join(temp, 'install dir')
     const venvBin = path.join(installDir, 'venv', 'bin')
     const pythonLink = path.join(venvBin, 'python')
     const entrypoint = path.join(installDir, 'hermes')
-    const launcher = path.join(temp, 'hermes launcher')
+    const launcher = path.join(temp, 'cybr launcher')
     const python: string = (await exec('command -v python3', { shell })).stdout.trim()
     const tokenPath: string = path.join(temp, spawnTokenPath(OWNERSHIP_ID, SPAWN_NONCE).replace(/^~\//, ''))
     const env: NodeJS.ProcessEnv = { ...process.env, HOME: temp, HERMES_HOME: temp }
@@ -802,12 +802,12 @@ test.skipIf(process.platform === 'win32')(
 test.skipIf(process.platform !== 'linux')(
   'terminateOwnedDashboardForUpdate SIGTERMs a serve pinned to a "serve"-named profile',
   async () => {
-    const temp = await mkdtemp(path.join(os.tmpdir(), 'hermes wrapper ownership '))
+    const temp = await mkdtemp(path.join(os.tmpdir(), 'cybr wrapper ownership '))
     const installDir = path.join(temp, 'install dir')
     const venvBin = path.join(installDir, 'venv', 'bin')
     const pythonLink = path.join(venvBin, 'python')
     const entrypoint = path.join(installDir, 'hermes')
-    const launcher = path.join(temp, 'hermes launcher')
+    const launcher = path.join(temp, 'cybr launcher')
     const python = (await exec('command -v python3')).stdout.trim()
     const tokenPath = path.join(os.homedir(), spawnTokenPath(OWNERSHIP_ID, SPAWN_NONCE).replace(/^~\//, ''))
 
@@ -1241,7 +1241,7 @@ test('connect() respawns when the requested remote profile differs from the lock
     [/print\("OWNED"/, 'OWNED\n'],
     [cmd => /pidfd_open/.test(cmd), 'TERMINATED\n'],
     [/kill 333/, ''],
-    [/--version/, 'Hermes Agent v0.18.2\n'],
+    [/--version/, 'Cybr Agent v0.18.2\n'],
     [/grep -q ssh-session-token-file/, 'YES\n'],
     [/python3 -c/, ''],
     [/setsid/, '890\n'],
@@ -1270,7 +1270,7 @@ test('connect() respawns when the lockfile hermesPath differs from the resolved 
     [/cat .*lock\.json/, JSON.stringify(lock)],
     [/kill -0/, 'ALIVE'],
     [/print\("OWNED"/, 'FOREIGN\n'],
-    [/--version/, 'Hermes Agent v0.18.2\n'],
+    [/--version/, 'Cybr Agent v0.18.2\n'],
     [/grep -q ssh-session-token-file/, 'YES\n'],
     [/python3 -c/, ''],
     [/setsid/, '890\n'],
@@ -1981,12 +1981,12 @@ test('probes run under the remote watchdog so a hung CLI cannot orphan (#110478)
       (cmd: string) => {
         versionProbe = cmd
 
-        return 'Hermes Agent v0.18.2 (abc123)\n'
+        return 'Cybr Agent v0.18.2 (abc123)\n'
       }
     ]
   ])
 
-  assert.equal(await probeHermesVersion(versionSsh, '/x/hermes'), 'Hermes Agent v0.18.2 (abc123)')
+  assert.equal(await probeHermesVersion(versionSsh, '/x/hermes'), 'Cybr Agent v0.18.2 (abc123)')
   assert.ok(versionProbe.includes('kill -9'), 'version probe wrapped in the remote watchdog')
 
   let helpProbe = ''

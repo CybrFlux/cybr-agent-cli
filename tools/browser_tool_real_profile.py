@@ -40,7 +40,7 @@ def _cdp_http_ready(http_cdp: str) -> bool:
 def _real_profile_daemon_env() -> tuple:
     """Reaper-visible socket dir + ``owner_pid`` claim like every other lane (agent-browser's
     default dir is invisible to the reaper — #100855). The daemon-side idle timeout is dropped:
-    Chrome is launched by Hermes, not the daemon, so a self-exiting daemon would leave Chrome
+    Chrome is launched by Cybr Agent, not the daemon, so a self-exiting daemon would leave Chrome
     holding the copy dir under the next snapshot overlay. Returns ``(env, socket_dir)``."""
     _bt = _origin()
     socket_dir = _session._prepare_session_socket_dir(_bt._REAL_PROFILE_SESSION)
@@ -181,7 +181,7 @@ def _real_profile_snapshot_error(err: str) -> str:
     from hermes_cli.browser_connect import _PROFILE_LOCKED_PREFIX
     if err and err.startswith(_PROFILE_LOCKED_PREFIX):
         return (err[len(_PROFILE_LOCKED_PREFIX):] + " To close it (only after the user approves — it "
-                "quits their browser and loses unsaved tabs), run: `hermes browser close-profile`; the next "
+                "quits their browser and loses unsaved tabs), run: `cybr browser close-profile`; the next "
                 "browser session then uses the profile.")
     return f"{_RP}{err}"
 
@@ -296,7 +296,7 @@ def _real_profile_cdp() -> tuple:
         return None, (
             _RP + "the real-profile browser is already being prepared by another "
             "call that has not finished. Retry after that call completes, or "
-            "restart Hermes if it was abandoned."
+            "restart Cybr Agent if it was abandoned."
         )
     try:
         cached = _bt._real_profile_cdp_cache.get("cdp")

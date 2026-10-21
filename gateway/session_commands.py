@@ -120,12 +120,12 @@ _REFUSED_ARGUMENTS = {
 # with the client. Rides the ``unsupported_command`` refusal as ``data.detail`` (the reason stays the
 # same, so shipped clients keep working); Ink and Desktop print it under the refusal.
 REFUSAL_HINTS = {
-    'export': 'Run `hermes profile export [name] -o <file>` in a terminal.',
-    'import': 'Run `hermes profile import <archive> [--name <name>]` in a terminal.',
-    'snapshot': 'Run `hermes backup --quick` in a terminal (restore: `hermes --cli`, then /snapshot restore).',
-    'handoff': 'Hand off from the classic CLI: `hermes --cli --resume <session>`, then /handoff <platform>.',
-    'hatch': 'Generate a pet from the classic CLI (`hermes --cli`, then /hatch), or use /pet to pick one.',
-    'worktree': 'Start in a fresh worktree with `hermes -w`, or use the classic CLI (`hermes --cli`).',
+    'export': 'Run `cybr profile export [name] -o <file>` in a terminal.',
+    'import': 'Run `cybr profile import <archive> [--name <name>]` in a terminal.',
+    'snapshot': 'Run `cybr backup --quick` in a terminal (restore: `cybr --cli`, then /snapshot restore).',
+    'handoff': 'Hand off from the classic CLI: `cybr --cli --resume <session>`, then /handoff <platform>.',
+    'hatch': 'Generate a pet from the classic CLI (`cybr --cli`, then /hatch), or use /pet to pick one.',
+    'worktree': 'Start in a fresh worktree with `cybr -w`, or use the classic CLI (`cybr --cli`).',
     'palette': 'Type / to search commands (the composer completes and filters them).',
 }
 

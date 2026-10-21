@@ -1,4 +1,4 @@
-"""Profile management for multiple isolated Hermes instances."""
+"""Profile management for multiple isolated Cybr Agent instances."""
 
 import contextlib
 import json
@@ -77,7 +77,7 @@ _CLONE_ALL_DEFAULT_EXCLUDE_ROOT: frozenset[str] =  frozenset({
 }) | LOCAL_RUNTIME_ROOT_DIRS
 
 # Per-profile history excluded from --clone-all for ANY source: SQLite session store
-# (+wal/shm, can reach many GB), session dirs, `hermes backup` archives, quick-backup
+# (+wal/shm, can reach many GB), session dirs, `cybr backup` archives, quick-backup
 # snapshots, checkpoints. Inheriting them is never useful (restoring one inside the
 # clone would resurrect the SOURCE profile's state) and can balloon the copy by tens of GB.
 # ``cron`` is scheduled work bound to the source profile and its origin channel: a clone
@@ -88,14 +88,14 @@ _CLONE_ALL_HISTORY_EXCLUDE_ROOT: frozenset[str] = frozenset({
     "cron",
 })
 
-# Marker written by `hermes profile create --no-skills`. When present at a profile root,
-# seed_profile_skills() callers (fresh-create, `hermes update` all-profile sync, the
+# Marker written by `cybr profile create --no-skills`. When present at a profile root,
+# seed_profile_skills() callers (fresh-create, `cybr update` all-profile sync, the
 # dashboard) skip bundled-skill seeding. Delete the file to opt back in.
 NO_BUNDLED_SKILLS_MARKER = ".no-bundled-skills"
 
 # Header seeded into a profile's empty .env so it owns a credentials file from day one.
 _PLACEHOLDER_ENV = (
-    "# Per-profile secrets for this Hermes profile.\n"
+    "# Per-profile secrets for this Cybr Agent profile.\n"
     "# API keys and tokens set here override the shell environment.\n"
     "# Behavioral settings belong in config.yaml, not here.\n"
 )
@@ -148,7 +148,7 @@ def _clone_all_copytree_ignore(source_dir: Path):
 # OS credential dirs (file_safety.HOME_CREDENTIAL_DIRS) + direnv .envrc (_BLOCKED_PROJECT_ENV_BASENAMES).
 _OS_CREDENTIAL_STORES = (*HOME_CREDENTIAL_DIRS, ".envrc")
 
-# Credential stores in a profile home, as paths relative to it, plus the directories where Hermes
+# Credential stores in a profile home, as paths relative to it, plus the directories where Cybr Agent
 # keeps recovery copies of them. Never shipped in a profile export, and user-owned (never
 # overwritten) on a distribution install. Add a store here when a writer or loader starts using one.
 PROFILE_CREDENTIAL_PATHS = frozenset({
@@ -183,7 +183,7 @@ PROFILE_CREDENTIAL_PATHS = frozenset({
 })
 _CREDENTIAL_PATH_PARTS = tuple(tuple(p.casefold().split("/")) for p in PROFILE_CREDENTIAL_PATHS)
 
-# Copies Hermes' writers leave beside a store at the profile root, matched case-folded. Any
+# Copies Cybr Agent' writers leave beside a store at the profile root, matched case-folded. Any
 # ``auth.json.*`` / ``.env.bak*`` is a credential store whoever named it; for config.yaml only the
 # writers' formats match (post_update ``.bak-<stamp>[.N]``, config_backups' legacy siblings), because a
 # hand-named ``config.yaml.bak-my-note`` is the user's and ships through the export scrub instead.
@@ -249,7 +249,7 @@ _DEFAULT_EXPORT_EXCLUDE_ROOT = DEFAULT_EXPORT_EXCLUDE_ROOT = frozenset({
 # Allow-list for ``export_profile("default")``: when HERMES_HOME equals the
 # cwd (Docker/custom deployments), the default profile home is the working
 # directory and contains arbitrary user files that should NOT be bundled
-# into the export. The set below identifies the *known Hermes profile
+# into the export. The set below identifies the *known Cybr Agent profile
 # artifacts* at the root of HERMES_HOME; everything else is excluded.
 # Sensitive runtime infrastructure (``state.db``, ``logs/``, ``auth.*``,
 # other profiles) is intentionally *not* in this list so the export stays
@@ -270,7 +270,7 @@ _DEFAULT_EXPORT_INCLUDE_ROOT = frozenset({
 # Names that cannot be used as profile aliases
 _RESERVED_NAMES = frozenset({"hermes", "default", "test", "tmp", "root", "sudo"})
 
-# Hermes subcommands that cannot be used as profile names/aliases
+# Cybr Agent subcommands that cannot be used as profile names/aliases
 _HERMES_SUBCOMMANDS = frozenset({
     "chat", "model", "gateway", "setup", "whatsapp", "login", "logout",
     "status", "cron", "doctor", "dump", "config", "pairing", "skills", "tools",
@@ -307,33 +307,33 @@ def _wrapper_path(alias: str) -> Path:
 
 
 def _find_our_wrapper(alias: str) -> Optional[Path]:
-    """The Hermes wrapper for *alias*: :func:`_wrapper_path`, else a pre-``.bat`` bare Windows one."""
+    """The Cybr Agent wrapper for *alias*: :func:`_wrapper_path`, else a pre-``.bat`` bare Windows one."""
     candidates = [_wrapper_path(alias), _get_wrapper_dir() / alias] if sys.platform == "win32" else [_wrapper_path(alias)]
     return next((p for p in candidates if _is_our_wrapper(p)), None)
 
 
 def _is_our_wrapper(path: Path) -> bool:
-    """True when *path* reads as a Hermes-generated wrapper (``hermes -p`` in its head)."""
+    """True when *path* reads as a Cybr Agent-generated wrapper (``cybr -p`` in its head)."""
     try:
         with open(path, encoding="utf-8-sig") as f:
-            return "hermes -p" in f.read(_WRAPPER_READ_LIMIT)
+            return "cybr -p" in f.read(_WRAPPER_READ_LIMIT)
     except Exception:
         return False
 
 
 def _missing_profile_error(canon: str) -> FileNotFoundError:
-    return FileNotFoundError(f"Profile '{canon}' does not exist. Create it with: hermes profile create {canon}")
+    return FileNotFoundError(f"Profile '{canon}' does not exist. Create it with: cybr profile create {canon}")
 
 
 def _unknown_profile_error(canon: str) -> FileNotFoundError:
     """For delete/rename/export of a name that matches no profile (likely a typo)."""
-    return FileNotFoundError(f"No profile named '{canon}'. See your profiles with: hermes profile list")
+    return FileNotFoundError(f"No profile named '{canon}'. See your profiles with: cybr profile list")
 
 
 def _profile_exists_error(canon: str) -> FileExistsError:
     return FileExistsError(
-        f"A profile named '{canon}' already exists. Switch to it with `hermes profile use {canon}`, "
-        "see all profiles with `hermes profile list`, or choose a different name."
+        f"A profile named '{canon}' already exists. Switch to it with `cybr profile use {canon}`, "
+        "see all profiles with `cybr profile list`, or choose a different name."
     )
 
 
@@ -353,7 +353,7 @@ def _invalid_profile_name_error(name: str) -> ValueError:
     suggestion = _suggest_profile_name(name)
     return ValueError(
         f"{name!r} is not a valid profile name. {_PROFILE_NAME_RULE} (for example: {suggestion}). "
-        f"Then run `hermes profile create {suggestion}`."
+        f"Then run `cybr profile create {suggestion}`."
     )
 
 
@@ -402,7 +402,7 @@ def validate_profile_name(name: str) -> None:
     if name in _RESERVED_NAMES:
         raise ValueError(
             f"Profile name {name!r} is reserved — it collides with either "
-            f"the Hermes installation itself or a common system binary.  "
+            f"the Cybr Agent installation itself or a common system binary.  "
             f"Pick a different name."
         )
 
@@ -479,7 +479,7 @@ def _iter_named_profile_dirs(*, live_only: bool = True) -> list[Path]:
     A dir is a profile only when it carries an identity marker (``named_profile_has_identity``):
     cron/logging side-effects and pre-tombstone ghost shells leave marker-less dirs that must
     not be listed, served, ticked, or ``.env``-seeded — that seeding is what turned a ghost
-    shell into a "real" profile on the next ``hermes update`` (#95188, #94823, #99392)."""
+    shell into a "real" profile on the next ``cybr update`` (#95188, #94823, #99392)."""
     profiles_root = _get_profiles_root()
     if not profiles_root.is_dir():
         return []
@@ -587,7 +587,7 @@ def _migrate_profile_config_if_outdated(profile_dir: Path) -> None:
     profile); otherwise the first desktop/doctor view shows a scary ``v0 -> latest`` warning."""
     if not (profile_dir / "config.yaml").exists():
         return
-    # Creation must not fail over an unmigratable old config; `hermes doctor --fix` surfaces
+    # Creation must not fail over an unmigratable old config; `cybr doctor --fix` surfaces
     # the detailed error in the target profile.
     with contextlib.suppress(Exception):
         from hermes_constants import reset_hermes_home_override, set_hermes_home_override
@@ -609,7 +609,7 @@ def find_alias_for_profile(profile_name: str) -> Optional[str]:
 
 
 # Cap on how much of a wrapper file is read when reverse-looking-up its profile. Real
-# wrappers are a few hundred bytes with the ``hermes -p X`` needle near the top; the wrapper
+# wrappers are a few hundred bytes with the ``cybr -p X`` needle near the top; the wrapper
 # dir commonly also holds large binaries (ffmpeg, node, …) whose whole-file reads, N times,
 # dominated ``list_profiles`` (~4.5s).
 _WRAPPER_READ_LIMIT = 8192
@@ -626,7 +626,7 @@ def build_alias_map() -> dict[str, str]:
     if not wrapper_dir.is_dir():
         return result
     is_windows = sys.platform == "win32"
-    prefix = "hermes -p "
+    prefix = "cybr -p "
     for entry in sorted(wrapper_dir.iterdir()):
         if not entry.is_file():
             continue
@@ -687,7 +687,7 @@ class ProfileInfo:
     # Bot Mode title (``profile.yaml`` ``ui_meta['hermes-bots'].title``) — the name
     # the Bots roster shows. Presentation-only, like ``display_name``.
     bot_title: str = ""
-    # Canonical ids this profile was previously known by (``hermes profile rename``
+    # Canonical ids this profile was previously known by (``cybr profile rename``
     # appends here). Lets Bot Mode group chats re-link persisted member
     # descriptors to the renamed live profile (#110200).
     previous_names: list[str] = field(default_factory=list)
@@ -781,7 +781,7 @@ def _seed_model_config(profile_dir: Path) -> None:
     config_path = profile_dir / "config.yaml"
     if config_path.exists():
         return
-    with contextlib.suppress(Exception):  # creation must not fail over this; `hermes model` sets it later
+    with contextlib.suppress(Exception):  # creation must not fail over this; `cybr model` sets it later
         from hermes_constants import get_hermes_home
         from hermes_cli.config import atomic_config_write, read_user_config_raw
         from hermes_cli.profile_model_seed import launch_model_seed
@@ -866,7 +866,7 @@ def _walk_skill_count(skills_dir: Path) -> int:
 
 def _count_skills(profile_dir: Path) -> int:
     """Count installed skills in a profile (cached by skills-dir signature + TTL). Walks
-    synchronously when stale — detail surfaces (``hermes profile info``, ``profiles.describe``)
+    synchronously when stale — detail surfaces (``cybr profile info``, ``profiles.describe``)
     want the fresh number; polled lists go through :func:`_cached_skill_count`."""
     skills_dir = profile_dir / "skills"
     if not skills_dir.is_dir():
@@ -909,7 +909,7 @@ def _cached_skill_count(profile_dir: Path) -> int:
 
 
 # profile.yaml — per-profile metadata (description, etc.)
-# Deliberately tiny and separate from ``config.yaml`` (user-facing Hermes config, ~5000
+# Deliberately tiny and separate from ``config.yaml`` (user-facing Cybr Agent config, ~5000
 # lines of defaults): this is metadata ABOUT the profile. Missing file -> empty defaults,
 # never an error; the kanban decomposer falls back to the profile name.
 
@@ -917,7 +917,7 @@ def _cached_skill_count(profile_dir: Path) -> int:
 def read_profile_meta(profile_dir: Path) -> dict:
     """Read ``profile.yaml`` -> ``{description, description_auto, display_name,
     previous_names}`` (empty defaults when missing/unreadable). Never raises — a
-    corrupt file on one profile must not break ``hermes profile list``."""
+    corrupt file on one profile must not break ``cybr profile list``."""
     def _read() -> dict:
         data = _load_yaml_dict(profile_dir / "profile.yaml") or {}
         ui_meta = data.get("ui_meta")
@@ -1144,7 +1144,7 @@ def profiles_to_serve(multiplex: bool, *, include_standalone: bool = False,
     and parked profiles skipped). Pure directory read: never creates a profile dir (#94590).
 
     Named profiles that authored ``gateway.standalone: true`` are skipped because they opted
-    out of the host multiplexer; a ``gateway.parked`` marker (``hermes -p X gateway stop``) skips
+    out of the host multiplexer; a ``gateway.parked`` marker (``cybr -p X gateway stop``) skips
     a profile the host would otherwise serve. Callers enumerating INSTALLED profiles pass
     ``include_standalone=True, include_parked=True``; serving/ticking callers pass neither."""
     active = get_active_profile_name() or "default"
@@ -1354,9 +1354,9 @@ def _bootstrap_profile_dir(profile_dir: Path, source_dir: Optional[Path],
     config files, installed skills (the dashboard's "clone from default" must keep bundled
     AND user-installed skills), and memory/identity files from *source_dir*.
 
-    ``sync_imports`` also copies the source's ``import-sync.json`` (the ``hermes import-agent``
+    ``sync_imports`` also copies the source's ``import-sync.json`` (the ``cybr import-agent``
     manifest) so the clone stays registered against the same external Claude Code / Codex trees
-    and ``hermes -p <clone> import-agent --sync`` keeps pulling from them. The link is to the
+    and ``cybr -p <clone> import-agent --sync`` keeps pulling from them. The link is to the
     external tree, never to the source profile: both profiles stay independent islands."""
     profile_dir.mkdir(parents=True, exist_ok=True)
     for subdir in _PROFILE_DIRS:
@@ -1394,7 +1394,7 @@ def create_profile(
     sections, pairing/session state — unless ``clone_channels`` opts in: a copied bot credential
     makes two gateways fight over one bot (``hermes_cli.profile_channels``; callers list what
     was left behind with ``channel_platforms_configured(source_dir)``).
-    ``no_skills`` creates an empty profile and writes a marker so ``hermes update`` skips
+    ``no_skills`` creates an empty profile and writes a marker so ``cybr update`` skips
     re-seeding its skills; it is mutually exclusive with the clone options, which copy skills.
     ``sync_imports`` (``--clone`` only; ``--clone-all`` copies the file anyway) also copies the
     ``import-agent`` sync manifest so the clone can keep pulling the same external agent trees."""
@@ -1459,7 +1459,7 @@ def create_profile(
         raise
 
     # Inside a container under s6, register the gateway as a runtime s6 service so
-    # `hermes -p <profile> gateway start` supervises via `s6-svc -u` instead of a bare
+    # `cybr -p <profile> gateway start` supervises via `s6-svc -u` instead of a bare
     # process. No-op on host (systemd/launchd/windows unit generation handles lifecycle).
     _maybe_register_gateway_service(canon)
     # A running multiplexer enumerates profiles/ at boot: ask it to serve this one now (it also
@@ -1580,8 +1580,8 @@ _HERMES_CONSOLE_SCRIPT_NAMES = frozenset({"hermes", "hermes-agent", "hermes-acp"
 
 
 def _is_hermes_argv(argv: list) -> bool:
-    """True for a Hermes process: entrypoint marker in argv, executable named ``hermes*``,
-    or a python interpreter directly exec'ing a known ``hermes`` console-script shim."""
+    """True for a Cybr Agent process: entrypoint marker in argv, executable named ``hermes*``,
+    or a python interpreter directly exec'ing a known ``cybr`` console-script shim."""
     joined = " ".join(argv)
     exe_name = os.path.basename(argv[0]).lower()
     if any(marker in joined for marker in _HERMES_ARGV_MARKERS) or exe_name.startswith("hermes"):
@@ -1602,7 +1602,7 @@ def _argv_profile_selectors(argv: list):
 
 
 def _profile_bound_backend_pids(canon: str, profile_dir: Path) -> list[int]:
-    """PIDs of running Hermes *backends* bound to this profile (``gateway.pid`` only tracks
+    """PIDs of running Cybr Agent *backends* bound to this profile (``gateway.pid`` only tracks
     the messaging gateway). Tightly scoped: current-user processes, backend subcommands only
     (never an interactive ``chat``/``tui``), never this process or its ancestors. Empty when
     ``psutil`` can't inspect anything."""
@@ -1615,7 +1615,7 @@ def _profile_bound_backend_pids(canon: str, profile_dir: Path) -> list[int]:
     except OSError:
         resolved_dir = profile_dir
 
-    # Never terminate ourselves or a parent (`hermes -p <canon> profile delete` runs under
+    # Never terminate ourselves or a parent (`cybr -p <canon> profile delete` runs under
     # the very profile it's deleting).
     skip: set[int] = {os.getpid()}
     with contextlib.suppress(Exception):
@@ -1743,7 +1743,7 @@ class ProfileIdentitySettlementPending(RuntimeError):
     settled (``hermes_cli.profile_identity.purge_profile_identity`` returned False).
 
     Subclasses ``RuntimeError`` so delete-failure handling that treats the error as fatal (the
-    CLI's ``hermes profile delete``) keeps working unchanged; surfaces that can report a partial
+    CLI's ``cybr profile delete``) keeps working unchanged; surfaces that can report a partial
     success (the dashboard's ``DELETE /api/profiles/{name}``) catch this type — it carries the
     profile, its now-removed path, and the retry command — instead of matching on the message.
     """
@@ -1751,7 +1751,7 @@ class ProfileIdentitySettlementPending(RuntimeError):
     def __init__(self, profile: str, path: Path):
         self.profile = profile
         self.path = path
-        self.retry_command = f"hermes profile purge-identity {profile}"
+        self.retry_command = f"cybr profile purge-identity {profile}"
         super().__init__(
             f"Profile '{profile}' was deleted, but its session/routing identity settlement is "
             f"still pending — run: {self.retry_command}")
@@ -1762,7 +1762,7 @@ def delete_profile(name: str, yes: bool = False) -> Path:
     to prevent auto-restart, gateway stopped if running)."""
     canon = normalize_profile_name(name)
     if canon == "default":
-        raise ValueError("Cannot delete the default profile (~/.hermes).\nTo remove everything, use: hermes uninstall")
+        raise ValueError("Cannot delete the default profile (~/.hermes).\nTo remove everything, use: cybr uninstall")
     canon, profile_dir = _existing_profile_dir(canon)
     gw_running = _check_gateway_running(profile_dir)
     wrapper_path = _find_our_wrapper(canon)
@@ -2000,7 +2000,7 @@ def _stop_gateway_process(profile_dir: Path) -> None:
 # Active profile (sticky default)
 
 def get_active_profile(root: Path | None = None) -> str:
-    """Read the sticky active profile name (of *root*, default: this process's Hermes root)."""
+    """Read the sticky active profile name (of *root*, default: this process's Cybr Agent root)."""
     path = root / "active_profile" if root is not None else _get_active_profile_path()
     try:
         name = path.read_text(encoding="utf-8-sig").strip()
@@ -2143,7 +2143,7 @@ def _default_export_ignore(root_dir: Path):
     * **Root-level allow-list** — only entries whose name appears in ``_DEFAULT_EXPORT_INCLUDE_ROOT``
     survive. Everything else (such as an unrelated ``x11-dev/`` directory in a Docker deployment where
     HERMES_HOME equals the cwd) is excluded. Blacklisting was tried first and proved unable to anticipate
-    every non-Hermes file the user may have lying alongside HERMES_HOME (#58394). * **Universal exclusions
+    every non-Cybr Agent file the user may have lying alongside HERMES_HOME (#58394). * **Universal exclusions
     at any depth** — ``__pycache__``, sockets and other special files, temp files
     (:func:`_non_exportable_entries`); plus npm lockfiles, which may appear at the root.
     """
@@ -2265,7 +2265,7 @@ def import_profile(archive_path: str, name: Optional[str] = None) -> Path:
     if not inferred_name:
         raise ValueError(
             "Cannot determine profile name from archive. "
-            "Specify it explicitly: hermes profile import <archive> --name <name>"
+            "Specify it explicitly: cybr profile import <archive> --name <name>"
         )
     if archive_root is None:
         raise ValueError("Profile archive must contain exactly one top-level directory.")
@@ -2276,7 +2276,7 @@ def import_profile(archive_path: str, name: Optional[str] = None) -> Path:
     if canon == "default":
         raise ValueError(
             "Cannot import as 'default' — that is the built-in root profile (~/.hermes). "
-            "Specify a different name: hermes profile import <archive> --name <name>"
+            "Specify a different name: cybr profile import <archive> --name <name>"
         )
     profile_dir = get_profile_dir(canon)
     if profile_dir.exists():
@@ -2383,7 +2383,7 @@ def rename_profile(old_name: str, new_name: str) -> Path:
             _notify_multiplexer(old_canon)
         _maybe_register_gateway_service(old_canon)
         if service_removed:
-            print(f"⚠ The gateway service was removed. Reinstall it with: hermes -p {old_canon} gateway install")
+            print(f"⚠ The gateway service was removed. Reinstall it with: cybr -p {old_canon} gateway install")
         raise
     print(f"✓ Renamed {old_dir.name} → {new_dir.name}")
     # The tombstone lives at profiles/.deleted/<old_name>; old_dir is gone so nothing can
@@ -2423,14 +2423,14 @@ def rename_profile(old_name: str, new_name: str) -> Path:
         _notify_multiplexer(new_canon)
     _maybe_register_gateway_service(new_canon)
     if service_removed:
-        print(f"⚠ The gateway service was removed. Reinstall it with: hermes -p {new_canon} gateway install")
+        print(f"⚠ The gateway service was removed. Reinstall it with: cybr -p {new_canon} gateway install")
     return new_dir
 
 
 # Profile env resolution (called from _apply_profile_override)
 
 def profile_root_for_env_home(env_home: str, default_root: Path) -> Path:
-    """Hermes root named by an exported ``HERMES_HOME``: the grandparent of a profile-shaped value
+    """Cybr Agent root named by an exported ``HERMES_HOME``: the grandparent of a profile-shaped value
     (``<root>/profiles/<name>``, mirrors ``get_default_hermes_root()``), the value itself otherwise,
     *default_root* when unset. Pure: callers pass any process's env, not only ``os.environ``."""
     env_home = env_home.strip()
@@ -2446,7 +2446,7 @@ def resolve_profile_env(profile_name: str) -> str:
 
     When HERMES_HOME is already set, the configured spelling IS the launch root (it may be a
     junction/symlink alias of the platform default). Keep that spelling so profile re-home does not destroy
-    the launcher's lexical provenance -- the subprocess sanitizer needs it to match Hermes-owned PYTHONPATH
+    the launcher's lexical provenance -- the subprocess sanitizer needs it to match Cybr Agent-owned PYTHONPATH
     entries written in the same spelling (#82581 junction follow-up). Physically the paths are identical
     (junction-transparent); only the spelling is preserved.
     """

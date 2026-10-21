@@ -273,10 +273,10 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
               ]) "expected hermes-agent + hermes-backend processes, got: ${toString names}"
               ++ lib.optional (
                 !lib.hasInfix "bin/hermes gateway" (argvOf "hermes-agent")
-              ) "gateway process does not run `hermes gateway`: ${argvOf "hermes-agent"}"
+              ) "gateway process does not run `cybr gateway`: ${argvOf "hermes-agent"}"
               ++ lib.optional (
                 !lib.hasInfix "bin/hermes serve" (argvOf "hermes-backend")
-              ) "backend process does not run `hermes serve`: ${argvOf "hermes-backend"}"
+              ) "backend process does not run `cybr serve`: ${argvOf "hermes-backend"}"
               ++ lib.optional (
                 !lib.hasInfix "--no-open" (argvOf "hermes-backend")
               ) "backend must pass --no-open so a service never opens a browser"
@@ -447,7 +447,7 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
 
             # The agent package that the module installs, and the runtime
             # that the launcher pins. These must be the same store path: a
-            # second Hermes runtime beside the services is the fault that
+            # second Cybr Agent runtime beside the services is the fault that
             # `programs.enable` plus a plain desktop package would give.
             agentPackages = builtins.filter (p: (p.pname or "") == "hermes-agent") cfg.home.packages;
 
@@ -567,7 +567,7 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
         # ── installPackage names its replacement ─────────────────────────
         # The option was removed by the programs./services. split. It
         # defaulted to true, so a person who never named it still got the
-        # command line. A silent removal thus leaves them with no `hermes`
+        # command line. A silent removal thus leaves them with no `cybr`
         # and no message. The module must refuse the configuration and name
         # the replacement.
         home-manager-install-package-removed =
@@ -710,10 +710,10 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
               ]) "expected hermes-agent + hermes-backend units, got: ${toString names}"
               ++ lib.optional (
                 !lib.hasInfix "bin/hermes gateway" (execOf "hermes-agent")
-              ) "gateway unit does not run `hermes gateway`: ${execOf "hermes-agent"}"
+              ) "gateway unit does not run `cybr gateway`: ${execOf "hermes-agent"}"
               ++ lib.optional (
                 !lib.hasInfix "bin/hermes dashboard" (execOf "hermes-backend")
-              ) "backend unit does not run `hermes dashboard`: ${execOf "hermes-backend"}"
+              ) "backend unit does not run `cybr dashboard`: ${execOf "hermes-backend"}"
               ++ lib.optional (
                 units.hermes-agent.environment.HERMES_HOME != units.hermes-backend.environment.HERMES_HOME
               ) "gateway and backend must share one HERMES_HOME"
@@ -1066,7 +1066,7 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
           set -e
           export HOME=$(mktemp -d)
 
-          echo "=== Checking hermes --help ==="
+          echo "=== Checking cybr --help ==="
           ${hermes-agent}/bin/hermes --help 2>&1 | grep -q "gateway" || (echo "FAIL: gateway subcommand missing"; exit 1)
           ${hermes-agent}/bin/hermes --help 2>&1 | grep -q "config" || (echo "FAIL: config subcommand missing"; exit 1)
           echo "PASS: All subcommands accessible"
@@ -1183,7 +1183,7 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
           export HOME=$(mktemp -d)
           CATALOG=$(cd "$HOME" && ${hermes-agent}/bin/hermes mcp catalog 2>/dev/null || true)
           echo "catalog output: $CATALOG"
-          test -n "$CATALOG" || (echo "FAIL: hermes mcp catalog returned empty"; exit 1)
+          test -n "$CATALOG" || (echo "FAIL: cybr mcp catalog returned empty"; exit 1)
           echo "PASS: mcp catalog resolves entries"
 
           echo "=== All bundled optional-mcps checks passed ==="
@@ -1221,7 +1221,7 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
         '';
 
         # Verify HERMES_NODE is set in wrapper and points to Node 26+
-        # (Hermes pins its toolchain to Node 26 everywhere)
+        # (Cybr Agent pins its toolchain to Node 26 everywhere)
         hermes-node = pkgs.runCommand "hermes-node-version" { } ''
           set -e
           echo "=== Checking HERMES_NODE in wrapper ==="
@@ -1235,7 +1235,7 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
 
           NODE_MAJOR=$("$HERMES_NODE" --version | sed 's/^v//' | cut -d. -f1)
           test "$NODE_MAJOR" -ge 26 || \
-            (echo "FAIL: Node v$NODE_MAJOR < 26, Hermes requires Node 26"; exit 1)
+            (echo "FAIL: Node v$NODE_MAJOR < 26, Cybr Agent requires Node 26"; exit 1)
           echo "PASS: Node v$NODE_MAJOR >= 26"
 
           echo "=== All HERMES_NODE checks passed ==="
@@ -1368,8 +1368,8 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
           echo "ok" > $out/result
         '';
 
-        # A fresh declarative install must be current to the Hermes it ships
-        # with. Hermes cannot stamp config.yaml in managed mode, so an
+        # A fresh declarative install must be current to the Cybr Agent it ships
+        # with. Cybr Agent cannot stamp config.yaml in managed mode, so an
         # unstamped file reads as version 0 and trips the support-floor
         # warning at every boot.
         generated-config-version =

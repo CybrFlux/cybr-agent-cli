@@ -97,11 +97,11 @@ test('canImportHermesCli returns false when binary does not exist', async () => 
   assert.equal(await canImportHermesCli(ghost), false)
 })
 
-test('explicit Hermes override is authoritative', () => {
+test('explicit Cybr Agent override is authoritative', () => {
   assert.equal(shouldTrustHermesOverride('/nix/store/abc/bin/hermes'), true)
 })
 
-test('empty Hermes override is not authoritative', () => {
+test('empty Cybr Agent override is not authoritative', () => {
   assert.equal(shouldTrustHermesOverride(''), false)
   assert.equal(shouldTrustHermesOverride(undefined), false)
 })
@@ -130,7 +130,7 @@ test('verifyHermesCli accepts an actual zero-exit executable', async (): Promise
 test.skipIf(process.platform === 'win32')(
   'verifyHermesCli quotes a spaced executable path when probing through a shell',
   async (): Promise<void> => {
-    const spacedDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hermes probe-'))
+    const spacedDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cybr probe-'))
     const spacedCmd = path.join(spacedDir, 'hermes.cmd')
     fs.writeFileSync(spacedCmd, '#!/bin/sh\nexit 0\n', { mode: 0o755 })
     fs.chmodSync(spacedCmd, 0o755)

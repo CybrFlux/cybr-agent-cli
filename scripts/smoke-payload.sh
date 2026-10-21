@@ -37,12 +37,12 @@ try {
   // tools list crosses the real application/config/registry imports, unlike
   // version/help and PM's stdlib bootstrap fast paths.
   for (const args of [['--version'], ['--help'], ['tools', 'list'], ['pm', 'doctor']]) {
-    console.log(`— published hermes ${args.join(' ')} (relocated) —`)
+    console.log(`— published cybr ${args.join(' ')} (relocated) —`)
     const child = spawnSync(executable, args, {
       cwd: home, env, stdio: 'inherit', timeout: 120000,
     })
     if (child.error) throw child.error
-    if (child.status !== 0) throw new Error(`hermes ${args.join(' ')} failed: ${child.status ?? child.signal}`)
+    if (child.status !== 0) throw new Error(`cybr ${args.join(' ')} failed: ${child.status ?? child.signal}`)
   }
   // browser_exec's engine (browser-harness) runs on the store interpreter with only the
   // payload's site dir on PYTHONPATH (tools/browser_use_cli.py); -S drops any site of its own.

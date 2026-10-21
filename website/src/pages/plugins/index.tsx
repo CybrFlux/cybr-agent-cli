@@ -249,10 +249,10 @@ function PluginCard({
           <a
             className={styles.pickBtn}
             href={desktopInstallLink(plugin.name)}
-            title="Opens the Install Plugin dialog in Hermes Desktop at the reviewed version. No app? Use the install command below."
+            title="Opens the Install Plugin dialog in Cybr Agent Desktop at the reviewed version. No app? Use the install command below."
             onClick={(e) => e.stopPropagation()}
           >
-            Open in Hermes Desktop
+            Open in Cybr Agent Desktop
           </a>
         )}
 
@@ -276,7 +276,7 @@ function PluginCard({
               <span className={styles.metaLabel}>Pinned</span>
               <span
                 className={styles.metaValue}
-                title={plugin.requiresHermes ? `${plugin.sha} · requires hermes ${plugin.requiresHermes}` : plugin.sha}
+                title={plugin.requiresHermes ? `${plugin.sha} · requires cybr ${plugin.requiresHermes}` : plugin.sha}
               >
                 <a
                   href={pinUrl(plugin)}
@@ -290,7 +290,7 @@ function PluginCard({
                 {plugin.requiresHermes && (
                   <>
                     <span aria-hidden="true" className={styles.cardDatesSep}> · </span>
-                    <code>hermes {plugin.requiresHermes}</code>
+                    <code>cybr {plugin.requiresHermes}</code>
                   </>
                 )}
               </span>
@@ -363,7 +363,7 @@ function buildSearchHaystack(p: CatalogPlugin): string {
 
 export default function PluginCatalogPage() {
   // Picker embed mode (?embed=picker): the page is iframed by a host app
-  // (Hermes desktop's Capabilities > Plugins tab) as a one-click catalog
+  // (Cybr Agent desktop's Capabilities > Plugins tab) as a one-click catalog
   // picker. Site chrome is hidden via CSS and every card gains an
   // "+ Add to this Agent" button that posts
   //   { type: 'hermes-plugin-pick', name, repo, sha, subdir, tier,
@@ -385,7 +385,7 @@ export default function PluginCatalogPage() {
         sha: plugin.sha,
         subdir: plugin.subdir || "",
         tier: plugin.tier,
-        installCmd: plugin.installCommand || `hermes plugins install ${plugin.name}`,
+        installCmd: plugin.installCommand || `cybr plugins install ${plugin.name}`,
       },
       "*"
     );
@@ -548,13 +548,13 @@ export default function PluginCatalogPage() {
   return (
     <Layout
       title="Plugin Catalog"
-      description="Give Hermes new powers: reviewed plugins you can install in one click"
+      description="Give Cybr Agent new powers: reviewed plugins you can install in one click"
     >
       <div className={`${styles.page} ${pickerMode ? styles.pickerMode : ""}`}>
         <header className={styles.hero}>
           <div className={styles.heroGlow} />
           <div className={styles.heroContent}>
-            <p className={styles.heroEyebrow}>Hermes Agent</p>
+            <p className={styles.heroEyebrow}>Cybr Agent</p>
             <h1 className={styles.heroTitle}>Plugin Catalog</h1>
             <nav className={styles.crossNav} aria-label="Catalog pages">
               <Link className={styles.crossNavLink} to="/skills">
@@ -565,7 +565,7 @@ export default function PluginCatalogPage() {
               </span>
             </nav>
             <p className={styles.heroSub}>
-              Give Hermes new powers. Memory, voice, messaging, browsing, Desktop panes and more,
+              Give Cybr Agent new powers. Memory, voice, messaging, browsing, Desktop panes and more,
               built by the community.
               {loadError && (
                 <span style={{ color: "#f87171", marginLeft: 8 }}>
@@ -778,7 +778,7 @@ export default function PluginCatalogPage() {
               <div className={styles.emptyIcon}>{"\u{1F331}"}</div>
               <h3 className={styles.emptyTitle}>The catalog is just getting started</h3>
               <p className={styles.emptyDesc}>
-                The plugin catalog is a curated, human-reviewed list of Hermes
+                The plugin catalog is a curated, human-reviewed list of Cybr Agent
                 plugins — each entry pinned to an exact commit. Want yours listed?
                 Submissions are open.
               </p>

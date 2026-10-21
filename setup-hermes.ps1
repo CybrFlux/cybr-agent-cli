@@ -1,5 +1,5 @@
 # ============================================================================
-# Hermes Agent Setup Script (Windows) — THE dev-environment entry point.
+# Cybr Agent Setup Script (Windows) — THE dev-environment entry point.
 # ============================================================================
 # Sets up the pm-managed development environment from a fresh clone:
 #   1. Stage the pinned uv from pm/lock.json (sha256-verified, into the pm
@@ -16,7 +16,7 @@ param([switch]$RuntimeOnly, [string]$TestExtras = '')
 $ErrorActionPreference = 'Stop'
 
 Write-Host ''
-Write-Host 'Hermes Agent Setup' -ForegroundColor Cyan
+Write-Host 'Cybr Agent Setup' -ForegroundColor Cyan
 Write-Host ''
 
 $repo = $PSScriptRoot
@@ -143,14 +143,14 @@ Write-Host '  1. Activate the dev environment (venv-style, in THIS session):'
 Write-Host '     .\activate.ps1'
 Write-Host ''
 Write-Host '  2. Run the setup wizard to configure API keys:'
-Write-Host '     hermes setup'
+Write-Host '     cybr setup'
 Write-Host ''
 Write-Host '  3. Start chatting:'
 Write-Host '     hermes'
 Write-Host ''
 Write-Host 'Other commands:'
-Write-Host '  hermes pm install     # Re-run the tool + dependency install'
-Write-Host '  hermes status         # Check configuration'
-Write-Host '  hermes doctor         # Diagnose issues'
+Write-Host '  cybr pm install     # Re-run the tool + dependency install'
+Write-Host '  cybr status         # Check configuration'
+Write-Host '  cybr doctor         # Diagnose issues'
 Write-Host '  deactivate            # Undo the activation (restore PATH etc.)'
 Write-Host ''

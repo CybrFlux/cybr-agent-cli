@@ -2691,7 +2691,7 @@ def test_history_to_messages_types_the_failed_turn_boundary_for_resume():
         {"role": "user", "content": "b"},
         {"role": "assistant", "content": PARTIAL_FAILED_TURN_NOTICE},  # legacy untyped row
         {"role": "user", "content": "c"},
-        {"role": "assistant", "content": f"Quoting Hermes: {FAILED_TURN_NOTICE}"},  # a real reply
+        {"role": "assistant", "content": f"Quoting Cybr Agent: {FAILED_TURN_NOTICE}"},  # a real reply
     ]
 
     assert [m.get("display_kind") for m in server._history_to_messages(history)] == [
@@ -4477,7 +4477,7 @@ def test_config_sync_config_wins_over_env_seed(monkeypatch):
 
 
 def test_config_sync_ignores_env_seed_without_config_model(monkeypatch):
-    # `hermes --tui -m <model>` sets HERMES_MODEL/HERMES_INFERENCE_MODEL as a
+    # `cybr --tui -m <model>` sets HERMES_MODEL/HERMES_INFERENCE_MODEL as a
     # launch-scoped seed. When config.yaml has NO model.default (typical
     # custom-provider-only setup), the sync must NOT adopt the env seed as a
     # config target — doing so replayed the -m flag as a /model switch and
@@ -9417,7 +9417,7 @@ def test_enable_gateway_prompts_sets_gateway_env(monkeypatch):
 
 
 def test_setup_status_answers_from_the_bootstrap_record_once_it_exists(monkeypatch):
-    """Under ``hermes serve`` the boot bootstrap records who carries inference; ``setup.status``
+    """Under ``cybr serve`` the boot bootstrap records who carries inference; ``setup.status``
     reports its record (blocking for it while it is in flight) instead of re-probing, so a client's
     first poll sees the boot's answer rather than racing it."""
     import threading
@@ -15947,7 +15947,7 @@ def test_handoff_request_uses_session_profile_home(monkeypatch, tmp_path):
                 home_channel=HomeChannel(
                     platform=Platform.DISCORD,
                     chat_id="discord-home",
-                    name="Hermes / #chat-coding",
+                    name="Cybr Agent / #chat-coding",
                 ),
             )
         return config
@@ -16991,13 +16991,13 @@ def test_session_branch_uses_persisted_display_history_after_compaction(monkeypa
 
 
 # --------------------------------------------------------------------------
-# model.options — curated-list parity with `hermes model` and classic /model
+# model.options — curated-list parity with `cybr model` and classic /model
 # --------------------------------------------------------------------------
 
 
 def test_model_options_does_not_overwrite_curated_models(monkeypatch):
     """The TUI model.options handler must surface the same curated model
-    list as `hermes model` and the classic CLI /model picker.
+    list as `cybr model` and the classic CLI /model picker.
 
     Regression: earlier versions of this handler unconditionally replaced
     each provider's curated ``models`` field with ``provider_model_ids()``
@@ -17507,7 +17507,7 @@ def test_session_active_list_excludes_finalized_sessions(monkeypatch):
     that window ``session.active_list`` would otherwise still report the dead
     session, which is exactly the footer "N sessions" count that only ever grew
     until a gateway restart. A live session on the real stdio transport (the
-    standalone ``hermes --tui`` case) must still be reported.
+    standalone ``cybr --tui`` case) must still be reported.
     """
     class _DB:
         def get_session_title(self, key):
@@ -18351,7 +18351,7 @@ def test_notification_poller_requeues_when_busy(monkeypatch):
 
 
 def test_session_save_writes_under_hermes_home_with_system_prompt(monkeypatch, tmp_path):
-    """TUI /save (session.save RPC) must snapshot under the Hermes profile
+    """TUI /save (session.save RPC) must snapshot under the Cybr Agent profile
     home — not the project/workspace CWD — and include the system prompt,
     mirroring the classic CLI /save and the dashboard save export.
 
@@ -18373,7 +18373,7 @@ def test_session_save_writes_under_hermes_home_with_system_prompt(monkeypatch, t
         model="hermes-test",
         session_id="20260101_120000_abc123",
         session_start=datetime(2026, 1, 1, 12, 0, 0),
-        _cached_system_prompt="You are Hermes.",
+        _cached_system_prompt="You are Cybr Agent.",
     )
     history = [
         {"role": "user", "content": "hi"},
@@ -18405,7 +18405,7 @@ def test_session_save_writes_under_hermes_home_with_system_prompt(monkeypatch, t
     assert payload["model"] == "hermes-test"
     assert payload["id"] == "20260101_120000_abc123"  # importable: import_sessions keys on raw["id"]
     assert payload["started_at"] == datetime(2026, 1, 1, 12, 0, 0).timestamp()
-    assert payload["system_prompt"] == "You are Hermes."
+    assert payload["system_prompt"] == "You are Cybr Agent."
     assert payload["messages"] == history
 
 
@@ -20606,7 +20606,7 @@ def test_build_persist_message_quotes_paths_containing_spaces(tmp_path):
     with a space parses as a truncated ref with the tail left as loose text.
     Desktop composer images live in the app's userData dir, which on macOS is
     ``~/Library/Application Support/...`` — a space every time."""
-    img_dir = tmp_path / "Application Support" / "Hermes" / "composer-images"
+    img_dir = tmp_path / "Application Support" / "Cybr Agent" / "composer-images"
     img_dir.mkdir(parents=True)
     img = img_dir / "cat.png"
     img.write_bytes(b"png")

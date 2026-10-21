@@ -43,8 +43,8 @@ def test_no_scrub_is_byte_preserving_except_explicit_extra():
 
 def test_e2e_scrubbed_env_resolves_bare_hermes_under_minimal_parent_path(monkeypatch, tmp_path):
     """Regression for #92998/#93082: a gateway launched by systemd/cron with a
-    minimal PATH (no hermes console-script dir) must still hand cron job
-    children an env whose PATH resolves bare ``hermes``.
+    minimal PATH (no cybr console-script dir) must still hand cron job
+    children an env whose PATH resolves bare ``cybr``.
 
     Exercises the REAL factory and the REAL bin-dir resolver — no mocks of the
     helpers. cron/scheduler._run_job_script builds its child env via exactly
@@ -58,7 +58,7 @@ def test_e2e_scrubbed_env_resolves_bare_hermes_under_minimal_parent_path(monkeyp
     if not bin_dir or not os.path.isfile(
         os.path.join(bin_dir, "hermes.exe" if os.name == "nt" else "hermes")
     ):
-        pytest.skip("no real hermes console-script install available")
+        pytest.skip("no real cybr console-script install available")
 
     # Simulate the service-manager minimal PATH: hermes dir absent. An empty directory, not
     # /usr/bin:/bin — a distro-packaged hermes (/usr/bin/hermes) would already be on those.

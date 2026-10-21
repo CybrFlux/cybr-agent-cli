@@ -396,13 +396,13 @@ def _hermes_closure_repair():
             from hermes_cli import _early_recovery
             restored = _early_recovery.restore_interrupted_pull(root)
     except Exception as exc:
-        said.write('hermes: the checkout cannot start after an interrupted `hermes update`, and it was not '
+        said.write('hermes: the checkout cannot start after an interrupted `cybr update`, and it was not '
                    'repaired: %s\\n' % (exc,))
     if restored:
-        sys.stderr.write('hermes: the checkout could not start after an interrupted `hermes update`; '
+        sys.stderr.write('hermes: the checkout could not start after an interrupted `cybr update`; '
                          'repaired it with the recovery code saved before the update.\\n' + said.getvalue())
         _early_recovery.relaunch_after_restore()
-    sys.stderr.write(said.getvalue() or 'hermes: the checkout cannot start after an interrupted `hermes update`; '
+    sys.stderr.write(said.getvalue() or 'hermes: the checkout cannot start after an interrupted `cybr update`; '
                      'launch again once the update that owns it finishes.\\n')
     raise SystemExit(1)
 """
@@ -856,7 +856,7 @@ def _read_environment_block(address: int) -> dict[str, str]:
 
 
 def new_console_hermes_root() -> Path | None:
-    """The Hermes root that a newly opened console resolves, or None when Windows cannot say."""
+    """The Cybr Agent root that a newly opened console resolves, or None when Windows cannot say."""
     from hermes_constants import hermes_root_for_environment
 
     environ = _new_console_environment()
@@ -882,7 +882,7 @@ def owns_user_path(root: Path) -> bool:
 
     logging.getLogger(__name__).info(
         "User PATH left unchanged: new consoles use %s, not %s",
-        console_root or "an unknown Hermes home", root)
+        console_root or "an unknown Cybr Agent home", root)
     return False
 
 
@@ -989,7 +989,7 @@ def _symlink_sealed_launchers(payload_bin) -> dict:
 
     Ownership guard mirrors expose_cli's wrapper logic: an existing
     entry is replaced only when it is ours — a symlink into THIS app
-    bundle's payload — or missing/broken. A user's own `hermes` (pipx,
+    bundle's payload — or missing/broken. A user's own `cybr` (pipx,
     another checkout's wrapper) is never touched.
     """
     link_dir = Path.home() / ".local" / "bin"

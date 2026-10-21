@@ -13,7 +13,7 @@
 #   E  custom branch whose commit merges cleanly: the kill lands inside the `git merge`, after it wrote
 #      the merged run_agent.py; the user edits a file git never wrote, then runs `hermes-agent`'s import
 # Fixed: A/B untouched, C/D/E restored with the user edit kept and the re-update lands; one VERDICT line.
-# [python] defaults to <repo>/venv/bin/python (needs the Hermes deps).
+# [python] defaults to <repo>/venv/bin/python (needs the Cybr Agent deps).
 set -u
 REPO=$1; REF=$2; LABEL=$3
 PY=${4:-$REPO/venv/bin/python}
@@ -21,7 +21,7 @@ U=$(mktemp -d -t "hermes-interrupted-pull-ab-$LABEL.XXXXXX")
 export HOME=$U/fakehome HERMES_HOME=$U/fakehome/.hermes
 unset PYTEST_CURRENT_TEST
 cat > "$U/pull.py" <<'PYEOF'
-# `hermes update` after its fetch: the REAL autostash + _pull_updates, imported from the install's tree.
+# `cybr update` after its fetch: the REAL autostash + _pull_updates, imported from the install's tree.
 import pathlib
 import sys
 
@@ -136,7 +136,7 @@ EOF
   kill -KILL -- -$PID; wait $PID 2>/dev/null
   echo "  torn: HEAD=$(git rev-parse --short HEAD) [$(git status --porcelain | tr '\n' ' ')] marker=[$(marker | cut -c1-60)...]"
   sed -i "1a USER_EDIT = 'stash re-applied'" run_agent.py  # upstream changes this file too; git never wrote it
-  hermes
+  cybr
   echo "  RESULT $([ $KIND = clone ] && echo C || echo D): [$(git status --porcelain | tr '\n' ' ')] user edit kept=$(grep -c "USER_EDIT" run_agent.py) torn_newpkg=$(test -e torn_newpkg && echo present || echo gone) marker=[$(marker)]"
   PATH=/usr/bin:$PATH $PY $U/pull.py $U/install 2>&1 | grep PULL | sed 's/^/    re-update> /'
   echo "  after re-update: HEAD==origin/main? $([ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] && echo yes || echo no) user edit kept=$(grep -c USER_EDIT run_agent.py)"

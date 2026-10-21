@@ -1,4 +1,4 @@
-"""`hermes plugins update` with no name: offer every plugin that has an update, never move one silently."""
+"""`cybr plugins update` with no name: offer every plugin that has an update, never move one silently."""
 from __future__ import annotations
 
 import argparse
@@ -12,7 +12,7 @@ def _parse(argv):
     from hermes_cli.plugins_cmd import plugins_command
     from hermes_cli.subcommands.plugins import build_plugins_parser
 
-    parser = argparse.ArgumentParser(prog="hermes")
+    parser = argparse.ArgumentParser(prog="cybr")
     build_plugins_parser(parser.add_subparsers(dest="command"), cmd_plugins=plugins_command)
     return parser.parse_args(["plugins", *argv])
 

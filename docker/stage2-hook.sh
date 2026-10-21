@@ -142,7 +142,7 @@ fi
 #   - socket owned by GID 0 (root) — some Podman setups; usermod -aG root
 #   - socket GID already used by a known container group (e.g. tty=5):
 #     reuse that group's name rather than creating a duplicate
-#   - hermes is already a member of the right group (idempotent restart)
+#   - Cybr Agent is already a member of the right group (idempotent restart)
 #   - chown/groupadd failures under rootless containers — non-fatal
 for sock in /var/run/docker.sock /run/docker.sock; do
     [ -S "$sock" ] || continue
@@ -222,7 +222,7 @@ chown_hermes_tree() {
 
 tree_has_non_hermes_owner() {
     target="$1"
-    find "$target" \( ! -user hermes -o ! -group hermes \) -print -quit 2>/dev/null | grep -q .
+    find "$target" \( ! -user cybr -o ! -group hermes \) -print -quit 2>/dev/null | grep -q .
 }
 
 needs_chown=false
@@ -236,7 +236,7 @@ if [ "$needs_chown" = true ]; then
     # is already owned by the mapped user on the host side.
     #
     # Top-level $HERMES_HOME: chown the directory itself (not its contents)
-    # so hermes can mkdir new subdirs but bind-mounted host files keep
+    # so Cybr Agent can mkdir new subdirs but bind-mounted host files keep
     # their existing ownership.
     if refuse_symlinked_path "chown" "$HERMES_HOME"; then
         :
@@ -244,7 +244,7 @@ if [ "$needs_chown" = true ]; then
         chown hermes:hermes "$HERMES_HOME" 2>/dev/null || \
             echo "[stage2] Warning: chown $HERMES_HOME failed (rootless container?) — continuing"
     fi
-    # Hermes-owned subdirs: recursive chown is safe here because these are
+    # Cybr Agent-owned subdirs: recursive chown is safe here because these are
     # created and managed exclusively by hermes (see the s6-setuidgid mkdir
     # -p block below for the canonical list).
     for sub in cron sessions logs hooks memories skills skins plans workspace home profiles pairing platforms/pairing; do
@@ -302,8 +302,8 @@ fi
 
 # Always reset ownership of pairing data on every boot, same docker-exec/
 # root-write reason as profiles/ and cron/. `docker exec <container>
-# hermes pairing approve …` defaults to uid=0 and writes 0600 root-owned
-# approval files that the unprivileged hermes gateway cannot read,
+# cybr pairing approve …` defaults to uid=0 and writes 0600 root-owned
+# approval files that the unprivileged cybr gateway cannot read,
 # silently leaving the approved user unauthorized (#10270). The targeted
 # data-volume chown above only runs when the top-level $HERMES_HOME is
 # mis-owned, so warm boots skip it — this block makes a container restart
@@ -418,7 +418,7 @@ fi
 # bind-mounted from the host (~/.hermes:/opt/data) and sometimes shared with a
 # host-side Desktop/CLI install. Stamping 'docker' here clobbered that host
 # install's marker, so its in-app updater read 'docker' and refused to run
-# 'hermes update'. To heal homes already poisoned by older images, remove a
+# 'cybr update'. To heal homes already poisoned by older images, remove a
 # stale 'docker' stamp from $HERMES_HOME if one is present (the host install's
 # own installer re-creates its code-scoped stamp; a genuine container relies on
 # the baked /opt/hermes stamp, so deleting the data-dir copy is safe).
@@ -467,7 +467,7 @@ seed_one "SOUL.md" "docker/SOUL.md"
 #
 # OPERATOR-PROVIDED KEYS WIN: if the container environment already carries
 # API_SERVER_KEY (documented `docker run -e API_SERVER_KEY=...` flow), do
-# not generate one. Hermes loads $HERMES_HOME/.env with override=True, so
+# not generate one. Cybr Agent loads $HERMES_HOME/.env with override=True, so
 # a generated key written here would silently SHADOW the operator's env
 # key and 401 every client still using the supplied credential.
 if [ -n "${API_SERVER_KEY:-}" ]; then
@@ -615,7 +615,7 @@ fi
 # On Fly, flyd mounts the local Machines API ("flaps") unix socket at /.fly/api
 # owned root:root 0755. The gateway's scale-to-zero self-suspend
 # (gateway/scale_to_zero.py suspend_self) must POST to it, but the gateway runs
-# as the unprivileged `hermes` user — without this it gets EACCES on every
+# as the unprivileged `cybr` user — without this it gets EACCES on every
 # suspend attempt and the machine can never sleep (fail-awake; verified live on
 # staging 2026-08-20: "flaps suspend request failed: [Errno 13]"). This hook
 # runs as root before user services (the gateway) start, so grant group access
@@ -637,7 +637,7 @@ fi
 # --- Migrate persisted config schema ---
 # Docker image upgrades replace the code under $INSTALL_DIR but preserve
 # $HERMES_HOME on the mounted volume. Run the same safe, non-interactive
-# config-schema migrations that `hermes update` runs for non-Docker installs,
+# config-schema migrations that `cybr update` runs for non-Docker installs,
 # after first-boot seeding and before supervised gateway services start.
 # Set HERMES_SKIP_CONFIG_MIGRATION=1 for controlled/manual migrations.
 if [ -f "$HERMES_HOME/config.yaml" ]; then
@@ -758,14 +758,14 @@ fi
 # resolved browser binary path into /etc/hermes/agent-browser-executable-path
 # (the layout differs per arch — chrome-linux64/chrome on amd64,
 # chromium-linux-arm64/chromium on arm64 — so it is resolved at build time,
-# not hard-coded). agent-browser (the runtime CLI Hermes spawns for the
+# not hard-coded). agent-browser (the runtime CLI Cybr Agent spawns for the
 # browser tool) doesn't recognise Playwright's directory layout in its own
 # cache scan and fails with "Auto-launch failed: Chrome not found" — even
 # though the binary is right there (#15697).
 #
 # Fix: read the baked path and export ``AGENT_BROWSER_EXECUTABLE_PATH``
 # via /run/s6/container_environment so the `with-contenv` shebang on
-# main-wrapper.sh propagates it into the supervised ``hermes`` process
+# main-wrapper.sh propagates it into the supervised ``cybr`` process
 # and thence to agent-browser subprocesses.
 #
 # - Skipped when the user has already set ``AGENT_BROWSER_EXECUTABLE_PATH``

@@ -70,33 +70,33 @@ def _skin_color(key: str, fallback: str) -> str:
 from hermes_cli import __release_date__ as RELEASE_DATE
 from hermes_cli.version_info import get_version_info
 
-HERMES_AGENT_LOGO = """[bold #FFD700]██╗  ██╗███████╗██████╗ ███╗   ███╗███████╗███████╗       █████╗  ██████╗ ███████╗███╗   ██╗████████╗[/]
-[bold #FFD700]██║  ██║██╔════╝██╔══██╗████╗ ████║██╔════╝██╔════╝      ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝[/]
-[#FFBF00]███████║█████╗  ██████╔╝██╔████╔██║█████╗  ███████╗█████╗███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║[/]
-[#FFBF00]██╔══██║██╔══╝  ██╔══██╗██║╚██╔╝██║██╔══╝  ╚════██║╚════╝██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║[/]
-[#CD7F32]██║  ██║███████╗██║  ██║██║ ╚═╝ ██║███████╗███████║      ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║[/]
-[#CD7F32]╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝╚══════╝      ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝[/]"""
+HERMES_AGENT_LOGO = """[bold #FFFFFF] ██████╗██╗   ██╗██████╗ ██████╗      █████╗  ██████╗ ███████╗███╗   ██╗████████╗[/]
+[bold #F2F2F2]██╔════╝╚██╗ ██╔╝██╔══██╗██╔══██╗    ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝[/]
+[bold #DDDDDD]██║      ╚████╔╝ ██████╔╝██████╔╝    ███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║   [/]
+[bold #C8C8C8]██║       ╚██╔╝  ██╔══██╗██╔══██╗    ██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║   [/]
+[bold #B0B0B0]╚██████╗   ██║   ██████╔╝██║  ██║    ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║   [/]
+[bold #999999] ╚═════╝   ╚═╝   ╚═════╝ ╚═╝  ╚═╝    ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝   [/]"""
 
-HERMES_CADUCEUS = """[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⡀⠀⣀⣀⠀⢀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#CD7F32]⠀⠀⠀⠀⠀⠀⢀⣠⣴⣾⣿⣿⣇⠸⣿⣿⠇⣸⣿⣿⣷⣦⣄⡀⠀⠀⠀⠀⠀⠀[/]
-[#FFBF00]⠀⢀⣠⣴⣶⠿⠋⣩⡿⣿⡿⠻⣿⡇⢠⡄⢸⣿⠟⢿⣿⢿⣍⠙⠿⣶⣦⣄⡀⠀[/]
-[#FFBF00]⠀⠀⠉⠉⠁⠶⠟⠋⠀⠉⠀⢀⣈⣁⡈⢁⣈⣁⡀⠀⠉⠀⠙⠻⠶⠈⠉⠉⠀⠀[/]
-[#FFD700]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣴⣿⡿⠛⢁⡈⠛⢿⣿⣦⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#FFD700]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠿⣿⣦⣤⣈⠁⢠⣴⣿⠿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#FFBF00]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠻⢿⣿⣦⡉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#FFBF00]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⢷⣦⣈⠛⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣴⠦⠈⠙⠿⣦⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⣿⣤⡈⠁⢤⣿⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⠷⠄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⠑⢶⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠁⢰⡆⠈⡿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠳⠈⣡⠞⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#B8860B]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]"""
+HERMES_CADUCEUS = """[#D9D9D9]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#D9D9D9]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#D9D9D9]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#D9D9D9]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣤⣤⣤⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#D9D9D9]⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⣿⣿⠿⠿⠿⣿⣿⣷⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#D9D9D9]⠀⠀⠀⠀⠀⠀⠀⣠⣿⣿⠟⠁⠀⠀⠀⠀⠙⣿⣿⣦⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#D9D9D9]⠀⣠⣾⣿⣿⣦⣰⣿⣿⠃⠀⠀⠀⠀⠀⠀⠀⠈⢿⣿⣇⠀⠀⠀⠀⠀⠀⣀⡀⠀[/]
+[#D9D9D9]⠀⣿⣿⣿⣿⣿⣿⣿⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⣿⣿⡆⠀⠀⠀⠀⢸⣿⣿⠀[/]
+[#D9D9D9]⠀⠈⠻⠿⠿⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠹⣿⣿⡄⠀⠀⠀⢸⣿⣿⠀[/]
+[#D9D9D9]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠹⣿⣿⣆⠀⢀⣿⣿⡏⠀[/]
+[#D9D9D9]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠿⣿⣿⣿⣿⠟⠀⠀[/]
+[#D9D9D9]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠉⠁⠀⠀⠀[/]
+[#D9D9D9]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#D9D9D9]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#D9D9D9]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]"""
 
 # === Skills scanning ===
 
 # Per-process caches: ``None`` until computed, then a 1-tuple ``(value,)`` so a computed ``None``
-# is distinguishable from "not yet computed". Reset by assigning ``None`` (tests, ``hermes skills``).
+# is distinguishable from "not yet computed". Reset by assigning ``None`` (tests, ``cybr skills``).
 _available_skills_cache: Optional[tuple] = None
 _git_banner_state_cache: Optional[tuple] = None
 _latest_release_cache: Optional[tuple] = None
@@ -144,7 +144,7 @@ def get_available_skills() -> dict[str, list[str]]:
 
 
 def _resolve_repo_dir() -> Optional[Path]:
-    """The active Hermes git checkout, or None if this isn't a git install.
+    """The active Cybr Agent git checkout, or None if this isn't a git install.
 
     Prefers the running code's location: ``$HERMES_HOME/hermes-agent/`` may be a stale copy
     carried over by ``--clone-all``.
@@ -210,7 +210,7 @@ def format_banner_version_label() -> str:
 
     stamp = read_install_stamp(get_project_root())
     if stamp.get("distribution") == "desktop-app":
-        label = f"Hermes Agent v{get_version_info().derived_version}"
+        label = f"Cybr Agent v{get_version_info().derived_version}"
         if stamp.get("source") == "commit-build":
             return f"{label} · commit-build · {str(stamp.get('commit') or '')[:12]}"
         if stamp.get("tag"):
@@ -223,7 +223,7 @@ def format_banner_version_label() -> str:
             return f"{label} · installer"
         return label
 
-    base = f"Hermes Agent v{get_version_info().derived_version} ({RELEASE_DATE})"
+    base = f"Cybr Agent v{get_version_info().derived_version} ({RELEASE_DATE})"
     from hermes_cli.config import load_config
     from hermes_cli.update_channel import resolve_update_channel
 
@@ -516,8 +516,8 @@ def _mcp_failed_line(name: str, transport: str, error: Optional[str]) -> str:
     exact next command, so 'failed' is never the whole story."""
     from rich.markup import escape
     reason = escape(" ".join(str(error or "").split())[:120]) or "no details recorded"
-    next_cmd = (f"hermes mcp login {name}" if re.search(r"\b401\b|unauthori[sz]ed", reason, re.IGNORECASE)
-                else f"hermes mcp test {name}")
+    next_cmd = (f"cybr mcp login {name}" if re.search(r"\b401\b|unauthori[sz]ed", reason, re.IGNORECASE)
+                else f"cybr mcp test {name}")
     return (f"[red]{name}[/] [dim]({transport})[/] [red]— could not connect:[/] {reason} "
             f"[dim]— run `{next_cmd}`[/]")
 
@@ -613,7 +613,7 @@ def _banner_left_lines(model: str, cwd: str, session_id, context_length, provide
         lines.append(f"[{accent}]MoA: {_short_label(model)}[/]{agg_str}{ctx_str}{nous_str}")
     elif not (model or "").strip() or (model or "").strip().lower() == "unknown":
         # Unconfigured install: the clearest place to say what is wrong and how to fix it.
-        lines.append(f"[bold red]no model configured[/] [dim {dim}]— run /model or hermes setup[/]")
+        lines.append(f"[bold red]no model configured[/] [dim {dim}]— run /model or cybr setup[/]")
     else:
         model_short = model.split("/")[-1].removesuffix(".gguf")
         lines.append(f"[{accent}]{_short_label(model_short)}[/]{ctx_str}{nous_str}")

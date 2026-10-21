@@ -43,8 +43,8 @@ it('resolves the asar path per platform, including the branded macOS bundle', ()
   expect(resolvePackagedAsarPath({
     appOutDir: '/out/mac',
     electronPlatformName: 'darwin',
-    packager: { appInfo: { productFilename: 'Hermes Preview' } }
-  })).toBe(path.join('/out/mac', 'Hermes Preview.app', 'Contents', 'Resources', 'app.asar'))
+    packager: { appInfo: { productFilename: 'Cybr Agent Preview' } }
+  })).toBe(path.join('/out/mac', 'Cybr Agent Preview.app', 'Contents', 'Resources', 'app.asar'))
   expect(() => resolvePackagedAsarPath({ electronPlatformName: 'linux' }))
     .toThrow('missing appOutDir')
 })

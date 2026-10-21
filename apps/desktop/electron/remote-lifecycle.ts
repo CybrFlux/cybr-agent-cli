@@ -1,12 +1,12 @@
 /**
  * remote-lifecycle.ts
  *
- * Pure, electron-free remote Hermes dashboard lifecycle over SSH for Desktop
+ * Pure, electron-free remote Cybr Agent dashboard lifecycle over SSH for Desktop
  * SSH remote mode. Composes an SshConnection (injected) with HTTP probes
  * through the established tunnel (injected fetch) and the served-token adoption
  * step (injected). Knows how to:
  *
- *   - locate the Hermes install on the remote (login-shell probe),
+ *   - locate the Cybr Agent install on the remote (login-shell probe),
  *   - gate the remote platform to Linux/macOS via `uname`,
  *   - reuse an existing desktop-dedicated dashboard via a lockfile + an
  *     AUTHENTICATED /api/status probe (pid liveness alone is insufficient),
@@ -42,7 +42,7 @@ const READY_RE = READY_IN_MERGED_OUTPUT_RE // the remote log is `>> log 2>&1`: m
 const REMOTE_LOCK_DIR = '~/.hermes/desktop-ssh'
 const SUPPORTED_REMOTE_OS = new Set(['Linux', 'Darwin'])
 // On a busy remote host a healthy cold boot can take 60-150s before the
-// freshly spawned `hermes serve --isolated` prints its READY line (event-loop
+// freshly spawned `cybr serve --isolated` prints its READY line (event-loop
 // stalls of 5-27s each during spawn storms are routine). The historical 45s
 // budget gave up milliseconds before a healthy backend announced ready and
 // surfaced a timeout toast (issue #94642). A roomier default absorbs the
@@ -202,7 +202,7 @@ async function locateHermes(ssh, remoteHermesPath) {
     // correctly on its own. Previously, this function followed `exec` wrappers and
     // returned only the python interpreter, which broke:
     //   - version checking: `<python> --version` printed "Python x.y.z" instead of
-    //     the Hermes version, and
+    //     the Cybr Agent version, and
     //   - capability probing: `<python> serve --help` failed entirely.
     // See https://github.com/NousResearch/hermes-agent/issues/74411
     return candidate
@@ -225,8 +225,8 @@ async function locateHermes(ssh, remoteHermesPath) {
     }
 
     const err: any = new Error(
-      `The Hermes path you set is not an executable on the remote host: "${remoteHermesPath}". ` +
-        'Check the path (it must be the full path to the `hermes` binary on the remote, e.g. ' +
+      `The Cybr Agent path you set is not an executable on the remote host: "${remoteHermesPath}". ` +
+        'Check the path (it must be the full path to the `cybr` binary on the remote, e.g. ' +
         '~/hermes-agent/.venv/bin/hermes), or clear it to auto-detect.'
     )
 
@@ -263,9 +263,9 @@ async function locateHermes(ssh, remoteHermesPath) {
   }
 
   const err: any = new Error(
-    'Hermes is not installed on the remote host (could not find a `hermes` executable). ' +
+    'Cybr Agent is not installed on the remote host (could not find a `cybr` executable). ' +
       'Install it on the remote with:  curl -fsSL https://hermes-agent.nousresearch.com/install.sh | sh  ' +
-      '— or set the Hermes path explicitly in the SSH connection settings.'
+      '— or set the Cybr Agent path explicitly in the SSH connection settings.'
   )
 
   err.kind = 'hermes-not-found'
@@ -273,7 +273,7 @@ async function locateHermes(ssh, remoteHermesPath) {
 }
 
 // Probe the resolved binary's version string (first line of `<hermes> --version`,
-// e.g. "Hermes Agent v0.18.2 ..."), or '' on failure. Surfaces WHICH hermes a
+// e.g. "Cybr Agent v0.18.2 ..."), or '' on failure. Surfaces WHICH hermes a
 // connection uses, so a stale/unexpected install is visible.
 async function probeHermesVersion(ssh, hermesPath) {
   try {
@@ -294,7 +294,7 @@ async function probeRemotePlatform(ssh) {
 
   if (!SUPPORTED_REMOTE_OS.has(osName)) {
     const err: any = new Error(
-      `Unsupported remote platform "${osName || 'unknown'}". Hermes Desktop SSH mode supports Linux, macOS, and Windows remote hosts.`
+      `Unsupported remote platform "${osName || 'unknown'}". Cybr Agent Desktop SSH mode supports Linux, macOS, and Windows remote hosts.`
     )
 
     err.kind = 'unsupported-platform'
@@ -313,7 +313,7 @@ async function probeRemoteHermesHome(ssh) {
 
     return out || '~/.hermes'
   } catch (cause) {
-    const error: any = new Error('Could not resolve the remote Hermes home.')
+    const error: any = new Error('Could not resolve the remote Cybr Agent home.')
     error.kind = 'transient-transport-error'
     error.cause = cause
     throw error
@@ -355,7 +355,7 @@ async function assertRemoteInstallUpdateClear(ssh, hermesHome, hermesPath = '') 
         .split(/\r?\n/)
         .pop() || ''
   } catch (cause) {
-    const error: any = new Error('Could not prove that the remote Hermes install is clear for SSH startup.')
+    const error: any = new Error('Could not prove that the remote Cybr Agent install is clear for SSH startup.')
     error.kind = 'update-in-progress'
     error.cause = cause
     throw error
@@ -369,10 +369,10 @@ async function assertRemoteInstallUpdateClear(ssh, hermesHome, hermesPath = '') 
 
   const error: any = new Error(
     live
-      ? `Remote Hermes update process ${live[1]} is still running; SSH startup is paused.`
+      ? `Remote Cybr Agent update process ${live[1]} is still running; SSH startup is paused.`
       : observation === 'HELD'
-        ? 'A process the remote Hermes update started still holds the install; SSH startup is paused.'
-        : 'The remote Hermes update marker is unreadable, malformed, or locked; refusing SSH startup.'
+        ? 'A process the remote Cybr Agent update started still holds the install; SSH startup is paused.'
+        : 'The remote Cybr Agent update marker is unreadable, malformed, or locked; refusing SSH startup.'
   )
 
   error.kind = 'update-in-progress'
@@ -387,7 +387,7 @@ async function listRemoteHermesProfiles(ssh) {
   try {
     listing = await ssh.exec(`if [ -d ${dir} ]; then ls -1 ${dir}; fi`)
   } catch (cause) {
-    const error: any = new Error('Could not list remote Hermes profiles.')
+    const error: any = new Error('Could not list remote Cybr Agent profiles.')
     error.kind = 'transient-transport-error'
     error.cause = cause
     throw error
@@ -409,7 +409,7 @@ async function readRemoteInstallId(ssh) {
   try {
     out = await ssh.exec(`if [ -f ${file} ]; then cat ${file}; fi`)
   } catch (cause) {
-    const error: any = new Error('Could not read the remote Hermes install id.')
+    const error: any = new Error('Could not read the remote Cybr Agent install id.')
     error.kind = 'transient-transport-error'
     error.cause = cause
     throw error
@@ -431,7 +431,7 @@ function assertSafeRemoteHome(home) {
   const value = String(home || '').trim()
 
   if (!/^(\/|~\/)[A-Za-z0-9._/+-]+$/.test(value) || value.includes('..')) {
-    const error: any = new Error('Unsafe remote Hermes home.')
+    const error: any = new Error('Unsafe remote Cybr Agent home.')
     error.kind = 'unsafe-path'
     throw error
   }
@@ -976,13 +976,13 @@ finally:
 
 // Run `command` under the updaters' marker lock: REMOTE_MARKER_GATE_PY holds
 // `<marker>.lock` (the sidecar Python update_lock and marker.sh flock), clears a
-// dead claim while `hermes`'s checkout lock is free, and refuses (exit 75) a
+// dead claim while `cybr`'s checkout lock is free, and refuses (exit 75) a
 // live, unreadable, or checkout-held one, then keeps the
 // lock across the spawn and the initial lockfile publication. The descriptor
 // is close-on-exec and passed only to the outer shell; each detached child
-// closes it before execing Hermes. markerPath is expandRemotePath() output — a
+// closes it before execing Cybr Agent. markerPath is expandRemotePath() output — a
 // complete shell word ("$HOME"'/…' or '/abs/…') embedded raw so $HOME expands
-// remotely; a second shq() would hand python the quote characters. `hermes`
+// remotely; a second shq() would hand python the quote characters. `cybr`
 // is the same kind of word (expandRemotePath of the located executable).
 function withRemoteUpdateMutex(command, markerPath, hermes) {
   return `python3 -c ${shq(REMOTE_MARKER_GATE_PY)} ${markerPath} ${shq(command)} ${hermes}`
@@ -1144,7 +1144,7 @@ function buildSpawnCommand(hermesPath, profile, opts: any = {}) {
     `exec env HERMES_DESKTOP=1 ${hermes} ${profileArgs}${subCmd}`
 
   const detachedShell: string = `eval "exec $1>&-"; ${dashCmd} </dev/null >> ${logPath} 2>&1 & echo $!`
-  // The inner shell backgrounds Hermes and reports its PID; backgrounding the
+  // The inner shell backgrounds Cybr Agent and reports its PID; backgrounding the
   // launcher too adds its unrelated PID to the value published in the lock.
   const detachedSpawn: string = `child=$("$(command -v setsid || echo nohup)" sh -c ${shq(detachedShell)} hermes-update-child "$1")`
 
@@ -1154,7 +1154,7 @@ function buildSpawnCommand(hermesPath, profile, opts: any = {}) {
         `${detachedSpawn}; ` +
         `${markerAbsent} || { kill "$child" 2>/dev/null || true; wait "$child" 2>/dev/null || true; exit 75; }; echo "$child"`,
       marker,
-      hermes
+      cybr
     )
   }
 
@@ -1196,7 +1196,7 @@ function buildSpawnCommand(hermesPath, profile, opts: any = {}) {
       `printf '%s' "$lock_json" > "$temporary_lock" && mv -f "$temporary_lock" "$lock" || { kill "$child" 2>/dev/null || true; wait "$child" 2>/dev/null || true; exit 76; }; ` +
       `echo "$child"`,
     marker,
-    hermes
+    cybr
   )
 }
 
@@ -1230,7 +1230,7 @@ function remoteProfileMissingError(output) {
   const createCommand = match[2]?.trim()
 
   const err: any = new Error(
-    `The remote Hermes profile '${profile}' does not exist. ` +
+    `The remote Cybr Agent profile '${profile}' does not exist. ` +
       `Select an existing remote profile${createCommand ? ` or create it with: ${createCommand}` : '.'}`
   )
 
@@ -1287,8 +1287,8 @@ async function spawnRemoteDashboard(
 ) {
   if (!(await remoteSupportsSshOwnership(ssh, hermesPath))) {
     const err: any = new Error(
-      'The remote Hermes install does not support --ssh-session-token-file and --ssh-owner-nonce. ' +
-        'Update Hermes on the remote host to continue using Desktop SSH mode.'
+      'The remote Cybr Agent install does not support --ssh-session-token-file and --ssh-owner-nonce. ' +
+        'Update Cybr Agent on the remote host to continue using Desktop SSH mode.'
     )
 
     err.kind = 'update-required'
@@ -1540,7 +1540,7 @@ async function connect(deps) {
     )
 
     const error: any = new Error(
-      `The remote ownership record ${lpath} does not match this Hermes Desktop build (${lock.reason}). ` +
+      `The remote ownership record ${lpath} does not match this Cybr Agent Desktop build (${lock.reason}). ` +
         'It was probably written by a different or modified desktop build sharing this remote, or the file is corrupt. ' +
         'Refusing to reap or overwrite it — that could kill a live SSH backend owned by another build. ' +
         'If nothing else uses this remote, delete that file on the remote host and reconnect.'

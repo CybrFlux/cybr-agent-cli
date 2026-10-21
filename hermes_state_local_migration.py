@@ -8,7 +8,7 @@ LEGACY_PREFIX = 'gateway.local_legacy.v1:'
 
 
 # Sources the pre-authority local CLI/TUI/GUI wrote. ``oneshot`` (finite ``chat -q`` / ``-z``) and ``tool``
-# (``chat --source tool``) are CLI runs that printed ``hermes --resume <id>``: adopted for resume like
+# (``chat --source tool``) are CLI runs that printed ``cybr --resume <id>``: adopted for resume like
 # ``cli`` and keeping their label, so human pickers still hide them (INTERNAL_LISTING_SOURCES).
 # ``desktop`` is the label main's Desktop stored; it is adopted as the ``gui`` creation source.
 # ``acp`` is main's in-process editor server (Zed, VS Code, JetBrains): adopted under its own source.
@@ -27,7 +27,7 @@ def legacy_account_label(row):
 def login_owned_by(row, subject):
     """Whether *subject* is the login a served remote backend stamped on this Desktop row.
 
-    ``hermes serve`` stamps the WS-upgrade login as ``<provider>:<user id>``
+    ``cybr serve`` stamps the WS-upgrade login as ``<provider>:<user id>``
     (tui_gateway/session_transports.py). Unlike the Nous label that stamp IS an owner: once a
     login's dashboard writes reach the gateway as that login, reading it as no-owner let login bob
     rename, claim and delete alice's chats (#140183 review F1). So it adopts only for the caller

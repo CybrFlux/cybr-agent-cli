@@ -1,18 +1,18 @@
 /**
- * Hermes Bot Mode — a "one chat per agent" roster for the Hermes desktop.
+ * Cybr Agent Bot Mode — a "one chat per agent" roster for the Cybr Agent desktop.
  *
- * Left pane "Bots": one row per Hermes profile (a bot = an agent profile) with
+ * Left pane "Bots": one row per Cybr Agent profile (a bot = an agent profile) with
  * a customizable avatar (shape + color + eyes, image, or pet). Click opens that
  * bot's chat; right-click → Edit Profile (avatar, title, description).
  * "New Bot" creates a profile — Name / Title / Description with an
  * "Advanced" disclosure for full profile config.
  *
- * Right tile "Routines": scheduled tasks (Hermes cron jobs) scoped to the
+ * Right tile "Routines": scheduled tasks (Cybr Agent cron jobs) scoped to the
  * bot you're currently chatting with — follows the live gateway profile.
  *
  * Bots message each other straight into each bot's ONE canonical "Bot
  * Chat" — @-mentions deliver over gateway RPCs (no CLI relay), and
- * bot-initiated sends use `hermes -p <bot> chat --in ~ -c "Bot Chat"`.
+ * bot-initiated sends use `cybr -p <bot> chat --in ~ -c "Bot Chat"`.
  */
 
 import {
@@ -722,7 +722,7 @@ export default {
       registerRoutinesPane(true)
     }
 
-    // A bot's chat before it has spoken: core's splash is Hermes' wordmark and
+    // A bot's chat before it has spoken: core's splash is Cybr Agent' wordmark and
     // stands down for any session that exists, so the bot titles its own.
     ctx.register({
       id: 'chat-empty',

@@ -78,7 +78,7 @@ def _warn_memory_provider_unavailable(name: str, reason: str = "", say=None) -> 
     message = (
         f"⚠ Memory provider {name!r} is selected but reports unavailable — external memory "
         "is disabled for this session (built-in memory still works). Check the "
-        "provider's credentials/config with 'hermes memory status'. Note: "
+        "provider's credentials/config with 'cybr memory status'. Note: "
         "systemd/gateway services do not inherit ~/.hermes/.env automatically; set "
         f"any required variables in the service environment.{f' {reason}' if reason else ''}"
     )
@@ -193,7 +193,7 @@ def _build_codex_gpt5_autoraise_notice(
         f"ℹ Codex {model} caps context at {cap}, so auto-compaction was raised "
         f"to {to_pct}% (from {from_pct}%) to use more of the window before "
         f"summarizing.\n"
-        f"  Opt back out: hermes config set compression.codex_gpt55_autoraise false"
+        f"  Opt back out: cybr config set compression.codex_gpt55_autoraise false"
     )
 
 
@@ -950,8 +950,8 @@ def _routed_client_kwargs(agent, fallback_model, _provider_timeout) -> Optional[
     from agent.auxiliary_unavailable import ProviderNotConfiguredError
     _sel = profile_cli_selector()
     raise ProviderNotConfiguredError(
-        "No LLM provider configured. Run `hermes model` to "
-        "select a provider, or run `hermes setup` for first-time "
+        "No LLM provider configured. Run `cybr model` to "
+        "select a provider, or run `cybr setup` for first-time "
         "configuration."
     )
 
@@ -1208,7 +1208,7 @@ def _init_session_state(agent, session_id, session_db, parent_session_id, reason
         "reasoning_config": reasoning_config,
         "max_tokens": max_tokens,
     }
-    # Process-scoped --yolo is persisted so `hermes --resume` restores the bypass
+    # Process-scoped --yolo is persisted so `cybr --resume` restores the bypass
     # (SessionDB.session_yolo_enabled); session-scoped /yolo toggles persist separately.
     with suppress(Exception):
         from tools.approval import _YOLO_MODE_FROZEN
@@ -2088,7 +2088,7 @@ def _enforce_minimum_context(agent):
         raise ValueError(
             f"Model {agent.model} has a context window of {_ctx:,} tokens, "
             f"which is below the minimum {MINIMUM_CONTEXT_LENGTH:,} required "
-            f"by Hermes Agent.  {remedy}"
+            f"by Cybr Agent.  {remedy}"
         )
 
 

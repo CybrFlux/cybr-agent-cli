@@ -4,7 +4,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 import relativeDocLinks from './src/remark/relativeDocLinks';
 
 const config: Config = {
-  title: 'Hermes Agent',
+  title: 'Cybr Agent',
   tagline: 'The self-improving AI agent',
   favicon: 'img/favicon.ico',
 
@@ -109,7 +109,7 @@ const config: Config = {
     algolia: {
       appId: '2JLBVEYZN5',
       apiKey: '9629ec26628d1a126535fd5ef408990d',
-      indexName: 'hermes docs',
+      indexName: 'cybr docs',
       contextualSearch: true,
     },
     colorMode: {
@@ -123,9 +123,9 @@ const config: Config = {
       },
     },
     navbar: {
-      title: 'Hermes Agent',
+      title: 'Cybr Agent',
       logo: {
-        alt: 'Hermes Agent',
+        alt: 'Cybr Agent',
         src: 'img/logo.png',
         srcDark: 'img/logo-dark.png',
       },

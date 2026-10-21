@@ -358,9 +358,9 @@ test('update-all deduplicates the same recovery scope and keeps primary preceden
 test.runIf(process.platform !== 'win32').each([0, 23])(
   'POSIX managed launcher executes the updater command and atomically publishes status %i',
   async (exitCode: number): Promise<void> => {
-    const home: string = await mkdtemp(path.join(os.tmpdir(), 'hermes managed launch '))
+    const home: string = await mkdtemp(path.join(os.tmpdir(), 'cybr managed launch '))
     const shell: string = (await exec('command -v bash', { shell: 'bash' })).stdout.trim()
-    const launcher: string = path.join(home, 'hermes launcher')
+    const launcher: string = path.join(home, 'cybr launcher')
 
     try {
       await writeFile(
@@ -422,9 +422,9 @@ test('Windows managed launcher starts a hidden child and leaves exit 75 to the e
     {
       ssh: { exec: async () => '' },
       platform: 'Windows',
-      hermesPath: 'C:\\Hermes\\hermes.exe',
+      hermesPath: 'C:\\Cybr Agent\\hermes.exe',
       hermesHome: 'C:\\Users\\alice\\.hermes',
-      pythonPath: 'C:\\Hermes\\python.exe'
+      pythonPath: 'C:\\Cybr Agent\\python.exe'
     },
     CORRELATION
   )
@@ -572,7 +572,7 @@ test.runIf(process.platform !== 'win32')(
 
       assert.equal(clean.ok, true)
       assert.equal(clean.owed, undefined)
-      assert.equal(clean.message, 'Remote Hermes updated and every managed SSH profile is ready.')
+      assert.equal(clean.message, 'Remote Cybr Agent updated and every managed SSH profile is ready.')
 
       // The debt survives a failed restoration: update and restore verdicts stay independent.
       const unrestored = await run([{ step: 'dependencies', reason: 'sync failed' }], { restoreFails: true })
@@ -601,7 +601,7 @@ test.runIf(process.platform !== 'win32')(
       const detail = managedSshUpdateAllRow({ id: 'home' }, partial).detail || ''
       assert.ok(detail.includes(instruction), detail)
       assert.match(detail, /local_changes/)
-      assert.doesNotMatch(detail, /Re-run `hermes update`/)
+      assert.doesNotMatch(detail, /Re-run `cybr update`/)
     } finally {
       await rm(home, { force: true, recursive: true })
     }
@@ -724,9 +724,9 @@ test('Windows coordinator handoff is pending until its marker clears and correla
 
   const target = {
     platform: 'Windows' as const,
-    hermesPath: 'C:\\Hermes\\hermes.exe',
+    hermesPath: 'C:\\Cybr Agent\\hermes.exe',
     hermesHome: 'C:\\Users\\alice\\.hermes',
-    pythonPath: 'C:\\Hermes\\python.exe',
+    pythonPath: 'C:\\Cybr Agent\\python.exe',
     ssh: {
       exec: async () => {
         const reply = replies[Math.min(calls, replies.length - 1)]

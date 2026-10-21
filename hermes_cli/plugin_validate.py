@@ -1,4 +1,4 @@
-"""``hermes plugins validate`` — admission checks for a plugin directory.
+"""``cybr plugins validate`` — admission checks for a plugin directory.
 
 This is the command the plugin-catalog admission CI (and the
 ``.github/actions/plugin-validate`` composite action) runs against a
@@ -574,7 +574,7 @@ _LOADABLE_ENTRYPOINTS = ("__init__.py", "desktop/plugin.js", "plugin.json")
 
 
 def _check_loadable(report: ValidationReport, plugin_dir: Path, manifest: Optional[dict] = None) -> None:
-    """A plugin.yaml with nothing beside it that Hermes can load (no ``register()`` module, no
+    """A plugin.yaml with nothing beside it that Cybr Agent can load (no ``register()`` module, no
     desktop bundle, no portable manifest, no declared language pack) installs "successfully" and does
     nothing — a pip-layout repo whose code lives under ``src/`` behind an entry point is the usual shape."""
     present = [rel for rel in _LOADABLE_ENTRYPOINTS if (plugin_dir / rel).is_file()]
@@ -666,7 +666,7 @@ def _validate_portable_plugin(report: ValidationReport, plugin_dir: Path) -> Val
     for server_name, config in package.mcp_servers.items():
         if config.get("trust") == "untrusted":
             report.add(f"server trust: {server_name}", True,
-                       "untrusted (Hermes asks before every write-capable tool call)")
+                       "untrusted (Cybr Agent asks before every write-capable tool call)")
         if config.get("tool_costs"):
             limit = config.get("spend_limit") or 0
             report.add(f"server costs: {server_name}", True,
