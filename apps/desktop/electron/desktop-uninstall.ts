@@ -2,7 +2,7 @@
  * desktop-uninstall.ts
  *
  * Pure, electron-free helpers for the desktop Chat GUI uninstaller. These map
- * the three user-facing uninstall modes to the `cybr uninstall` CLI flags,
+ * the three user-facing uninstall modes to the `hermes uninstall` CLI flags,
  * resolve the running app bundle/exe so a detached cleanup script can remove
  * it after the app quits, and build that cleanup script for each OS.
  *
@@ -11,14 +11,14 @@
  *
  * The three modes mirror the CLI's options exactly:
  *   - 'gui'  → remove ONLY the Chat GUI, keep the agent + all user data.
- *              `cybr uninstall --gui --yes`
+ *              `hermes uninstall --gui --yes`
  *   - 'lite' → remove the GUI + agent code, KEEP user data (config / sessions
- *              / .env) for a future reinstall. `cybr uninstall --yes`
+ *              / .env) for a future reinstall. `hermes uninstall --yes`
  *   - 'full' → remove everything: GUI + agent + all user data.
- *              `cybr uninstall --full --yes`
+ *              `hermes uninstall --full --yes`
  *
  * Why a detached cleanup script: 'lite'/'full' delete the very venv the
- * `cybr` command runs from, and every mode may need to delete the running
+ * `hermes` command runs from, and every mode may need to delete the running
  * app bundle (locked on macOS/Windows while the process is alive). So we hand
  * the work to a detached child that waits for this app's PID to exit, runs the
  * Python uninstall, then removes the app bundle — then the app quits. Same
@@ -135,7 +135,7 @@ const UNINSTALL_MODES: string[] = ['gui', 'lite', 'full', 'data']
 //   'bundled'  — a bundled or light artifact. The OS owns app removal.
 //   'external' — another package manager owns updates and removal.
 //   'standard' — everything else: the git-clone install the desktop
-//                installer bootstraps, or a `cybr desktop` source build.
+//                installer bootstraps, or a `hermes desktop` source build.
 //                The classic script flow (venv python + rm the bundle) works.
 //
 // Only 'standard' installs may use the desktop cleanup script.

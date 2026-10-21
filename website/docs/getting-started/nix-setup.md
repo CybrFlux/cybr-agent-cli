@@ -78,7 +78,7 @@ cybr setup
 cybr --tui
 ```
 
-After `nix profile install`, `cybr`, `hermes-agent`, and `hermes-acp` are on your PATH. From here, the workflow is identical to the [standard installation](./installation.md) — `cybr setup` walks you through provider selection, `cybr gateway install` sets up a launchd (macOS) or systemd user service, and config lives in `~/.hermes/`.
+After `nix profile install`, `hermes`, `hermes-agent`, and `hermes-acp` are on your PATH. From here, the workflow is identical to the [standard installation](./installation.md) — `hermes setup` walks you through provider selection, `hermes gateway install` sets up a launchd (macOS) or systemd user service, and config lives in `~/.hermes/`.
 
 :::warning Messaging platforms (Discord, Telegram, Slack)
 The default package includes ALL libraries hermes-agent might need. if you want a smaller variant, check the other flake outputs. 
@@ -602,8 +602,8 @@ When cybr runs via the NixOS module, the following CLI commands are **blocked** 
 | `cybr setup` | Config is declarative — edit `settings` in your Nix config |
 | `cybr config edit` | Config is generated from `settings` |
 | `cybr config set <key> <value>` | Config is generated from `settings` |
-| `cybr gateway install` | The systemd service is managed by NixOS |
-| `cybr gateway uninstall` | The systemd service is managed by NixOS |
+| `hermes gateway install` | The systemd service is managed by NixOS |
+| `hermes gateway uninstall` | The systemd service is managed by NixOS |
 
 This prevents drift between what Nix declares and what's on disk. Detection uses two signals:
 

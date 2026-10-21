@@ -60,7 +60,7 @@ cybr model
 cybr doctor
 
 # Other surfaces
-cybr desktop                 # launch the native desktop app (alias: cybr gui)
+hermes desktop                 # launch the native desktop app (alias: hermes gui)
 cybr dashboard               # web admin panel + embedded chat
 cybr proxy                   # OpenAI-compatible local proxy backed by your OAuth provider
 ```

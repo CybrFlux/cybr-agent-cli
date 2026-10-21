@@ -3,7 +3,7 @@
 // Adds a fixed Vite port and CDP (9344) so the run can be driven and read
 // from outside. When you only want to click through it yourself:
 //   D=$(mktemp -d) && env -u HERMES_SHARED_AUTH_DIR \
-//     HERMES_HOME="$D/home" HERMES_DESKTOP_USER_DATA_DIR="$D/userdata" cybr desktop
+//     HERMES_HOME="$D/home" HERMES_DESKTOP_USER_DATA_DIR="$D/userdata" hermes desktop
 import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'

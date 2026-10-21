@@ -14,7 +14,7 @@ Two backends, chosen automatically:
   when it hits a 429 and retries once.
 
     python3 reddit.py sub LocalLLaMA [--sort hot|new|top] [--limit N]
-    python3 reddit.py search "cybr agent" [--sub LocalLLaMA] [--sort new] [--limit N]
+    python3 reddit.py search "hermes agent" [--sub LocalLLaMA] [--sort new] [--limit N]
     python3 reddit.py thread https://www.reddit.com/r/x/comments/abc123/... [--limit N]
     python3 reddit.py user spez [--limit N]
     python3 reddit.py doctor            # which backend is active, and why

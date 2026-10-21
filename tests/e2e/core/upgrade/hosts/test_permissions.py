@@ -8,9 +8,9 @@ who runs Cybr Agent, while their own data under HERMES_HOME stays writable. On s
 * a turn must work: deciding that an install is current is a read, and nothing on the launch
   path may need write access to the install, or the launch fails once saying the install is not
   writable by this user, never pointing at a remedy that needs the same access;
-* ``cybr update`` must exit non-zero with a message that names the permission problem, never
+* ``hermes update`` must exit non-zero with a message that names the permission problem, never
   report success, never crash with a traceback, and leave the install on its old commit;
-* once the tree is writable again, the same ``cybr update`` succeeds: the refused attempt left
+* once the tree is writable again, the same ``hermes update`` succeeds: the refused attempt left
   nothing behind that blocks the next one.
 
 One real install through HEAD's ``scripts/install.sh``; upstream then publishes a release. The
@@ -76,7 +76,7 @@ def world(tmp_path_factory, provider):
             finally:
                 _chmod_code(sb, writable=True)
             # Only the checkout read-only: the launch path works (a read-only installs/ refuses it), so
-            # this reaches `cybr update`'s own handling of a tree it cannot write.
+            # this reaches `hermes update`'s own handling of a tree it cannot write.
             subprocess.run(["chmod", "-R", "a-w", str(sb.checkout)], check=True)
             try:
                 out["ro_update"] = sb.cli("update", "--yes", "--branch", "main", timeout=X.UPDATE_TIMEOUT)
@@ -96,7 +96,7 @@ def test_read_only_install_tree_still_runs_a_turn(world, provider):
     err = cp.stdout + cp.stderr
     assert I.TRACEBACK not in err, "a turn crashed on a read-only install tree:\n" + I.describe(cp)
     # Either it works, or it says the install is not writable by this user without sending them
-    # to a remedy that needs the same write access (`cybr pm repair`, "finish the update").
+    # to a remedy that needs the same write access (`hermes pm repair`, "finish the update").
     if cp.returncode != 0:
         misleading = re.findall(r"run `hermes (?:pm repair|update)`[^\n]*", err)
         assert ACTIONABLE.search(err) and not misleading, (
@@ -111,13 +111,13 @@ def test_update_on_a_read_only_tree_refuses_with_a_reason_and_recovers(world, pr
     assert world["install"].returncode == 0, "install.sh failed:\n" + I.describe(world["install"])
     up = world["ro_update"]
     out = up.stdout + up.stderr
-    assert up.returncode != 0, "cybr update reported success on an install tree it cannot write:\n" + I.describe(up)
-    assert I.TRACEBACK not in out, "cybr update crashed on a read-only install tree:\n" + I.describe(up)
-    assert ACTIONABLE.search(out), "cybr update failed on a read-only tree without saying why:\n" + I.describe(up)
+    assert up.returncode != 0, "hermes update reported success on an install tree it cannot write:\n" + I.describe(up)
+    assert I.TRACEBACK not in out, "hermes update crashed on a read-only install tree:\n" + I.describe(up)
+    assert ACTIONABLE.search(out), "hermes update failed on a read-only tree without saying why:\n" + I.describe(up)
     assert world["ro_head"] == world["before"], "a refused update still moved the checkout"
     again = world["rw_update"]
     assert again.returncode == 0 and I.TRACEBACK not in again.stdout + again.stderr, (
-        "after the tree became writable again, cybr update still failed:\n" + I.describe(again))
+        "after the tree became writable again, hermes update still failed:\n" + I.describe(again))
     assert I.git("rev-parse", "HEAD", cwd=world["sb"].checkout) == world["target"], (
         "update exited 0 but HEAD is not the new release")
     X.turn(world["sb"], provider, "turn after the recovered update")

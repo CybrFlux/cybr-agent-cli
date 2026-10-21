@@ -117,7 +117,7 @@ cd /path/to/hermes-agent
 HERMES_UID=$(id -u) HERMES_GID=$(id -g) docker compose up -d gateway
 ```
 
-**Native / systemd install** (typical `cybr` one-liner installer under `~/.hermes/hermes-agent`):
+**Native / systemd install** (typical `hermes` one-liner installer under `~/.hermes/hermes-agent`):
 
 ```bash
 cybr gateway restart
@@ -264,7 +264,7 @@ Make sure the public HTTPS endpoint is reachable from the internet and uses a va
 
 | Problem | Solution |
 |---------|----------|
-| `Can't find a suitable configuration file` from `docker compose` | You are not in the repo that has `docker-compose.yml`, or you are on a native install — use `cybr gateway restart` instead, or `cd` into the clone first |
+| `Can't find a suitable configuration file` from `docker compose` | You are not in the repo that has `docker-compose.yml`, or you are on a native install — use `hermes gateway restart` instead, or `cd` into the clone first |
 | `requirements not met` / `Teams SDK missing` / `No adapter available for teams` | Request the `teams` extra through PM as shown above, then restart the gateway. Do not install into a system Python or mutate the Cybr Agent environment. |
 | `health` endpoint works but bot doesn't respond | Check that your tunnel is still running and the bot's messaging endpoint matches the tunnel URL |
 | Logs show `"UNKNOWN / HTTP/1.0" 400` when Teams sends a message | The tunnel or reverse proxy is forwarding HTTPS to Cybr Agent' plain HTTP listener. Terminate TLS at the proxy and forward HTTP to port `3978` |

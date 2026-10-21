@@ -73,7 +73,7 @@ The `.env` keys above supply **credentials only**. The active cloud browser is c
 
 Browser Use mode uses the [Browser Use CLI 3.0](https://github.com/browser-use/browser-use) instead of the built-in browser tools. The agent writes and executes Python in the browser to click, type, drag, scrape, and interact with webpages.
 
-**This is the default browser mode**: when `browser.backend` is unset, the agent gets the single `browser_exec` tool. Its engine is browser-harness (the Browser Use CLI is a thin wrapper around it), a regular Python dependency of Cybr Agent, so every install ships it, including the Desktop app, with no separate download. If it is ever missing from Cybr Agent's environment, Cybr Agent falls back to the built-in browser tools and `cybr update` restores it.
+**This is the default browser mode**: when `browser.backend` is unset, the agent gets the single `browser_exec` tool. Its engine is browser-harness (the Browser Use CLI is a thin wrapper around it), a regular Python dependency of Cybr Agent, so every install ships it, including the Desktop app, with no separate download. If it is ever missing from Cybr Agent's environment, Cybr Agent falls back to the built-in browser tools and `hermes update` restores it.
 
 The mode is a **driver** that composes with your configured browser backend: it drives Cybr Agent' own headless Chromium, a Nous-subscription cloud browser, Browserbase, Firecrawl, or Browser Use cloud browsers — whichever browser source is selected in `cybr tools` → Browser Automation. The one exception is Camofox, which has no CDP endpoint for the harness to attach to; Camofox setups automatically keep the built-in browser tools.
 

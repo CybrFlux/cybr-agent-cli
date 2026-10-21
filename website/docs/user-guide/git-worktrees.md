@@ -2,7 +2,7 @@
 sidebar_position: 3
 sidebar_label: "Git Worktrees"
 title: "Git Worktrees"
-description: "Run multiple Cybr Agent agents safely on the same repository using git worktrees and isolated checkouts"
+description: "Run multiple Cybr Agents safely on the same repository using git worktrees and isolated checkouts"
 ---
 
 # Git Worktrees
@@ -200,7 +200,7 @@ later. A clean tree whose commits are pushed is removed without asking.
 
 ## Stale worktree sweep and restore
 
-Every repository Cybr Agent creates a worktree in (`cybr -w`, `/worktree new`,
+Every repository Cybr Agent creates a worktree in (`hermes -w`, `/worktree new`,
 subagent worktree isolation, the desktop app's git pane) is recorded in
 `<HERMES_HOME>/worktree_repos.json` for the active profile. At `cybr -w`
 startup and every 6 hours from the cron ticker, Cybr Agent sweeps each of those

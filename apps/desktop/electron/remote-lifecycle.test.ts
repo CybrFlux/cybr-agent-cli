@@ -630,12 +630,12 @@ test.skipIf(process.platform === 'win32')(
   'pidIsOurDashboard recognizes an installer wrapper after it execs python + entrypoint',
   async (): Promise<void> => {
     const shell: string = (await exec('command -v bash', { shell: 'bash' })).stdout.trim()
-    const temp: string = await mkdtemp(path.join(os.tmpdir(), 'cybr wrapper ownership '))
+    const temp: string = await mkdtemp(path.join(os.tmpdir(), 'hermes wrapper ownership '))
     const installDir = path.join(temp, 'install dir')
     const venvBin = path.join(installDir, 'venv', 'bin')
     const pythonLink = path.join(venvBin, 'python')
     const entrypoint = path.join(installDir, 'hermes')
-    const launcher = path.join(temp, 'cybr launcher')
+    const launcher = path.join(temp, 'hermes launcher')
     const python: string = (await exec('command -v python3', { shell })).stdout.trim()
     const tokenPath: string = path.join(temp, spawnTokenPath(OWNERSHIP_ID, SPAWN_NONCE).replace(/^~\//, ''))
     const env: NodeJS.ProcessEnv = { ...process.env, HOME: temp, HERMES_HOME: temp }
@@ -802,12 +802,12 @@ test.skipIf(process.platform === 'win32')(
 test.skipIf(process.platform !== 'linux')(
   'terminateOwnedDashboardForUpdate SIGTERMs a serve pinned to a "serve"-named profile',
   async () => {
-    const temp = await mkdtemp(path.join(os.tmpdir(), 'cybr wrapper ownership '))
+    const temp = await mkdtemp(path.join(os.tmpdir(), 'hermes wrapper ownership '))
     const installDir = path.join(temp, 'install dir')
     const venvBin = path.join(installDir, 'venv', 'bin')
     const pythonLink = path.join(venvBin, 'python')
     const entrypoint = path.join(installDir, 'hermes')
-    const launcher = path.join(temp, 'cybr launcher')
+    const launcher = path.join(temp, 'hermes launcher')
     const python = (await exec('command -v python3')).stdout.trim()
     const tokenPath = path.join(os.homedir(), spawnTokenPath(OWNERSHIP_ID, SPAWN_NONCE).replace(/^~\//, ''))
 

@@ -165,7 +165,7 @@ kanban:
                                    # 纯人工审查看板可设为 false。
 ```
 
-通过 `HERMES_KANBAN_DISPATCH_IN_GATEWAY=0` 在运行时覆盖配置标志以进行调试。标准 gateway 监督适用：直接运行 `cybr gateway start`，或将 gateway 配置为 systemd 用户单元（参见 gateway 文档）。没有运行中的 gateway，`ready` 任务会保持原状，直到 gateway 启动 —— `cybr kanban create` 在创建时会对此发出警告。
+通过 `HERMES_KANBAN_DISPATCH_IN_GATEWAY=0` 在运行时覆盖配置标志以进行调试。标准 gateway 监督适用：直接运行 `hermes gateway start`，或将 gateway 配置为 systemd 用户单元（参见 gateway 文档）。没有运行中的 gateway，`ready` 任务会保持原状，直到 gateway 启动 —— `hermes kanban create` 在创建时会对此发出警告。
 
 将 `cybr kanban daemon` 作为单独进程运行已**弃用**；请使用 gateway。如果你确实无法运行 gateway（无头主机策略禁止长期运行的服务等），`--force` 逃生舱口在一个发布周期内保持旧的独立守护进程可用，但同时运行 gateway 内嵌调度器和针对同一 `kanban.db` 的独立守护进程会导致认领竞争，不受支持。
 
@@ -808,7 +808,7 @@ cybr kanban runs t_abcd
 
 **状态变更导致的运行回收。** 如果你在仪表盘中将运行中的任务从 `running` 拖走（回到 `ready`，或直接到 `todo`），或归档仍在运行的任务，进行中的运行以 `outcome='reclaimed'` 关闭，而不是被孤立。当 `tasks.current_run_id` 为 `NULL` 时，`task_runs` 行始终处于终端状态，反之亦然 —— 该不变量在 CLI、仪表盘、调度器和通知器之间保持。
 
-**从未认领的完成的合成运行。** 完成或阻塞从未被认领的任务（例如，人类从仪表盘关闭带摘要的 `ready` 任务，或 CLI 用户运行 `cybr kanban complete <ready-task> --summary X`）否则会丢失交接。相反，内核插入一个零持续时间运行行（`started_at == ended_at`），携带摘要 / 元数据 / 原因，以保持尝试历史完整。`completed` / `blocked` 事件的 `run_id` 指向该行。
+**从未认领的完成的合成运行。** 完成或阻塞从未被认领的任务（例如，人类从仪表盘关闭带摘要的 `ready` 任务，或 CLI 用户运行 `hermes kanban complete <ready-task> --summary X`）否则会丢失交接。相反，内核插入一个零持续时间运行行（`started_at == ended_at`），携带摘要 / 元数据 / 原因，以保持尝试历史完整。`completed` / `blocked` 事件的 `run_id` 指向该行。
 
 **实时抽屉刷新。** 当仪表盘的 WebSocket 事件流报告用户当前正在查看的任务的新事件时，抽屉会重新加载自身（通过线程到其 `useEffect` 依赖列表中的每任务事件计数器）。不再需要关闭并重新打开才能看到运行的新行或更新的结果。
 

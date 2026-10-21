@@ -95,7 +95,7 @@ export const ga: Translations = {
   status: {
     actionFailed: "Theip ar an ngníomh",
     actionFinished: "Críochnaithe",
-    actionFinishedOwed: "Nuashonraithe, ach fós le críochnú (rith `cybr update` arís chun é a chríochnú)",
+    actionFinishedOwed: "Nuashonraithe, ach fós le críochnú (rith `hermes update` arís chun é a chríochnú)",
     actions: "Gníomhartha",
     agent: "Agent",
     activeSessions: "Seisiúin ghníomhacha",
@@ -342,7 +342,7 @@ export const ga: Translations = {
       "Sábháilte — atosaigh an gateway chun an t-athrú a chur i bhfeidhm.",
     forceReinstall: "Cuir iallach ar athshuiteáil (scrios an fillteán atá ann ar dtús)",
     headline:
-      "Faigh, suiteáil, cumasaigh agus nuashonraigh plugins Cybr Agent (paireacht le `cybr plugins`).",
+      "Faigh, suiteáil, cumasaigh agus nuashonraigh plugins Cybr Agent (paireacht le `hermes plugins`).",
     identifierLabel: "URL Git nó owner/repo",
     inactive: "neamhghníomhach",
     installBtn: "Suiteáil",
@@ -621,7 +621,7 @@ export const ga: Translations = {
         "Osclaíonn Comhroinn ar X post réamhlíonta i gcluaisín nua. Cliceáil Cóipeáil íomhá ar dtús más mian leat an suaitheantas 1200×630 a bheith ceangailte — ligeann X duit é a ghreamú díreach isteach i scríbhneoir an tweet. Sábhálann Íoslódáil PNG an comhad le húsáid áit ar bith.",
       clipboard_unsupported:
         "Ní thacaítear le cóipeáil íomhá chuig an ngearrthaisce sa bhrabhsálaí seo — úsáid Íoslódáil ina ionad sin.",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Cybr Agent ☤",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in Cybr Agent ∿",
     },
   },
   kanban: {

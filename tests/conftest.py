@@ -109,7 +109,7 @@ def _hermes_home_points_at_production(value: str) -> bool:
 # ``import hermes_bootstrap`` (transitively: any entry-point module) runs
 # ``export_scratch_tmp_env()``, which points TMPDIR/TMP/TEMP at
 # ``<HERMES_HOME>/cache/scratch`` unless a temp var is already set — and a
-# Cybr Agent-launched shell (agent terminal, ``cybr`` child) arrives with that
+# Cybr Agent-launched shell (agent terminal, ``hermes`` child) arrives with that
 # redirect already applied, tagged by HERMES_SCRATCH_DIR. Either way the tmp
 # root ends up INSIDE a guarded real home (the operator's, or a custom one
 # honored below), so the session sandbox, pytest's basetemp and every
@@ -864,7 +864,7 @@ def tmp_dir(tmp_path):
 
 @pytest.fixture()
 def mock_config():
-    """Return a minimal cybr config dict suitable for unit tests."""
+    """Return a minimal hermes config dict suitable for unit tests."""
     return {
         "model": "test/mock-model",
         "toolsets": ["terminal", "file"],
@@ -1109,7 +1109,7 @@ def _processes_with_hermes_home_under(roots) -> list[int]:
 def _reap_session_hermes_processes(config) -> list[int]:
     """SIGTERM every process still running against a Cybr Agent home this session created.
 
-    Tests that run a real ``cybr chat -q`` child get a grandchild ``gateway run`` (detached, own
+    Tests that run a real ``hermes chat -q`` child get a grandchild ``gateway run`` (detached, own
     session) that no per-test subprocess patch can see, and pytest's tmp cleanup removes only
     directories: each one used to outlive the run at ~250 MB. The session basetemp and the session
     sandbox home bound exactly what this run created, so nothing else is ever signalled.

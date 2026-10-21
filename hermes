@@ -2,7 +2,7 @@
 """
 Cybr Agent CLI launcher.
 
-This wrapper should behave like the installed `cybr` command, including
+This wrapper should behave like the installed `hermes` command, including
 subcommands such as `gateway`, `cron`, and `doctor`.
 """
 

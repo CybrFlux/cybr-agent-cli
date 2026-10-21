@@ -133,7 +133,7 @@ cybr gateway setup        # 交互式配置所有消息平台
 ```bash
 cybr gateway              # 在前台运行
 cybr gateway setup        # 交互式配置消息平台
-cybr gateway install      # 安装为用户服务（Linux）/ launchd 服务（macOS）
+hermes gateway install      # 安装为用户服务（Linux）/ launchd 服务（macOS）
 sudo cybr gateway install --system   # 仅 Linux：安装开机启动的系统服务
 cybr gateway start        # 启动默认服务
 cybr gateway stop         # 停止默认服务
@@ -392,13 +392,13 @@ journalctl -u hermes-gateway -f
 除非你确实有此需要，否则避免同时安装用户和系统网关单元。Cybr Agent 检测到两者同时存在时会发出警告，因为 start/stop/status 行为会变得不明确。
 
 :::info 多个安装
-如果你在同一台机器上运行多个 Cybr Agent 安装（使用不同的 `HERMES_HOME` 目录），每个安装都有自己的 systemd 服务名称。默认的 `~/.hermes` 使用 `hermes-gateway`；其他安装使用 `hermes-gateway-<hash>`。`cybr gateway` 命令会自动针对当前 `HERMES_HOME` 对应的正确服务。
+如果你在同一台机器上运行多个 Cybr Agent 安装（使用不同的 `HERMES_HOME` 目录），每个安装都有自己的 systemd 服务名称。默认的 `~/.hermes` 使用 `hermes-gateway`；其他安装使用 `hermes-gateway-<hash>`。`hermes gateway` 命令会自动针对当前 `HERMES_HOME` 对应的正确服务。
 :::
 
 ### macOS（launchd）
 
 ```bash
-cybr gateway install               # 安装为 launchd agent
+hermes gateway install               # 安装为 launchd agent
 cybr gateway start                 # 启动服务
 cybr gateway stop                  # 停止服务
 cybr gateway status                # 检查状态
@@ -412,7 +412,7 @@ tail -f ~/.hermes/logs/gateway.log   # 查看日志
 - **HERMES_HOME** — 将网关限定到你的 Cybr Agent 安装。
 
 :::tip 安装后 PATH 变更
-launchd plist 是静态的——如果你在配置网关后安装了新工具（例如通过 nvm 安装新版 Node.js，或通过 Homebrew 安装 ffmpeg），请重新运行 `cybr gateway install` 以捕获更新后的 PATH。网关会检测到过时的 plist 并自动重新加载。
+launchd plist 是静态的——如果你在配置网关后安装了新工具（例如通过 nvm 安装新版 Node.js，或通过 Homebrew 安装 ffmpeg），请重新运行 `hermes gateway install` 以捕获更新后的 PATH。网关会检测到过时的 plist 并自动重新加载。
 :::
 
 :::info 多个安装

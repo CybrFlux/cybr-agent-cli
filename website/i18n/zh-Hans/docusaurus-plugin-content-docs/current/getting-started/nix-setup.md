@@ -55,7 +55,7 @@ cybr setup
 cybr chat
 ```
 
-执行 `nix profile install` 后，`cybr`、`hermes-agent` 和 `hermes-acp` 将出现在你的 PATH 中。之后的工作流与[标准安装](./installation.md)完全相同——`cybr setup` 引导你完成提供商选择，`cybr gateway install` 设置 launchd（macOS）或 systemd 用户服务，配置存放在 `~/.hermes/`。
+执行 `nix profile install` 后，`hermes`、`hermes-agent` 和 `hermes-acp` 将出现在你的 PATH 中。之后的工作流与[标准安装](./installation.md)完全相同——`hermes setup` 引导你完成提供商选择，`hermes gateway install` 设置 launchd（macOS）或 systemd 用户服务，配置存放在 `~/.hermes/`。
 
 <details>
 <summary><strong>从本地克隆构建</strong></summary>
@@ -540,8 +540,8 @@ scp ~/.hermes/mcp-tokens/my-oauth-server{,.client}.json \
 | `cybr setup` | 配置是声明式的——请在 Nix 配置中编辑 `settings` |
 | `cybr config edit` | 配置由 `settings` 生成 |
 | `cybr config set <key> <value>` | 配置由 `settings` 生成 |
-| `cybr gateway install` | systemd 服务由 NixOS 管理 |
-| `cybr gateway uninstall` | systemd 服务由 NixOS 管理 |
+| `hermes gateway install` | systemd 服务由 NixOS 管理 |
+| `hermes gateway uninstall` | systemd 服务由 NixOS 管理 |
 
 这可以防止 Nix 声明的内容与磁盘上实际内容之间产生漂移。检测使用两个信号：
 

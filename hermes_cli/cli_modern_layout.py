@@ -52,11 +52,11 @@ def _fg(hex_color: str, bold: bool = False) -> str:
 
 
 def _brand_glyph() -> tuple[str, str]:
-    """(glyph, name) from the skin's response label, e.g. ``" ☤ Cybr Agent "`` → ("☤", "Cybr Agent")."""
+    """(glyph, name) from the skin's response label, e.g. ``" ∿ Cybr Agent "`` → ("∿", "Cybr Agent")."""
     from hermes_cli.skin_engine import get_active_skin
-    label = get_active_skin().get_branding("response_label", " ☤ Cybr Agent ")
+    label = get_active_skin().get_branding("response_label", " ∿ Cybr Agent ")
     parts = label.split(None, 1)
-    return (parts[0], parts[1].strip()) if len(parts) == 2 else ("☤", label.strip() or "Cybr Agent")
+    return (parts[0], parts[1].strip()) if len(parts) == 2 else ("∿", label.strip() or "Cybr Agent")
 
 
 def prompt_glyph() -> str:

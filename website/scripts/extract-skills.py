@@ -166,32 +166,32 @@ def _docs_page_path(rel_dir: str, source_label: str) -> str:
 
 
 def _install_command(source: str, identifier: str, name: str) -> str:
-    """Build the ``cybr skills install …`` command for a unified-index entry.
+    """Build the ``hermes skills install …`` command for a unified-index entry.
 
     These show up in the SkillCard panel so users can copy-paste them. We try
     to use the most idiomatic identifier per source.
     """
     if not identifier:
-        return f"cybr skills install {name}"
+        return f"hermes skills install {name}"
     src = source.lower()
     if src in {"official", "built-in", "optional"}:
         # OptionalSkillSource emits identifiers like "official/security/1password"
-        return f"cybr skills install {identifier}"
+        return f"hermes skills install {identifier}"
     if src in {"skills.sh", "skills-sh"}:
         # Already wrapped as "skills-sh/owner/repo/skill" by the source
-        return f"cybr skills install {identifier}"
+        return f"hermes skills install {identifier}"
     if src == "clawhub":
-        return f"cybr skills install clawhub/{identifier}"
+        return f"hermes skills install clawhub/{identifier}"
     if src == "browse-sh":
         # Identifier already includes the "browse-sh/" prefix from BrowseShSource
-        return f"cybr skills install {identifier}"
+        return f"hermes skills install {identifier}"
     if src == "lobehub":
-        return f"cybr skills install {identifier}"
+        return f"hermes skills install {identifier}"
     if src == "github":
-        return f"cybr skills install {identifier}"
+        return f"hermes skills install {identifier}"
     if src == "well-known":
-        return f"cybr skills install {identifier}"
-    return f"cybr skills install {identifier}"
+        return f"hermes skills install {identifier}"
+    return f"hermes skills install {identifier}"
 
 
 def _source_url(source: str, identifier: str, extra: dict) -> str:
@@ -348,7 +348,7 @@ def extract_local_skills():
                 # 1-based curated hero rank; the site and the app rotate through these.
                 **({"featured": featured.index(rel_id) + 1} if rel_id in featured else {}),
                 "installIdentifier": install_identifier,
-                "installCmd": f"cybr skills install {install_identifier}",
+                "installCmd": f"hermes skills install {install_identifier}",
             })
 
     return skills
@@ -459,7 +459,7 @@ def extract_unified_index_skills():
             "docsPath": "",
             "identifier": identifier,
             "installCmd": install_cmd,
-            "installIdentifier": install_cmd.removeprefix("cybr skills install "),
+            "installIdentifier": install_cmd.removeprefix("hermes skills install "),
             "sourceUrl": source_url,
         })
 

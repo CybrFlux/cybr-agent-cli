@@ -121,9 +121,9 @@ All of the following resolve to `xai-oauth`:
 
 ```bash
 cybr --provider xai-oauth        # canonical
-cybr --provider grok-oauth       # alias
-cybr --provider x-ai-oauth       # alias
-cybr --provider xai-grok-oauth   # alias
+hermes --provider grok-oauth       # alias
+hermes --provider x-ai-oauth       # alias
+hermes --provider xai-grok-oauth   # alias
 ```
 
 ## Direct-to-xAI Tools (TTS / Image / Video / Transcription / X Search)

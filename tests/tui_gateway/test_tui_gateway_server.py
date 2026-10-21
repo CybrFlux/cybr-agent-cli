@@ -4477,7 +4477,7 @@ def test_config_sync_config_wins_over_env_seed(monkeypatch):
 
 
 def test_config_sync_ignores_env_seed_without_config_model(monkeypatch):
-    # `cybr --tui -m <model>` sets HERMES_MODEL/HERMES_INFERENCE_MODEL as a
+    # `hermes --tui -m <model>` sets HERMES_MODEL/HERMES_INFERENCE_MODEL as a
     # launch-scoped seed. When config.yaml has NO model.default (typical
     # custom-provider-only setup), the sync must NOT adopt the env seed as a
     # config target — doing so replayed the -m flag as a /model switch and
@@ -9417,7 +9417,7 @@ def test_enable_gateway_prompts_sets_gateway_env(monkeypatch):
 
 
 def test_setup_status_answers_from_the_bootstrap_record_once_it_exists(monkeypatch):
-    """Under ``cybr serve`` the boot bootstrap records who carries inference; ``setup.status``
+    """Under ``hermes serve`` the boot bootstrap records who carries inference; ``setup.status``
     reports its record (blocking for it while it is in flight) instead of re-probing, so a client's
     first poll sees the boot's answer rather than racing it."""
     import threading
@@ -16991,13 +16991,13 @@ def test_session_branch_uses_persisted_display_history_after_compaction(monkeypa
 
 
 # --------------------------------------------------------------------------
-# model.options — curated-list parity with `cybr model` and classic /model
+# model.options — curated-list parity with `hermes model` and classic /model
 # --------------------------------------------------------------------------
 
 
 def test_model_options_does_not_overwrite_curated_models(monkeypatch):
     """The TUI model.options handler must surface the same curated model
-    list as `cybr model` and the classic CLI /model picker.
+    list as `hermes model` and the classic CLI /model picker.
 
     Regression: earlier versions of this handler unconditionally replaced
     each provider's curated ``models`` field with ``provider_model_ids()``
@@ -17507,7 +17507,7 @@ def test_session_active_list_excludes_finalized_sessions(monkeypatch):
     that window ``session.active_list`` would otherwise still report the dead
     session, which is exactly the footer "N sessions" count that only ever grew
     until a gateway restart. A live session on the real stdio transport (the
-    standalone ``cybr --tui`` case) must still be reported.
+    standalone ``hermes --tui`` case) must still be reported.
     """
     class _DB:
         def get_session_title(self, key):

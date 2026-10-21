@@ -207,7 +207,7 @@ an obsolete backend.
 ### Switching and scoping
 
 The sidebar foot follows one hierarchy: **gateway → profile → sessions**.
-Gateways are machines or hosted backends; profiles are isolated Cybr Agent agents
+Gateways are machines or hosted backends; profiles are isolated Cybr Agents
 that live on one gateway.
 
 - With one registered gateway, no gateway control is added. Local-only Desktop

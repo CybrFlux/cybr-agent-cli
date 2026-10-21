@@ -80,7 +80,7 @@ class TestAuthErrorSurfacing:
             "MCP OAuth 'gmail': this provider does not support automatic "
             "client registration ... add it under config.yaml "
             "mcp_servers.<name>.oauth (client_id, client_secret), then run "
-            "`cybr mcp login gmail`."
+            "`hermes mcp login gmail`."
         )
         detail = _auth_error_detail(exc)
         assert detail.startswith(" ")
@@ -325,4 +325,4 @@ def test_initial_auth_failure_parks_and_revives_after_relogin(
         and "failed initial authentication" in r.getMessage()
     ]
     assert len(auth_warnings) == 1
-    assert "cybr mcp login figma" in auth_warnings[0].getMessage()
+    assert "hermes mcp login figma" in auth_warnings[0].getMessage()

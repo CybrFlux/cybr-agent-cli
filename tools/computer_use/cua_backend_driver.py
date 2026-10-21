@@ -89,8 +89,8 @@ def cua_driver_binary_available() -> bool:
     return resolve_cua_driver_cmd() is not None
 
 def cua_driver_install_hint() -> str:
-    return ("cua-driver is not installed. Install the pinned driver with:\n  cybr computer-use install\n"
-            "Or run `cybr tools` and enable the Computer Use toolset to install it automatically.")
+    return ("cua-driver is not installed. Install the pinned driver with:\n  hermes computer-use install\n"
+            "Or run `hermes tools` and enable the Computer Use toolset to install it automatically.")
 
 def _mcp_args_with_overlay_flag(args: list[str], driver_cmd: str = _CUA_DRIVER_DEFAULT_CMD) -> list[str]:
     """Return *args* with ``--no-overlay`` appended when configured and supported."""

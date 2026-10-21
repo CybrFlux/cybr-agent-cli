@@ -1627,7 +1627,7 @@ class TestExplicitOpenaiSelectionError:
 
     When ``_resolve_openai_audio_client_config()`` raises its
     selection-specific ValueError (managed openai-audio gateway unavailable,
-    with the ``cybr tools`` remediation for managed-Nous users), the old
+    with the ``hermes tools`` remediation for managed-Nous users), the old
     boolean probe flattened it into False — the log said "no API key" and
     the transcription result returned the all-provider install hint,
     pointing operators at unrelated setup instead of their managed route.
@@ -1648,7 +1648,7 @@ class TestExplicitOpenaiSelectionError:
 
     def test_dispatch_returns_selection_specific_error(self, monkeypatch):
         """The final transcription result carries the managed-route error and
-        its cybr tools remediation instead of the all-provider install
+        its hermes tools remediation instead of the all-provider install
         hint."""
         self._no_openai_credentials(monkeypatch)
         monkeypatch.setattr(
@@ -1661,7 +1661,7 @@ class TestExplicitOpenaiSelectionError:
              patch("tools.transcription_tools._HAS_FASTER_WHISPER", False), \
              patch(
                  "tools.tool_backend_helpers.nous_tool_gateway_unavailable_message",
-                 lambda what: f"managed route down for {what}; run `cybr tools`",
+                 lambda what: f"managed route down for {what}; run `hermes tools`",
              ):
             from tools.transcription_tools import _dispatch_stt_provider
 
@@ -1671,7 +1671,7 @@ class TestExplicitOpenaiSelectionError:
 
         assert result["success"] is False
         assert "managed route down" in result["error"]
-        assert "cybr tools" in result["error"]
+        assert "hermes tools" in result["error"]
         assert "No STT provider available" not in result["error"]
 
     def test_auto_detect_none_keeps_generic_hint(self, monkeypatch):

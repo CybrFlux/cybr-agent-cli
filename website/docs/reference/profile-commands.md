@@ -196,10 +196,10 @@ SOUL.md: exists
 Alias:   ~/.local/bin/work
 ```
 
-## `cybr profile alias`
+## `hermes profile alias`
 
 ```bash
-cybr profile alias <name> [options]
+hermes profile alias <name> [options]
 ```
 
 Regenerates the shell alias script at `~/.local/bin/<name>` (`<name>.bat` on Windows). Useful if the alias was accidentally deleted or if you need to update it after moving your Cybr Agent installation.
@@ -207,19 +207,19 @@ Regenerates the shell alias script at `~/.local/bin/<name>` (`<name>.bat` on Win
 | Argument / Option | Description |
 |-------------------|-------------|
 | `<name>` | Profile to create/update the alias for. |
-| `--remove` | Remove the wrapper script instead of creating it. Also removes an orphan alias whose profile was deleted: pass the alias name (`cybr doctor` lists them). |
+| `--remove` | Remove the wrapper script instead of creating it. Also removes an orphan alias whose profile was deleted: pass the alias name (`hermes doctor` lists them). |
 | `--name <alias>` | Custom alias name (default: profile name). |
 
 **Example:**
 
 ```bash
-cybr profile alias work
+hermes profile alias work
 # Creates/updates ~/.local/bin/work
 
-cybr profile alias work --name mywork
+hermes profile alias work --name mywork
 # Creates ~/.local/bin/mywork
 
-cybr profile alias work --remove
+hermes profile alias work --remove
 # Removes the wrapper script
 ```
 
@@ -394,7 +394,7 @@ Two ways to share a profile, and they complement each other. `cybr profile expor
 ### `cybr profile install`
 
 ```bash
-cybr profile install <source> [--name <name>] [--alias] [--force] [--yes]
+hermes profile install <source> [--name <name>] [--alias] [--force] [--yes]
 ```
 
 Installs a profile distribution from a git URL or a local directory.
@@ -403,7 +403,7 @@ Installs a profile distribution from a git URL or a local directory.
 |--------|-------------|
 | `<source>` | Git URL (`github.com/user/repo`, `https://...`, `git@...`, `ssh://`, `git://`) or a local directory containing `distribution.yaml` at its root. |
 | `--name NAME` | Override the profile name from the manifest. |
-| `--alias` | Also create a shell wrapper (e.g. `telemetry` → `cybr -p telemetry`). |
+| `--alias` | Also create a shell wrapper (e.g. `telemetry` → `hermes -p telemetry`). |
 | `--force` | Overwrite an existing profile of the same name. User data is still preserved. |
 | `-y`, `--yes` | Skip the manifest-preview confirmation prompt. |
 
@@ -415,7 +415,7 @@ cron jobs before asking for confirmation. Required env vars go into a
 
 ```bash
 # Install from a GitHub repo (shorthand)
-cybr profile install github.com/kyle/telemetry-distribution --alias
+hermes profile install github.com/kyle/telemetry-distribution --alias
 
 # Install from a full HTTPS git URL
 cybr profile install https://github.com/kyle/telemetry-distribution.git

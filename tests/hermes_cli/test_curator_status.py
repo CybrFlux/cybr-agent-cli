@@ -1,4 +1,4 @@
-"""Tests for `cybr curator status` output.
+"""Tests for `hermes curator status` output.
 
 Covers:
 - y0shualee's "least recently active" semantic (view/patch/use all count as activity).

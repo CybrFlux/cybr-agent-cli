@@ -456,7 +456,7 @@ class TestResolutionOrder:
 
 
 # ---------------------------------------------------------------------------
-# cybr tools picker: tier variant rows
+# hermes tools picker: tier variant rows
 # ---------------------------------------------------------------------------
 
 

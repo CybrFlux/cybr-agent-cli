@@ -191,7 +191,7 @@ stage_signal() {
 print_banner() {
     printf '\n%s%s' "$C_MAGENTA" "$C_BOLD"
     printf '%s\n' "┌─────────────────────────────────────────────────────────┐"
-    printf '%s\n' "│             ☤ Cybr Agent Installer                    │"
+    printf '%s\n' "│             ∿ Cybr Agent Installer                    │"
     printf '%s\n' "├─────────────────────────────────────────────────────────┤"
     printf '%s\n' "│  An open source AI agent by CybrFlux.              │"
     printf '%s\n' "└─────────────────────────────────────────────────────────┘"

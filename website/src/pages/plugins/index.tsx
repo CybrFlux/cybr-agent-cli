@@ -276,7 +276,7 @@ function PluginCard({
               <span className={styles.metaLabel}>Pinned</span>
               <span
                 className={styles.metaValue}
-                title={plugin.requiresHermes ? `${plugin.sha} · requires cybr ${plugin.requiresHermes}` : plugin.sha}
+                title={plugin.requiresHermes ? `${plugin.sha} · requires hermes ${plugin.requiresHermes}` : plugin.sha}
               >
                 <a
                   href={pinUrl(plugin)}
@@ -290,7 +290,7 @@ function PluginCard({
                 {plugin.requiresHermes && (
                   <>
                     <span aria-hidden="true" className={styles.cardDatesSep}> · </span>
-                    <code>cybr {plugin.requiresHermes}</code>
+                    <code>hermes {plugin.requiresHermes}</code>
                   </>
                 )}
               </span>
@@ -385,7 +385,7 @@ export default function PluginCatalogPage() {
         sha: plugin.sha,
         subdir: plugin.subdir || "",
         tier: plugin.tier,
-        installCmd: plugin.installCommand || `cybr plugins install ${plugin.name}`,
+        installCmd: plugin.installCommand || `hermes plugins install ${plugin.name}`,
       },
       "*"
     );

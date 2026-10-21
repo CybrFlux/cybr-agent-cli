@@ -438,9 +438,9 @@ function SkillCard({
               </div>
             )}
             <div className={styles.installHint}>
-              <code>{skill.installCmd || `cybr skills install ${skillCatalogInstallIdentifier(skill) || skill.name}`}</code>
+              <code>{skill.installCmd || `hermes skills install ${skillCatalogInstallIdentifier(skill) || skill.name}`}</code>
               <CopyButton
-                text={skill.installCmd || `cybr skills install ${skillCatalogInstallIdentifier(skill) || skill.name}`}
+                text={skill.installCmd || `hermes skills install ${skillCatalogInstallIdentifier(skill) || skill.name}`}
               />
             </div>
             {onPick ? (
@@ -546,7 +546,7 @@ export default function SkillsDashboard() {
           type: "hermes-skill-pick",
           name: skill.name,
           identifier: skillCatalogInstallIdentifier(skill) || skill.name,
-          installCmd: skill.installCmd || `cybr skills install ${skillCatalogInstallIdentifier(skill) || skill.name}`,
+          installCmd: skill.installCmd || `hermes skills install ${skillCatalogInstallIdentifier(skill) || skill.name}`,
           source: skill.source,
         },
         "*"

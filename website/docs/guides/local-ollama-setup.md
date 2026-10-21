@@ -270,7 +270,7 @@ This way, 90% of your usage is free (local), and only the hard tasks hit the pai
 
 ### "provider 'ollama' has no endpoint configured"
 
-`cybr chat --provider ollama` (or `vllm`) stops with this error when no endpoint is configured for that alias anywhere — no `providers.ollama.base_url`, no `model.base_url`. Cybr Agent refuses to send the request rather than fall back to OpenRouter with a cloud key (`OPENROUTER_API_KEY` / `OPENAI_API_KEY`) that happens to be set. Add the endpoint:
+`hermes chat --provider ollama` (or `vllm`) stops with this error when no endpoint is configured for that alias anywhere — no `providers.ollama.base_url`, no `model.base_url`. Cybr Agent refuses to send the request rather than fall back to OpenRouter with a cloud key (`OPENROUTER_API_KEY` / `OPENAI_API_KEY`) that happens to be set. Add the endpoint:
 
 ```yaml
 providers:

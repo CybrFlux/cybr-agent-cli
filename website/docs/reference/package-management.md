@@ -435,18 +435,18 @@ before starting another Python process.
 2. Relock:
 
    ```bash
-   cybr pm lock
+   hermes pm lock
    ```
 
    This re-resolves `uv.lock` from `pyproject.toml` with the same settings CI
    checks, including the 3-day `exclude-newer` release-age check. It changes no
    environment. When the lock is already current, it says so and writes
-   nothing. (`cybr pm lock --bump NAME VERSION` is a different operation: it
+   nothing. (`hermes pm lock --bump NAME VERSION` is a different operation: it
    pins a managed tool in `pm/lock.json` and does not touch `uv.lock`.)
 3. Source the activation script again (`source ./activate`, or
    `. .\activate.ps1` in PowerShell) to sync the application venv and the test
    interpreter to the new lock. Activation covers `[all]`. If you added an
-   opt-in extra outside `[all]`, `cybr pm lock` prints the command that also
+   opt-in extra outside `[all]`, `hermes pm lock` prints the command that also
    puts it in the test interpreter, for example
    `source ./activate --test-extras all,NAME`.
 4. Commit `pyproject.toml` and `uv.lock` together.
@@ -588,7 +588,7 @@ install from that lock, and installing or enabling a plugin never re-checks
 dates, so package mirrors that publish no upload times work. Set a mirror with `index-url` in `pip.conf`,
 which Cybr Agent passes to uv, or with `UV_INDEX_URL`.
 
-`cybr pm lock` is the one step that applies the check. Run against a mirror
+`hermes pm lock` is the one step that applies the check. Run against a mirror
 without upload times, it stops with `has no publish time`; use
 `https://pypi.org/simple` for that step.
 
@@ -598,7 +598,7 @@ without upload times, it stops with `has no publish time`; use
 - **Missing or outdated tool:** read `cybr pm doctor`, then use an explicit PM install on a writable installation.
 - **New environment requires restart:** restart the affected Cybr Agent process. Do not add a second site-packages tree to its live imports.
 - **Dependency conflict:** read `cybr pm status`. Correct the plugin requirements before retrying admission.
-- **Damaged Python dependencies:** run `cybr pm repair`, then restart Cybr Agent. Repair replays the selected generation's saved workspace and lock without parsing plugin configuration. An unreadable record or missing saved lock fails without selecting a reduced dependency set. Before a generation exists, repair uses the shipped or committed lock and recorded feature set.
+- **Damaged Python dependencies:** run `hermes pm repair`, then restart Cybr Agent. Repair replays the selected generation's saved workspace and lock without parsing plugin configuration. An unreadable record or missing saved lock fails without selecting a reduced dependency set. Before a generation exists, repair uses the shipped or committed lock and recorded feature set.
 - **Interrupted dependency install:** startup requests the same PM repair before dependency activation. Automatic attempts are bounded; `pm repair` retries explicitly. A failed repair preserves the previous selection and its retry marker.
 - **Damaged Python executable or application source:** repair or reinstall through the package owner. PM cannot run without those files. Signed payload files are never modified by dependency repair.
 - **Unknown package or extra:** use the declared name. `pm install` takes package names, not Python extra names or pip specifications.

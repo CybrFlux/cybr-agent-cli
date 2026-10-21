@@ -132,7 +132,7 @@ Every former god file is a **facade** (public entry points + the names other pac
   § Profile scope (HX002/HX004/HX005/HX012, PS-P05/P06).
 - **Machine facts and executable lookup go through `hermes_platform`** (`hermes_platform/AGENTS.md`).
 - **Dependencies carry upper bounds** (`>=floor,<next_major`; git URLs and Actions pinned to a SHA);
-  after editing `pyproject.toml` run `cybr pm lock` and commit `uv.lock`; never mutate a Cybr Agent
+  after editing `pyproject.toml` run `hermes pm lock` and commit `uv.lock`; never mutate a Cybr Agent
   environment with raw pip/uv. Full policy: `pm/AGENTS.md`.
 - **TypeScript (desktop, TUI, website):** feature-owned nanostores over threaded state, thin route
   roots, narrow hooks and colocated action modules, `interface` for props and shared shapes,

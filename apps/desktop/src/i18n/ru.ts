@@ -1504,7 +1504,7 @@ export const ruOverrides = {
     edit: 'Изменить',
     archive: 'В архив',
     skillArchivedTitle: 'Навык в архиве',
-    skillArchivedMessage: 'Восстановить через cybr curator restore.',
+    skillArchivedMessage: 'Восстановить через hermes curator restore.',
     hub: {
       searchPlaceholder: 'Поиск в хабе навыков',
       search: 'Поиск',
@@ -3844,7 +3844,7 @@ export const ruOverrides = {
       success: platform => `Передаём в ${platform}. Возобновите здесь в любой момент.`,
       systemNote: platform => `↻ Передано в ${platform} — возобновите здесь в любой момент.`,
       failed: error => `Передача не удалась: ${error}`,
-      timedOut: 'Превышено время ожидания шлюза. Выполняется ли `cybr gateway`?'
+      timedOut: 'Превышено время ожидания шлюза. Выполняется ли `hermes gateway`?'
     }
   },
   errors: {

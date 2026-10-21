@@ -1,4 +1,4 @@
-"""Notes `cybr gateway status` prints beside the running/not-running verdict."""
+"""Notes `hermes gateway status` prints beside the running/not-running verdict."""
 from __future__ import annotations
 
 from hermes_cli.config import get_hermes_home
@@ -27,7 +27,7 @@ def report_incompatible_owner(pids) -> bool:
     print(f"✗ {running} but cannot serve this Cybr Agent ({stale})")
     print("  It was started by another Cybr Agent version; TUI, Desktop and chat cannot attach to it.")
     print("  Replace it with this version:")
-    print("    cybr gateway restart")
+    print("    hermes gateway restart")
     return True
 
 

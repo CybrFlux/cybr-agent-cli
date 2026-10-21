@@ -284,7 +284,7 @@ def test_store_attachment_bytes_roundtrip(kanban_home):
 
 
 # ---------------------------------------------------------------------------
-# CLI — cybr kanban attach / attachments / attach-rm
+# CLI — hermes kanban attach / attachments / attach-rm
 # ---------------------------------------------------------------------------
 
 

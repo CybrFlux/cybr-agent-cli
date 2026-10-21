@@ -36,7 +36,7 @@ my-research-agent/
 接收方运行：
 
 ```bash
-cybr profile install github.com/you/my-research-agent --alias
+hermes profile install github.com/you/my-research-agent --alias
 ```
 
 ……他们就拥有了完整的 agent。填入自己的 API 密钥（`.env.EXAMPLE` → `.env`），即可运行 `my-research-agent chat`，或通过 Telegram / Discord / Slack / 任何 gateway 平台与其交互。当你推送新版本时，他们运行 `cybr profile update my-research-agent` 即可拉取你的更改——他们的记忆和会话保持不变。
@@ -195,7 +195,7 @@ distribution_owned:
 ### 安装
 
 ```bash
-cybr profile install github.com/you/research-bot --alias
+hermes profile install github.com/you/research-bot --alias
 ```
 
 执行过程：
@@ -238,9 +238,9 @@ cybr profile install ~/my-profile-in-progress/
 
 ```bash
 # Alice
-cybr profile install github.com/acme/support-bot --name support-us --alias
+hermes profile install github.com/acme/support-bot --name support-us --alias
 # Bob（同一分发，不同本地名称）
-cybr profile install github.com/acme/support-bot --name support-eu --alias
+hermes profile install github.com/acme/support-bot --name support-eu --alias
 ```
 
 ### 填写环境变量
@@ -358,7 +358,7 @@ git remote add origin git@github.com:you/research-bot.git
 git push -u origin main
 
 # 工作站
-cybr profile install github.com/you/research-bot --alias
+hermes profile install github.com/you/research-bot --alias
 # 填写 .env，完成。
 ```
 
@@ -377,7 +377,7 @@ git tag v1.0.0
 git push -u origin main --tags    # push to your company's internal Git host
 
 # 每位工程师
-cybr profile install git@github.com:your-org/pr-reviewer.git --alias
+hermes profile install git@github.com:your-org/pr-reviewer.git --alias
 # 填写 .env，使用自己的 API 密钥（费用由自己承担），.env.EXAMPLE 指明了所需内容
 pr-reviewer chat
 ```
@@ -399,7 +399,7 @@ git remote add origin https://github.com/you/hermes-polymarket-trader.git
 git push -u origin main --tags
 
 # 任何人
-cybr profile install github.com/you/hermes-polymarket-trader --alias
+hermes profile install github.com/you/hermes-polymarket-trader --alias
 ```
 
 发推分享安装命令。尝试的人会给你提 issue 和 PR。想要自定义的人可以 fork——与大家已熟悉的 git 工作流完全相同。
@@ -442,7 +442,7 @@ env_requires:
 git push -u origin main
 
 # 每位值班人员
-cybr profile install git@github.com:your-org/incident-2026-q2.git --alias
+hermes profile install git@github.com:your-org/incident-2026-q2.git --alias
 
 # 事故解决——清理
 cybr profile delete incident-2026-q2
@@ -486,7 +486,7 @@ git ls-remote --tags https://github.com/you/research-bot | tail -5
 ```bash
 # 彻底删除并重新安装（记忆/会话也会丢失）
 cybr profile delete research-bot --yes
-cybr profile install github.com/you/research-bot --alias
+hermes profile install github.com/you/research-bot --alias
 
 # 更新到当前 main，但将 config.yaml 重置为分发默认值
 cybr profile update research-bot --force-config --yes
@@ -498,7 +498,7 @@ cybr profile update research-bot --force-config --yes
 
 ```bash
 # 在 GitHub 上 fork 仓库，然后安装你的 fork
-cybr profile install github.com/yourname/forked-research-bot --alias
+hermes profile install github.com/yourname/forked-research-bot --alias
 
 # 在 ~/.hermes/profiles/forked-research-bot/ 中本地迭代
 # 编辑 SOUL.md，提交，推送到你的 fork
@@ -511,7 +511,7 @@ cybr profile install github.com/yourname/forked-research-bot --alias
 
 ```bash
 # 从本地目录安装（无需 git push）
-cybr profile install ~/.hermes/profiles/research-bot --name research-bot-test --alias
+hermes profile install ~/.hermes/profiles/research-bot --name research-bot-test --alias
 
 # 调整、删除、重新安装，直到满意
 cybr profile delete research-bot-test --yes

@@ -281,7 +281,7 @@ profile 使用 `HERMES_HOME` 环境变量。运行 `coder chat` 时，包装脚�
 
 ```bash
 # 从 git 仓库安装完整 agent
-cybr profile install github.com/you/research-bot --alias
+hermes profile install github.com/you/research-bot --alias
 
 # 当作者发布新版本时更新（保留你的记忆和 .env）
 cybr profile update research-bot

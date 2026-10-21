@@ -131,7 +131,7 @@ MIGRATION_OPTION_METADATA: dict[str, dict[str, str]] = {
     },
     "cron-jobs": {
         "label": "Cron / scheduled tasks",
-        "description": "Import cron job definitions. Archive for manual recreation via 'cybr cron'.",
+        "description": "Import cron job definitions. Archive for manual recreation via 'hermes cron'.",
     },
     "hooks-config": {
         "label": "Hooks and webhooks",
@@ -392,7 +392,7 @@ def load_yaml_file(path: Path) -> dict[str, Any]:
     except yaml.YAMLError as exc:
         raise ConfigReadError(
             f"Refusing to overwrite {path}: the existing file is not valid YAML "
-            f"({exc}). Fix it with `cybr config edit` (or move it aside), then "
+            f"({exc}). Fix it with `hermes config edit` (or move it aside), then "
             f"re-run the migration."
         ) from exc
     # An empty file parses to None — a legitimate state with nothing to lose.
@@ -402,7 +402,7 @@ def load_yaml_file(path: Path) -> dict[str, Any]:
         raise ConfigReadError(
             f"Refusing to overwrite {path}: expected the existing file to hold a "
             f"YAML mapping but found {type(data).__name__}. Fix it with "
-            f"`cybr config edit` (or move it aside), then re-run the migration."
+            f"`hermes config edit` (or move it aside), then re-run the migration."
         )
     return data
 
@@ -516,7 +516,7 @@ def backup_existing(path: Path, backup_root: Path) -> Optional[Path]:
 # read as self-referential to the new agent identity.
 #
 # Case-preserving: ``OpenClaw`` → ``Cybr Agent`` (prose), but lowercase matches
-# like ``openclaw`` → ``cybr`` (so filesystem paths like ``~/.openclaw``
+# like ``openclaw`` → ``hermes`` (so filesystem paths like ``~/.openclaw``
 # become ``~/.hermes`` — the real Cybr Agent home — not the broken ``~/.Hermes``).
 _REBRAND_PATTERNS: list[tuple[re.Pattern, str]] = [
     (re.compile(r'\bOpen[\s-]?Claw\b', re.IGNORECASE), 'Cybr Agent'),
@@ -529,7 +529,7 @@ def _case_preserving_replacement(replacement: str):
     """Return a re.sub replacement fn that lowercases the result when the
     matched text was all-lowercase.
 
-    Keeps ``OpenClaw`` → ``Cybr Agent`` but maps ``openclaw`` → ``cybr`` so a
+    Keeps ``OpenClaw`` → ``Cybr Agent`` but maps ``openclaw`` → ``hermes`` so a
     filesystem path like ``~/.openclaw/config.yaml`` rewrites to
     ``~/.hermes/config.yaml`` (the real Cybr Agent home) instead of the broken
     ``~/.Hermes/config.yaml``.
@@ -1685,7 +1685,7 @@ class Migrator:
                             None,
                             "skipped",
                             f"Provider '{provider_name}' uses a {raw_key['source']}-backed SecretRef "
-                            f"that cannot be auto-migrated. Add this key manually via: cybr config set",
+                            f"that cannot be auto-migrated. Add this key manually via: hermes config set",
                         )
                     continue
 
@@ -2384,7 +2384,7 @@ class Migrator:
                 dest = self.archive_dir / "cron-config.json"
                 dest.write_text(json.dumps(cron, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
                 self.record("cron-jobs", "openclaw.json cron.*", str(dest), "archived",
-                            "Cron config archived. Use 'cybr cron' to recreate jobs manually.")
+                            "Cron config archived. Use 'hermes cron' to recreate jobs manually.")
             else:
                 self.record("cron-jobs", "openclaw.json cron.*", "archive/cron-config.json",
                             "archived", "Would archive cron config")
@@ -2564,7 +2564,7 @@ class Migrator:
             dest = self.archive_dir / "gateway-config.json"
             dest.write_text(json.dumps(gateway, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         self.record("gateway-config", "openclaw.json gateway.*", "archive/gateway-config.json",
-                    "archived", "Gateway config archived. Use 'cybr gateway' to configure.")
+                    "archived", "Gateway config archived. Use 'hermes gateway' to configure.")
 
         # Extract gateway auth token to .env if present
         auth = gateway.get("auth") or {}
@@ -3014,25 +3014,25 @@ class Migrator:
             "directories, it may read/write to them instead of the Cybr Agent state, causing",
             "confusion (e.g., cron jobs reading a different todo list than interactive sessions).",
             "",
-            "**Strongly recommended:** Run `cybr claw cleanup` to rename the OpenClaw",
+            "**Strongly recommended:** Run `hermes claw cleanup` to rename the OpenClaw",
             "directory to `.openclaw.pre-migration`. This prevents the agent from finding it.",
             "The directory is renamed, not deleted — you can undo this at any time.",
             "",
             "If you skip this step and notice the agent getting confused about workspaces",
-            "or todo lists, run `cybr claw cleanup` to fix it.",
+            "or todo lists, run `hermes claw cleanup` to fix it.",
             "",
             "## Cybr Agent-Specific Setup",
             "",
             "After migration, you may want to:",
-            "- Run `cybr claw cleanup` to archive the OpenClaw directory (prevents state confusion)",
-            "- Run `cybr setup` to configure any remaining settings",
-            "- Run `cybr mcp list` to verify MCP servers were imported correctly",
+            "- Run `hermes claw cleanup` to archive the OpenClaw directory (prevents state confusion)",
+            "- Run `hermes setup` to configure any remaining settings",
+            "- Run `hermes mcp list` to verify MCP servers were imported correctly",
         ])
 
         if has_cron_config_archive:
-            notes.append("- Run `cybr cron` to recreate scheduled tasks (see archive/cron-config.json)")
+            notes.append("- Run `hermes cron` to recreate scheduled tasks (see archive/cron-config.json)")
         elif has_cron_store_archive:
-            notes.append("- Run `cybr cron` to recreate scheduled tasks (see archived cron-store)")
+            notes.append("- Run `hermes cron` to recreate scheduled tasks (see archived cron-store)")
 
         # Check if skills were imported
         has_skills = any(i.kind == "skills" and i.status == "migrated" for i in self.items)
@@ -3057,12 +3057,12 @@ class Migrator:
                 "WhatsApp uses QR-code pairing, not token-based auth. Your allowlist",
                 "was migrated, but you must re-pair the device by running:",
                 "",
-                "    cybr whatsapp",
+                "    hermes whatsapp",
                 "",
             ])
 
         notes.extend([
-            "- Run `cybr gateway install` if you need the gateway service",
+            "- Run `hermes gateway install` if you need the gateway service",
             "- Review `~/.hermes/config.yaml` for any adjustments",
             "",
         ])
@@ -3231,9 +3231,9 @@ def main() -> int:
         print()
         print("  Next steps:")
         print("    1. Review ~/.hermes/config.yaml")
-        print("    2. Run: cybr mcp list")
+        print("    2. Run: hermes mcp list")
         if any(i["kind"] == "cron-jobs" and i["status"] == "archived" for i in items):
-            print("    3. Recreate cron jobs: cybr cron")
+            print("    3. Recreate cron jobs: hermes cron")
         if report.get("output_dir"):
             print(f"    → Full report: {report['output_dir']}/MIGRATION_NOTES.md")
     elif not args.execute:

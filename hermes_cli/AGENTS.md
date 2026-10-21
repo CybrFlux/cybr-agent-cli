@@ -19,7 +19,7 @@ Moved bodies late-bind cli-level names via `from cli import ...` at call time, s
 handles input + autocomplete; `KawaiiSpinner` (`agent/display.py`) animates API calls and prints
 the `┊` activity feed. `load_cli_config()` in `cli.py` merges CLI defaults + user YAML.
 
-`hermes_cli/gateway.py` is the `cybr gateway` facade (process discovery, PM-aware systemd unit
+`hermes_cli/gateway.py` is the `hermes gateway` facade (process discovery, PM-aware systemd unit
 generation/refresh, command dispatch); topical siblings re-exported by the facade include
 `gateway_launchd.py` (macOS LaunchAgent backend), `gateway_setup_wizard.py`
 (`cybr gateway setup`: `_PLATFORMS` registry, status table, per-platform prompts, service offer),
@@ -190,7 +190,7 @@ other service domain / UNIX user / HERMES_HOME outside `profiles/` — notices f
 blockers for the hook) and the `gateway.auto_multiplex_migration` opt-out (#109954). Blockers reuse `GatewayRunner._adapter_credential_fingerprint` and `platform_binds_port`;
 "has a `/p/<profile>/` ingress" is the adapter class attribute `serves_profile_prefix` — set it on a
 new HTTP-inbound adapter when it answers the prefix, never extend a list here.
-`cybr gateway restart` for a gateway Cybr Agent did not install (custom launchd agent / unit running
+`hermes gateway restart` for a gateway Cybr Agent did not install (custom launchd agent / unit running
 `gateway run --external-supervisor`): `gateway_supervised_restart.py` — the gateway's SELF-declared
 supervisor (control-socket `identify` answering anything but `manual`, OR the argv marker) decides; hand back via SIGUSR1 and wait
 for a fresh supervised PID, never stop + foreground `run_gateway` (that stamps the CLI's PID and wedges

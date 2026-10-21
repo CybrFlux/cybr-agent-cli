@@ -1,8 +1,8 @@
-"""Linux/macOS ``cybr update`` pauses this install's gateways before the first checkout move.
+"""Linux/macOS ``hermes update`` pauses this install's gateways before the first checkout move.
 
 One real HEAD install (``_git_world``: the real ``scripts/install.sh`` over real smart HTTP, every
 command in a ``bwrap`` sandbox) is shared by the cells. A credential-free, platform-less (cron-only)
-``cybr gateway run`` lives in the same PID namespace as the updater (``handoff._nshost``), as on a
+``hermes gateway run`` lives in the same PID namespace as the updater (``handoff._nshost``), as on a
 user's machine. What is asserted is what the user sees: which gateway process serves the checkout
 (its control-socket ``identify``: pid + ``code_sha``), the update's exit code and transcript, HEAD,
 and the durable pause record ``update_pause_record`` keeps in the root hermes home.
@@ -15,7 +15,7 @@ and the durable pause record ``update_pause_record`` keeps in the root hermes ho
 (d) ``--no-gateway-restart``: nothing is stopped before the move (the user manages gateways).
 (e) SIGKILL mid-stop: the gateway is SIGSTOPped so the updater blocks in its control-socket pause
     request with that request recorded; the whole update tree is SIGKILLed there. The
-    next ``cybr`` launch must leave exactly one gateway serving: none lost, none duplicated.
+    next ``hermes`` launch must leave exactly one gateway serving: none lost, none duplicated.
 (f) SIGKILL after the commit, before the restart: the release's dependency preparation holds while
     a toggle exists; the update tree is SIGKILLed once HEAD is the release and the gateway is
     paused. The next launch syncs the dependencies and restarts exactly the paused gateway on the
@@ -24,15 +24,15 @@ and the durable pause record ``update_pause_record`` keeps in the root hermes ho
     preparation raises while a toggle exists and changes ``uv.lock``'s bytes (the dependency stamp),
     so the venv is stale at the new HEAD. The update exits 0 with a ``dependencies`` follow-up and
     the paused gateway stays stopped (the tree gate holds it: it would boot new code on stale
-    dependencies). A ``cybr gateway run`` launched then (the replayed argv) syncs the owed
-    dependencies in its own launch before serving; the next ``cybr`` launch adopts that gateway
+    dependencies). A ``hermes gateway run`` launched then (the replayed argv) syncs the owed
+    dependencies in its own launch before serving; the next ``hermes`` launch adopts that gateway
     instead of starting a twin, and the record is discharged.
 (i) the checkout move itself fails before the commit point (the release adds a file under a
     directory the user cannot write): the paused gateway is restarted on the OLD code, and the
     update's exit code and receipt outcome equal those of the same failing update run with no
     gateway at all.
 (h) the Desktop hand-off (``scripts/desktop-update/posix.sh``, what the Desktop app spawns before it
-    quits) runs the same ``cybr update --gateway``: the gateway is paused and restarted on the new
+    quits) runs the same ``hermes update --gateway``: the gateway is paused and restarted on the new
     commit, and the hand-off's result file reports success.
 """
 
@@ -165,7 +165,7 @@ def _namespace(w: G.World) -> Iterator[NamespaceHost]:
 
 def _ns_cli(host: NamespaceHost, w: G.World, *args: str, timeout: float = 600):
     cp = host.run([w.sb.hermes, *args], timeout=timeout)
-    w.transcripts.append(f"$ cybr {' '.join(args)} -> rc={cp.returncode}\n{(cp.stdout or '')[-6000:]}\n"
+    w.transcripts.append(f"$ hermes {' '.join(args)} -> rc={cp.returncode}\n{(cp.stdout or '')[-6000:]}\n"
                          f"{(cp.stderr or '')[-3000:]}")
     return cp
 

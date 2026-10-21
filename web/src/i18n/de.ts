@@ -95,7 +95,7 @@ export const de: Translations = {
   status: {
     actionFailed: "Aktion fehlgeschlagen",
     actionFinished: "Abgeschlossen",
-    actionFinishedOwed: "Aktualisiert, aber noch offen (`cybr update` erneut ausführen, um abzuschließen)",
+    actionFinishedOwed: "Aktualisiert, aber noch offen (`hermes update` erneut ausführen, um abzuschließen)",
     actions: "Aktionen",
     agent: "Agent",
     activeSessions: "Aktive Sitzungen",
@@ -334,7 +334,7 @@ export const de: Translations = {
       "Gespeichert — Gateway neu starten, um die Änderung anzuwenden.",
     forceReinstall: "Neuinstallation erzwingen (bestehenden Ordner zuerst löschen)",
     headline:
-      "Cybr Agent-Plugins entdecken, installieren, aktivieren und aktualisieren (entspricht `cybr plugins`).",
+      "Cybr Agent-Plugins entdecken, installieren, aktivieren und aktualisieren (entspricht `hermes plugins`).",
     identifierLabel: "Git-URL oder owner/repo",
     inactive: "inaktiv",
     installBtn: "Installieren",
@@ -612,7 +612,7 @@ export const de: Translations = {
         "Auf X teilen öffnet einen vorgefertigten Post in einem neuen Tab. Klicke zuerst auf Bild kopieren, wenn du das 1200×630-Abzeichen anhängen möchtest – X lässt dich es direkt in den Tweet-Editor einfügen. PNG herunterladen speichert die Datei zur Nutzung an beliebiger Stelle.",
       clipboard_unsupported:
         "Bildkopie über die Zwischenablage wird in diesem Browser nicht unterstützt – nutze stattdessen Herunterladen.",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Cybr Agent ☤",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in Cybr Agent ∿",
     },
   },
   kanban: {

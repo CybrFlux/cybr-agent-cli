@@ -130,7 +130,7 @@ test('verifyHermesCli accepts an actual zero-exit executable', async (): Promise
 test.skipIf(process.platform === 'win32')(
   'verifyHermesCli quotes a spaced executable path when probing through a shell',
   async (): Promise<void> => {
-    const spacedDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cybr probe-'))
+    const spacedDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hermes probe-'))
     const spacedCmd = path.join(spacedDir, 'hermes.cmd')
     fs.writeFileSync(spacedCmd, '#!/bin/sh\nexit 0\n', { mode: 0o755 })
     fs.chmodSync(spacedCmd, 0o755)

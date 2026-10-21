@@ -95,7 +95,7 @@ export const ru: Translations = {
   status: {
     actionFailed: "Ошибка действия",
     actionFinished: "Завершено",
-    actionFinishedOwed: "Обновлено, но работа ещё не завершена (запустите `cybr update` снова, чтобы закончить)",
+    actionFinishedOwed: "Обновлено, но работа ещё не завершена (запустите `hermes update` снова, чтобы закончить)",
     actions: "Действия",
     agent: "Агент",
     activeSessions: "Активные сессии",
@@ -334,7 +334,7 @@ export const ru: Translations = {
       "Сохранено — перезапустите шлюз, чтобы применить изменение.",
     forceReinstall: "Принудительная переустановка (сначала удалить существующую папку)",
     headline:
-      "Поиск, установка, включение и обновление плагинов Cybr Agent (аналог `cybr plugins`).",
+      "Поиск, установка, включение и обновление плагинов Cybr Agent (аналог `hermes plugins`).",
     identifierLabel: "Git URL или owner/repo",
     inactive: "неактивно",
     installBtn: "Установить",
@@ -613,7 +613,7 @@ export const ru: Translations = {
         "«Поделиться в X» открывает пост с заранее заполненным текстом в новой вкладке. Сначала нажмите «Скопировать изображение», если хотите прикрепить значок 1200×630 — X позволяет вставить его прямо в редактор твита. «Скачать PNG» сохраняет файл для использования где угодно.",
       clipboard_unsupported:
         "Копирование изображений в буфер обмена не поддерживается в этом браузере — используйте «Скачать».",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Cybr Agent ☤",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in Cybr Agent ∿",
     },
   },
   kanban: {

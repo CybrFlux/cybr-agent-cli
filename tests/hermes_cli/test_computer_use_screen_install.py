@@ -1,4 +1,4 @@
-"""`cybr computer-use screen install` shares the Desktop pane's installer (one lock, list-form spawn)."""
+"""`hermes computer-use screen install` shares the Desktop pane's installer (one lock, list-form spawn)."""
 
 from __future__ import annotations
 

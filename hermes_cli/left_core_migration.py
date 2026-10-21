@@ -6,20 +6,20 @@ plugin keeps its names, config keys and env vars, so migrating is only "install 
 contract is the one memory providers established (``memory_provider_migration``, whose helpers this
 reuses; memory is not a row because its plugin name comes from ``memory.provider``, not a table):
 
-* ``cybr update`` installs the plugin for every profile home sharing the venv that uses the feature.
+* ``hermes update`` installs the plugin for every profile home sharing the venv that uses the feature.
 * Agent start and gateway start retry once per process for the active home (Desktop users update
-  through the app and never run ``cybr update``), honouring ``security.allow_lazy_installs``.
+  through the app and never run ``hermes update``), honouring ``security.allow_lazy_installs``.
 * After a failed attempt (catalog miss or unreachable, failed install) starts skip the row for
   an hour, doubling with each further failure up to a week, so an offline
-  machine pays the network round trip once, not on every ``cybr chat``, and a home whose install
-  cannot succeed stops failing every hour; ``cybr update`` always retries.
+  machine pays the network round trip once, not on every ``hermes chat``, and a home whose install
+  cannot succeed stops failing every hour; ``hermes update`` always retries.
 * A home gets the plugin automatically at most once (``_left_core_installed`` in its config.yaml):
-  ``cybr plugins remove`` afterwards is the user's choice and sticks.
+  ``hermes plugins remove`` afterwards is the user's choice and sticks.
 
 Installs go through the normal catalog install path at the reviewed pin (kill list, dependency
 constraints, enable). Unattended dependency consent covers only these rows: the feature shipped in
 core, so its users already accepted its dependencies. Agent/gateway start always installs with it
-(nothing can answer a prompt there); ``cybr update`` in a terminal still asks. Every outcome
+(nothing can answer a prompt there); ``hermes update`` in a terminal still asks. Every outcome
 reaches the user (terminal, Desktop, chat); a gateway-start outcome waits for the home's first agent
 to deliver it.
 """
@@ -108,7 +108,7 @@ def homeassistant_in_use(home: Path, *, process_env: bool = False) -> bool:
 
 def spotify_in_use(home: Path, *, process_env: bool = False) -> bool:
     """What made core's Spotify tools usable for *home*: a login stored in its ``auth.json``
-    (``providers.spotify``, written by ``cybr auth spotify``) or the ``spotify`` toolset selected
+    (``providers.spotify``, written by ``hermes auth spotify``) or the ``spotify`` toolset selected
     for a platform. The tools were opt-in and login-gated, so a client id alone is not use."""
     import json
     try:
@@ -174,12 +174,12 @@ class LeftCoreFeature:
     # prefixes it shared with the feature's tools (stripped only when the source runs the adapter).
     enable_env: tuple[str, ...] = ()
     channel_env_prefixes: tuple[str, ...] = ()
-    # Top-level command the plugin registers in place of core's ``cybr auth <cli>`` login
-    # (``cybr <cli> login|status|logout``); :func:`moved_command_hint` points the old spelling at it.
+    # Top-level command the plugin registers in place of core's ``hermes auth <cli>`` login
+    # (``hermes <cli> login|status|logout``); :func:`moved_command_hint` points the old spelling at it.
     cli: str = ""
     # Key of the bundled plugin core shipped (``observability/langfuse``). It stays an alias of the
     # catalog plugin in ``plugins.enabled`` / ``plugins.disabled`` (the loader's gate, an
-    # administrator's pinned list) and for every `cybr plugins <verb>` (:func:`legacy_plugin_alias`).
+    # administrator's pinned list) and for every `hermes plugins <verb>` (:func:`legacy_plugin_alias`).
     plugin_key: str = ""
 
 
@@ -194,7 +194,7 @@ LEFT_CORE: tuple[LeftCoreFeature, ...] = (
     LeftCoreFeature(
         plugin="spotify", label="Spotify", in_use=spotify_in_use,
         unchanged="your Spotify login, the spotify toolset and the spotify_* tools are unchanged; "
-                  "`cybr auth spotify` is now `cybr spotify login`",
+                  "`hermes auth spotify` is now `hermes spotify login`",
         cli="spotify",
     ),
     LeftCoreFeature(
@@ -232,12 +232,12 @@ def legacy_plugin_keys(plugin: str) -> set[str]:
 
 
 def moved_command_hint(prog: str, value: str, action: str = "") -> str:
-    """For a command a left-core plugin took over: ``cybr auth [<action>] <cli>`` (core's old login
-    spelling) or ``cybr <cli>`` while the plugin is not loaded, the line saying where it went and
+    """For a command a left-core plugin took over: ``hermes auth [<action>] <cli>`` (core's old login
+    spelling) or ``hermes <cli>`` while the plugin is not loaded, the line saying where it went and
     how to get it for the active home, else ``""``."""
     from hermes_constants import get_hermes_home
     feature = next((f for f in LEFT_CORE if f.cli and f.cli == value), None)
-    if feature is None or prog not in {"hermes", "cybr auth"}:
+    if feature is None or prog not in {"hermes", "hermes auth"}:
         return ""
     home = Path(get_hermes_home())
     install = _install_command(feature.plugin, home)
@@ -245,10 +245,10 @@ def moved_command_hint(prog: str, value: str, action: str = "") -> str:
         get = f" Install it with: `{install}`."
     else:
         get = f" Enable it with: `{install.replace(' install ', ' enable ')}`." if prog == "hermes" else ""
-    if prog == "cybr auth":
-        old = " ".join(p for p in ("cybr auth", action, value) if p)
+    if prog == "hermes auth":
+        old = " ".join(p for p in ("hermes auth", action, value) if p)
         return (f"{feature.label} moved out of core into the '{feature.plugin}' plugin: `{old}` is now "
-                f"`cybr {value} {action or 'login'}`.{get}")
+                f"`hermes {value} {action or 'login'}`.{get}")
     return f"{feature.label} moved out of core into the '{feature.plugin}' plugin, which is not loaded.{get}"
 
 
@@ -271,7 +271,7 @@ def plugin_present(plugin: str, home: Path) -> bool:
 
 def _core_carried(feature: LeftCoreFeature, selection: list) -> bool:
     """Whether core resolved *feature*'s toolsets on for a platform selecting *selection*: named
-    directly, or through a ``cybr`` / ``hermes-<platform>`` composite that included them."""
+    directly, or through a ``hermes`` / ``hermes-<platform>`` composite that included them."""
     def carries(name: str) -> bool:
         if name in feature.toolsets or name == "hermes":
             return True
@@ -309,7 +309,7 @@ def _record_migration(home: Path, feature: LeftCoreFeature) -> None:
     conversion per home and row, independent of installation: a plugin installed before the update
     (it stays inert on a core that still ships the feature) still needs it. Completion is marked
     under ``_left_core_scoped`` so a later run never undoes a choice the user made since
-    (``cybr tools``). Raises when config.yaml cannot be read or written."""
+    (``hermes tools``). Raises when config.yaml cannot be read or written."""
     from hermes_cli.config import atomic_config_write, read_user_config_raw
     from hermes_cli.toolset_validation import parse_platform_toolsets_value
     path = home / "config.yaml"
@@ -360,13 +360,13 @@ def _pending(home: Path, *, say: Callable[[str], None], process_env: bool = Fals
             _record_migration(home, feature)
         except Exception as exc:
             say(f"  ⚠ {feature.label} moved out of core into the '{feature.plugin}' plugin: its per-platform "
-                f"toolset selection could not be kept ({exc}). Check `cybr tools`"
+                f"toolset selection could not be kept ({exc}). Check `hermes tools`"
                 + ("." if present else f" and run `{_install_command(feature.plugin, home)}`."))
             continue
         if present:
             continue
         if backoff and _failed_recently(home, feature.plugin):
-            logger.info("%s plugin install failed recently for %s; retrying later or on `cybr update`",
+            logger.info("%s plugin install failed recently for %s; retrying later or on `hermes update`",
                         feature.label, home)
             continue
         if catalog_source(feature.plugin) is None:
@@ -433,7 +433,7 @@ def migrate_home(home: Path, *, install: Callable[[str], dict], say: Callable[[s
 
 
 def migrate_all_homes(*, say: Callable[[str], None] = print) -> list[str]:
-    """``cybr update`` hook: every profile home sharing this venv. Grouped by plugin and each home's
+    """``hermes update`` hook: every profile home sharing this venv. Grouped by plugin and each home's
     unattended consent like the memory migration: homes of one group share dependency answers, and a
     failure names the rest of its group in one line instead of failing them one by one."""
     from hermes_cli.plugins_cmd_install import shared_dependency_answers
@@ -473,7 +473,7 @@ def migrate_all_homes(*, say: Callable[[str], None] = print) -> list[str]:
                     break
     except KeyboardInterrupt:
         say("  ⚠ Plugin migration cancelled. Profiles already migrated keep their plugin; run "
-            "`cybr plugins install <name>` (with `-p <profile>`) for the rest.")
+            "`hermes plugins install <name>` (with `-p <profile>`) for the rest.")
     return installed
 
 
@@ -541,7 +541,7 @@ def recover_at_startup(*, say: Optional[Callable[[str], None]] = None) -> list[s
             if _install_one(home, feature, install=_install_into(home, consent=True), say=report):
                 installed.append(feature.plugin)
                 if say is not None and feature.platform and _gateway_serves(home):
-                    report(f"Restart the gateway (`cybr gateway restart`) so it serves {feature.label}.")
+                    report(f"Restart the gateway (`hermes gateway restart`) so it serves {feature.label}.")
         return installed
     except Exception as exc:  # never take agent/gateway start down
         logger.warning("left-core plugin migration failed: %s", exc, exc_info=True)

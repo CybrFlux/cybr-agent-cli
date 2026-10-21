@@ -107,7 +107,7 @@ it opens the Cmd+K pet palette.
 
 Beyond installing pre-made pets from the gallery, Cybr Agent can **generate a brand-new pet** from a text description — its own AI sprite-generation pipeline.
 
-- CLI/TUI: `/hatch <description>` (alias `/generate-pet`), or `cybr pets` → the generate flow.
+- CLI/TUI: `/hatch <description>` (alias `/generate-pet`), or `hermes pets` → the generate flow.
 - Desktop app: the Pokédex-style **generate** UI — an animated egg, hatch FX, and a draft picker.
 
 How generation works (a two-step, cost-bounded flow):

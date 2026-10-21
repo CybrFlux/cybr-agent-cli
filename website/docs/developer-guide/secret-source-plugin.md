@@ -22,7 +22,7 @@ plugin secret source is configured. Enablement uses the source's
 That closes the "replace Bitwarden with my vault" first-process gap (#64177).
 
 - Re-pull is idempotent and fail-open (never blocks startup).
-- `cybr update` never resolves external sources — not in the updater process
+- `hermes update` never resolves external sources — not in the updater process
   and not in the import-health probes it spawns. Nothing in the update path
   needs credentials, and a slow helper would otherwise be misreported as an
   import failure (#110823).

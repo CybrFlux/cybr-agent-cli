@@ -179,7 +179,7 @@ cybr gateway install
 ```powershell
 cybr gateway status      # 合并视图：schtasks + Startup 文件夹 + 运行中的 PID
 cybr gateway start       # 立即启动计划任务
-cybr gateway stop        # 等效于优雅的 SIGTERM（通过 psutil 调用 TerminateProcess）
+hermes gateway stop        # 等效于优雅的 SIGTERM（通过 psutil 调用 TerminateProcess）
 cybr gateway restart
 cybr gateway uninstall   # 移除 schtasks 条目、Startup 快捷方式、pid 文件
 ```

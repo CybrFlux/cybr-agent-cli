@@ -59,7 +59,7 @@ cybr skills install ID    Hub identifier OR a direct https://…/SKILL.md URL
 cybr skills config        Enable/disable skills per platform
 cybr skills check|update|uninstall|publish PATH
 cybr skills tap add REPO  Add a GitHub repo as a skill source
-cybr bundles              Skill bundles (one /<name> alias loads several skills)
+hermes bundles              Skill bundles (one /<name> alias loads several skills)
 ```
 
 ### MCP Servers
@@ -100,7 +100,7 @@ Webhook payloads/routes: `references/webhooks.md`.
 
 ```
 cybr profile list|create NAME (--clone|--clone-all|--clone-from)|use|show|delete
-cybr profile rename A B | alias NAME | export NAME | import FILE
+hermes profile rename A B | alias NAME | export NAME | import FILE
 cybr profile migrate-identity A B   Retry a completed rename's session/routing identity migration
 ```
 

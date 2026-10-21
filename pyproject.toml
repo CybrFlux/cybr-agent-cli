@@ -27,7 +27,7 @@ dependencies = [
   # captured by `mistralai>=2.3.0,<3` rather than an exact pin, every
   # install in the hours before the quarantine would have pulled it.
   #
-  # After a pin change, run `cybr pm lock` so the transitive resolution
+  # After a pin change, run `hermes pm lock` so the transitive resolution
   # stays consistent. Do not introduce ranges
   # without a written justification.
   #
@@ -632,7 +632,7 @@ override-dependencies = [
   "spacy-curated-transformers; sys_platform == 'never'",
 ]
 # Release-age check: Cybr Agent's dependencies must be at least 3 days old when Cybr Agent
-# locks them. It runs where uv.lock is resolved (`cybr pm lock`, and CI's lock
+# locks them. It runs where uv.lock is resolved (`hermes pm lock`, and CI's lock
 # check), never on users' machines: PM installs from this vetted lock and drops the
 # cutoff from what it generates (pm/workspace.py::_trust_core_lock), because many
 # package mirrors publish no upload times and uv rejects a file it cannot date

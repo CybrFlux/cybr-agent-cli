@@ -1,4 +1,4 @@
-"""``cybr slack`` subcommand parser."""
+"""``hermes slack`` subcommand parser."""
 
 from __future__ import annotations
 

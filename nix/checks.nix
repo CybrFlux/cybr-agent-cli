@@ -273,10 +273,10 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
               ]) "expected hermes-agent + hermes-backend processes, got: ${toString names}"
               ++ lib.optional (
                 !lib.hasInfix "bin/hermes gateway" (argvOf "hermes-agent")
-              ) "gateway process does not run `cybr gateway`: ${argvOf "hermes-agent"}"
+              ) "gateway process does not run `hermes gateway`: ${argvOf "hermes-agent"}"
               ++ lib.optional (
                 !lib.hasInfix "bin/hermes serve" (argvOf "hermes-backend")
-              ) "backend process does not run `cybr serve`: ${argvOf "hermes-backend"}"
+              ) "backend process does not run `hermes serve`: ${argvOf "hermes-backend"}"
               ++ lib.optional (
                 !lib.hasInfix "--no-open" (argvOf "hermes-backend")
               ) "backend must pass --no-open so a service never opens a browser"
@@ -567,7 +567,7 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
         # ── installPackage names its replacement ─────────────────────────
         # The option was removed by the programs./services. split. It
         # defaulted to true, so a person who never named it still got the
-        # command line. A silent removal thus leaves them with no `cybr`
+        # command line. A silent removal thus leaves them with no `hermes`
         # and no message. The module must refuse the configuration and name
         # the replacement.
         home-manager-install-package-removed =
@@ -710,10 +710,10 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
               ]) "expected hermes-agent + hermes-backend units, got: ${toString names}"
               ++ lib.optional (
                 !lib.hasInfix "bin/hermes gateway" (execOf "hermes-agent")
-              ) "gateway unit does not run `cybr gateway`: ${execOf "hermes-agent"}"
+              ) "gateway unit does not run `hermes gateway`: ${execOf "hermes-agent"}"
               ++ lib.optional (
                 !lib.hasInfix "bin/hermes dashboard" (execOf "hermes-backend")
-              ) "backend unit does not run `cybr dashboard`: ${execOf "hermes-backend"}"
+              ) "backend unit does not run `hermes dashboard`: ${execOf "hermes-backend"}"
               ++ lib.optional (
                 units.hermes-agent.environment.HERMES_HOME != units.hermes-backend.environment.HERMES_HOME
               ) "gateway and backend must share one HERMES_HOME"
@@ -1066,7 +1066,7 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
           set -e
           export HOME=$(mktemp -d)
 
-          echo "=== Checking cybr --help ==="
+          echo "=== Checking hermes --help ==="
           ${hermes-agent}/bin/hermes --help 2>&1 | grep -q "gateway" || (echo "FAIL: gateway subcommand missing"; exit 1)
           ${hermes-agent}/bin/hermes --help 2>&1 | grep -q "config" || (echo "FAIL: config subcommand missing"; exit 1)
           echo "PASS: All subcommands accessible"
@@ -1183,7 +1183,7 @@ json.dump(sorted(leaf_paths(DEFAULT_CONFIG)), sys.stdout, indent=2)
           export HOME=$(mktemp -d)
           CATALOG=$(cd "$HOME" && ${hermes-agent}/bin/hermes mcp catalog 2>/dev/null || true)
           echo "catalog output: $CATALOG"
-          test -n "$CATALOG" || (echo "FAIL: cybr mcp catalog returned empty"; exit 1)
+          test -n "$CATALOG" || (echo "FAIL: hermes mcp catalog returned empty"; exit 1)
           echo "PASS: mcp catalog resolves entries"
 
           echo "=== All bundled optional-mcps checks passed ==="

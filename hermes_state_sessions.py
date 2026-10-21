@@ -1145,7 +1145,7 @@ class SessionSessionsMixin:
                     merged[key] = tip_row[key]
             if merged.get("title") is None:
                 # The title is carried root->tip AFTER the publish transaction; a rotation cut off in
-                # between leaves it on the ended root, and exact-title lookups (`cybr peer dm` ->
+                # between leaves it on the ended root, and exact-title lookups (`hermes peer dm` ->
                 # canonical "Bot Chat") must still see the lineage under its name (#106165).
                 merged["title"] = s.get("title")
             merged["_lineage_root_id"] = s["id"]
@@ -1562,7 +1562,7 @@ class SessionSessionsMixin:
         skip_launch_stubs: bool = False,
     ) -> list[dict[str, Any]]:
         """Sessions MRU-first with a computed ``last_active``; ``workspace_key`` scopes to one workspace
-        so ``cybr -c``/``--resume`` picks its last session. ``source`` may be one label or several.
+        so ``hermes -c``/``--resume`` picks its last session. ``source`` may be one label or several.
         ``local_created_sources`` restricts ``source='local'`` rows before LIMIT/OFFSET, and
         ``skip_launch_stubs`` drops empty launch stubs (launch_stub_filter_sql) before it too."""
         where_clauses = [launch_stub_filter_sql(self)] if skip_launch_stubs else []

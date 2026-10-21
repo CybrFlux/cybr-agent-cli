@@ -52,7 +52,7 @@ export interface CheckoutStrategyDeps {
   resolveUpdaterBinary: () => string | null
   /**
    * True when one remote gateway serves this Desktop (app-global remote /
-   * cloud / SSH). The hand-off then tells `cybr update` not to (re)start a
+   * cloud / SSH). The hand-off then tells `hermes update` not to (re)start a
    * local messaging gateway: with the same channel credentials as the remote
    * host it would become a competing long-poll consumer (#117529).
    */
@@ -102,14 +102,14 @@ const WITHDRAW_RETRY_MS = 250
 
 /**
  * The manual command card for a checkout with no staged updater: the exact
- * `cybr update` line to run, branch-pinned to the checkout's current branch
- * for non-main (bare `cybr update` would silently switch the install
+ * `hermes update` line to run, branch-pinned to the checkout's current branch
+ * for non-main (bare `hermes update` would silently switch the install
  * off-branch).
  */
 export function buildManualUpdateCommand(currentBranch: string | null | undefined): string {
   return currentBranch && currentBranch !== 'HEAD' && currentBranch !== 'main'
-    ? `cybr update --branch ${currentBranch}`
-    : 'cybr update'
+    ? `hermes update --branch ${currentBranch}`
+    : 'hermes update'
 }
 
 /**
@@ -278,7 +278,7 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): CheckoutStra
       // Not withdrawn means the bridge may still be there, and the daemon
       // (setsid, out of killHandoffTree's reach) adopts it whenever it starts.
       // Reporting "did not start" and restarting the backend would then run
-      // `cybr update` beside it. Quit instead: the next boot's update gate
+      // `hermes update` beside it. Quit instead: the next boot's update gate
       // judges the bridge or the script's claim under the script's lock.
       if (!WITHDRAW_SETTLED_VERDICTS.has(verdict.kind)) {
         deps.rememberLog(
@@ -353,7 +353,7 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): CheckoutStra
     // waitForUpdateToFinish() gate sees a live update and parks instead.
     // The marker names the updater's pid AND creation time (v2): the updater
     // adopts it as its own claim, so no age ceiling applies to a slow update
-    // and the `cybr update` it runs can add its delegate line.
+    // and the `hermes update` it runs can add its delegate line.
     //
     // SKIPPED for pre-#74782 staged updaters: those have no self-PID
     // exclusion, so they read this very marker as a foreign live owner and
@@ -420,7 +420,7 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): CheckoutStra
     const targetLabel: string = status.channel ?? branch
 
     const manualCommand: string = status.channel
-      ? `cybr update --channel ${status.channel}`
+      ? `hermes update --channel ${status.channel}`
       : buildManualUpdateCommand(branch)
 
     const updater: string | null = deps.resolveUpdaterBinary()
@@ -445,20 +445,20 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): CheckoutStra
 
     if (!deps.isWindows && (!updater || status.channel)) {
       // macOS/Linux: hand off to the repo-owned posix script — same shape as
-      // Windows (quit → detached orchestrator → `cybr update` → relaunch),
+      // Windows (quit → detached orchestrator → `hermes update` → relaunch),
       // minus the venv-lock gauntlet POSIX doesn't need. The old in-app
       // updater (applyUpdatesPosixInApp) is gone with everything it dragged
       // in: the HERMES_DESKTOP_CHILD_PID reaper-exclusion dance (#37532),
       // the in-window rebuild retry, and the relaunch-outcome matrix — the
       // script owns swap/relaunch, and the app is DEAD during the update so
       // there is nothing to reap around. Checkouts that predate the script
-      // get the manual `cybr update` card once; their next update pulls it.
+      // get the manual `hermes update` card once; their next update pulls it.
       return await applyPosixHandoff(targetArgs, targetLabel, manualCommand)
     }
 
     if (!updater || status.channel) {
       // No staged updater binary — this is a CLI-installed user (they ran
-      // `cybr desktop`, never the Tauri installer that self-copies
+      // `hermes desktop`, never the Tauri installer that self-copies
       // hermes-setup.exe into HERMES_HOME). On Windows the repo hand-off
       // script serves them just as well as installer users — it only needs
       // PowerShell and the checkout — so fall through to the normal hand-off
@@ -536,7 +536,7 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): CheckoutStra
     // months-stale updater logic — pre-#67369 cache resolver, pre-#74782
     // marker adoption — producing failures that were fixed on main long ago
     // (2026-08-09 incident). scripts/desktop-update/windows.ps1 ships WITH the
-    // checkout, so each `cybr update` refreshes the code that drives the
+    // checkout, so each `hermes update` refreshes the code that drives the
     // next one. Checkouts that predate the script fall back to the binary
     // path unchanged.
     const scriptHandoff = resolveUpdateScriptHandoff(updateRoot)
@@ -676,7 +676,7 @@ export function createCheckoutStrategy(deps: CheckoutStrategyDeps): CheckoutStra
       String(process.pid)
     ]
 
-    // A remote-served Desktop owns no local messaging gateway: `cybr update
+    // A remote-served Desktop owns no local messaging gateway: `hermes update
     // --gateway` would (re)start one here anyway, and with the same channel
     // credentials as the remote host it becomes a competing long-poll consumer
     // (#117529). Keep --gateway for the local-ownership default.

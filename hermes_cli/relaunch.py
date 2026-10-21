@@ -1,5 +1,5 @@
 """Unified self-relaunch for Cybr Agent CLI: preserves inherited flags (--tui, --dev, --profile, --model…)
-across process replacement so ``cybr sessions browse`` / post-setup relaunch keep the user's mode."""
+across process replacement so ``hermes sessions browse`` / post-setup relaunch keep the user's mode."""
 
 import os
 import pathlib
@@ -129,12 +129,12 @@ def relaunch(
         except KeyboardInterrupt:
             sys.exit(130)
         except OSError as exc:
-            # Raw ``[Errno 8] Exec format error`` is cryptic; usual causes are ``cybr`` not on
+            # Raw ``[Errno 8] Exec format error`` is cryptic; usual causes are ``hermes`` not on
             # PATH yet (install hasn't propagated User PATH into this shell) or a stale shim.
             print(
                 f"\nHermes relaunch failed: {exc}\n"
                 f"Command: {' '.join(new_argv)}\n"
-                f"Fix: open a new terminal so PATH picks up, then re-run cybr.",
+                f"Fix: open a new terminal so PATH picks up, then re-run hermes.",
                 file=sys.stderr,
             )
             sys.exit(1)

@@ -95,7 +95,7 @@ export const tr: Translations = {
   status: {
     actionFailed: "İşlem başarısız",
     actionFinished: "Tamamlandı",
-    actionFinishedOwed: "Güncellendi, ancak bekleyen adımlar var (bitirmek için `cybr update` komutunu yeniden çalıştırın)",
+    actionFinishedOwed: "Güncellendi, ancak bekleyen adımlar var (bitirmek için `hermes update` komutunu yeniden çalıştırın)",
     actions: "İşlemler",
     agent: "Agent",
     activeSessions: "Aktif Oturumlar",
@@ -334,7 +334,7 @@ export const tr: Translations = {
       "Kaydedildi — değişikliği uygulamak için ağ geçidini yeniden başlatın.",
     forceReinstall: "Yeniden yüklemeyi zorla (önce mevcut klasörü sil)",
     headline:
-      "Cybr Agent eklentilerini keşfedin, yükleyin, etkinleştirin ve güncelleyin (`cybr plugins` ile eşdeğer).",
+      "Cybr Agent eklentilerini keşfedin, yükleyin, etkinleştirin ve güncelleyin (`hermes plugins` ile eşdeğer).",
     identifierLabel: "Git URL veya owner/repo",
     inactive: "pasif",
     installBtn: "Yükle",
@@ -613,7 +613,7 @@ export const tr: Translations = {
         "X'te paylaş, yeni sekmede önceden doldurulmuş bir gönderi açar. 1200×630 rozetin eklenmesini istiyorsan önce Görseli kopyala'ya tıkla — X, görseli doğrudan tweet düzenleyiciye yapıştırmana izin verir. PNG indir, dosyayı her yerde kullanmak üzere kaydeder.",
       clipboard_unsupported:
         "Bu tarayıcıda panoya görsel kopyalama desteklenmiyor — bunun yerine İndir'i kullanın.",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Cybr Agent ☤",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in Cybr Agent ∿",
     },
   },
   kanban: {

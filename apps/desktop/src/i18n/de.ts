@@ -509,7 +509,7 @@ export const deOverrides = {
       'Ihr Paket wurde privat hochgeladen. Teilen Sie den Link unten in Ihrem Support-Thread, damit das Team Ihre Logs sehen kann.',
     failedTitle: 'Hochladen fehlgeschlagen',
     failedHint:
-      'Sie können auch `cybr debug share --nous` im Terminal ausführen oder `cybr debug share --local`, um den Bericht ohne Hochladen auszugeben.',
+      'Sie können auch `hermes debug share --nous` im Terminal ausführen oder `hermes debug share --local`, um den Bericht ohne Hochladen auszugeben.',
     handoffLead: 'Diskussion hier fortsetzen:',
     links: {
       github: 'GitHub Issues',
@@ -2457,7 +2457,7 @@ export const deOverrides = {
     edit: 'Bearbeiten',
     archive: 'Archivieren',
     skillArchivedTitle: 'Skill archiviert',
-    skillArchivedMessage: 'Wiederherstellbar über „cybr curator restore“.',
+    skillArchivedMessage: 'Wiederherstellbar über „hermes curator restore“.',
     tabPlugins: 'Plugins',
     plugins: {
       agentTitle: 'Agent-Plugins',
@@ -3787,7 +3787,7 @@ export const deOverrides = {
       '/resume': 'Gespeicherte Session fortsetzen',
       '/details': 'Transkript-Detailgrad steuern',
       '/copy': 'Auswahl oder letzte Assistenten-Nachricht kopieren',
-      '/quit': 'cybr beenden',
+      '/quit': 'hermes beenden',
       '/start': 'Start-Pings der Plattform ohne Antwort bestätigen',
       '/new': 'Neuen Desktop-Chat starten',
       '/topic': 'Telegram-DM-Themen-Sessions aktivieren oder prüfen',
@@ -4132,9 +4132,9 @@ export const deOverrides = {
     versionDetailsDistributionDesktopMsix: 'Desktop-App (MSIX)',
     versionDetailsDistributionDesktopInstaller: 'Desktop-App (Installer)',
     versionDetailsDistributionSourceInstaller: 'Quellcode (Installationsskript)',
-    versionDetailsDistributionSourceInstallerDesktop: 'Quellcode (Installationsskript) + cybr desktop',
+    versionDetailsDistributionSourceInstallerDesktop: 'Quellcode (Installationsskript) + hermes desktop',
     versionDetailsDistributionSource: 'Quellcode',
-    versionDetailsDistributionSourceDesktop: 'Quellcode + cybr desktop',
+    versionDetailsDistributionSourceDesktop: 'Quellcode + hermes desktop',
     versionDetailsDistributionStore: 'Microsoft Store',
     versionDetailsRuntime: 'Laufzeit',
     versionDetailsRuntimeEmbedded: 'Eingebettete Laufzeit',
@@ -5490,7 +5490,7 @@ export const deOverrides = {
       success: platform => `Übergeben an ${platform}. Jederzeit hier fortsetzen.`,
       systemNote: platform => `↻ Übergeben an ${platform} — jederzeit hier fortsetzen.`,
       failed: error => `Übergabe fehlgeschlagen: ${error}`,
-      timedOut: 'Zeitüberschreitung beim Warten auf das Gateway. Läuft `cybr gateway`?',
+      timedOut: 'Zeitüberschreitung beim Warten auf das Gateway. Läuft `hermes gateway`?',
       startMessaging: 'Messaging starten'
     }
   },

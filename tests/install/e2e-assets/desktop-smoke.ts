@@ -337,7 +337,7 @@ export async function runInstalledDesktopSmoke(options: SmokeOptions, launchApp:
     const identity = await readChatIdentity(page)
     assertResolvedIdentity(identity, options, predictedHome)
     // The ordinary host-attach path may reuse the updater's relaunched app's
-    // backend, and `cybr gateway ensure` attaches to (or starts, detached) the
+    // backend, and `hermes gateway ensure` attaches to (or starts, detached) the
     // canonical gateway. Observe the ledger and gateway_state.json the app's home
     // resolves to (its machine root), not an arbitrary listener, and retain the
     // OS listener + installed-tree proof below.

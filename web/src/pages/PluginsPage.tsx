@@ -1382,7 +1382,7 @@ function CatalogEntryCard(props: CatalogEntryCardProps) {
           ) : null}
 
           {entry.requires_hermes ? (
-            <span>cybr {entry.requires_hermes}</span>
+            <span>hermes {entry.requires_hermes}</span>
           ) : null}
 
           {entry.platforms.length ? (

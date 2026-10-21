@@ -136,7 +136,7 @@ EOF
   kill -KILL -- -$PID; wait $PID 2>/dev/null
   echo "  torn: HEAD=$(git rev-parse --short HEAD) [$(git status --porcelain | tr '\n' ' ')] marker=[$(marker | cut -c1-60)...]"
   sed -i "1a USER_EDIT = 'stash re-applied'" run_agent.py  # upstream changes this file too; git never wrote it
-  cybr
+  hermes
   echo "  RESULT $([ $KIND = clone ] && echo C || echo D): [$(git status --porcelain | tr '\n' ' ')] user edit kept=$(grep -c "USER_EDIT" run_agent.py) torn_newpkg=$(test -e torn_newpkg && echo present || echo gone) marker=[$(marker)]"
   PATH=/usr/bin:$PATH $PY $U/pull.py $U/install 2>&1 | grep PULL | sed 's/^/    re-update> /'
   echo "  after re-update: HEAD==origin/main? $([ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] && echo yes || echo no) user edit kept=$(grep -c USER_EDIT run_agent.py)"

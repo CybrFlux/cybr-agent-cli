@@ -1,4 +1,4 @@
-"""cybr pm: lock / install / repair / env / doctor / gc / bundle."""
+"""hermes pm: lock / install / repair / env / doctor / gc / bundle."""
 
 from __future__ import annotations
 
@@ -304,7 +304,7 @@ def _install_defaults(names: list[str], *, verify: bool) -> None:
     for name in names:
         if _install_names([name], verify=verify):
             print(f"⚠ optional {name} was not installed; its tools stay unavailable until "
-                  f"`cybr pm install {name}` succeeds", flush=True)
+                  f"`hermes pm install {name}` succeeds", flush=True)
 
 
 def _install_python_environments(extras: list[str], *, sync: bool, test_environment) -> int:
@@ -315,7 +315,7 @@ def _install_python_environments(extras: list[str], *, sync: bool, test_environm
 
         try:
             # Default the venv to the [all] feature set — the same thing
-            # `cybr update` force-syncs on every run (update_cmd.py) and
+            # `hermes update` force-syncs on every run (update_cmd.py) and
             # the installers' old `--extra all` did. sync_venv unions, so
             # any lazy extras already recorded survive this; it only makes
             # a fresh bootstrap match what the first update would do.
@@ -359,7 +359,7 @@ def cmd_install(args) -> int:
         from pm.defaults import record_declined
 
         # Persisted before anything installs: later bare installs and
-        # `cybr update` read the same record, so the opt-out sticks.
+        # `hermes update` read the same record, so the opt-out sticks.
         record_declined(add=without)
     defaults: list[str] = []
     if not (args.names or extras):
@@ -444,7 +444,7 @@ def cmd_doctor(args) -> int:
         ):
             # Legacy fact: pre-dates digest-bound identity; installed()
             # treats it as not installed and forces one reinstall.
-            print(f"{'?' if soft else '✗'} {name}: legacy fact: no recorded identity, run `cybr pm install`")
+            print(f"{'?' if soft else '✗'} {name}: legacy fact: no recorded identity, run `hermes pm install`")
             bad += 0 if soft else 1
             continue
         if not facts.installed(name, lockfile.version(name), store.root, identity):
@@ -617,7 +617,7 @@ def _apply_pins(changed: list, lockfile) -> int:
     if not failed:
         return rc
     print(f"pm update: pinned {len(pinned)}, failed {len(failed)}: {', '.join(failed)}")
-    # The venv sync above leaves an `ok` sync receipt as latest; `cybr pm
+    # The venv sync above leaves an `ok` sync receipt as latest; `hermes pm
     # status` and the desktop read latest, so the partial run must land last.
     from pm import receipt
 
@@ -646,7 +646,7 @@ def _refresh_npm_lock() -> int:
     npm = installed_package("npm")
     node = installed_package("node")
     if npm is None or npm.binary is None or node is None or node.binary is None:
-        print("✗ npm or Node: not installed; run `cybr pm install`")
+        print("✗ npm or Node: not installed; run `hermes pm install`")
         return 1
     env = npm_env(writable_store_root() / ".npm-cache", env_for("npm"))
     code, tail = _run_live([str(npm.binary), "update"], cwd=str(repo_root()), env=env)
@@ -658,7 +658,7 @@ def _refresh_npm_lock() -> int:
 
 
 def cmd_update(args) -> int:
-    """`cybr pm update [names...] [--check] [--target T] [--uv] [--npm] [--termux]`.
+    """`hermes pm update [names...] [--check] [--target T] [--uv] [--npm] [--termux]`.
 
     Resolve each package's latest via its own latest_versions() hook,
     intersect across targets, and (real mode) re-pin the lockfile + install
@@ -807,7 +807,7 @@ def main(argv=None) -> int:
             stream.reconfigure(errors="replace", line_buffering=True)
         except (AttributeError, OSError):
             pass
-    parser = argparse.ArgumentParser(prog="cybr pm")
+    parser = argparse.ArgumentParser(prog="hermes pm")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     lock_parser = p = sub.add_parser(
@@ -826,7 +826,7 @@ def main(argv=None) -> int:
                    help="enable a declared dependency extra in the venv (repeatable)")
     p.add_argument("--without", action="append", default=[], metavar="NAME",
                    help="leave an optional default package (agent-browser, cua-driver) out of this and every later "
-                        "default install and update; `cybr pm install NAME` opts back in (repeatable)")
+                        "default install and update; `hermes pm install NAME` opts back in (repeatable)")
     p.add_argument("--tools-only", action="store_true",
                    help="install the tool closure, put it on PATH, and stop before the venv sync")
     p.add_argument("--trust-recorded", action="store_true",

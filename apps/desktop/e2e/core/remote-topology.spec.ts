@@ -1,6 +1,6 @@
 /**
  * Remote-backend topology: the Desktop attached by URL + token to a real
- * `cybr serve` it did NOT spawn, running under a different HOME and
+ * `hermes serve` it did NOT spawn, running under a different HOME and
  * filesystem root (./remote-helpers.ts). Only the LLM is faked.
  *
  *  - first chat over the remote route: the turn persists in the BACKEND's

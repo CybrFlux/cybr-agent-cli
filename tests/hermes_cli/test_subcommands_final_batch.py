@@ -18,7 +18,7 @@ from hermes_cli.subcommands.worktree import build_worktree_parser
 
 
 def _tree():
-    parser = argparse.ArgumentParser(prog="cybr")
+    parser = argparse.ArgumentParser(prog="hermes")
     return parser, parser.add_subparsers(dest="command")
 
 

@@ -1,4 +1,4 @@
-"""``cybr claw`` subcommand parser."""
+"""``hermes claw`` subcommand parser."""
 
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ def build_claw_parser(subparsers, *, cmd_claw: Callable) -> None:
         "--no-backup", action="store_true",
         help="Skip the pre-migration zip snapshot of ~/.hermes/ (by default a "
         "single restore-point archive is written to ~/.hermes/backups/ "
-        "before apply; restorable with 'cybr import').")
+        "before apply; restorable with 'hermes import').")
     claw_migrate.add_argument(
         "--workspace-target", help="Absolute path to copy workspace instructions into")
     claw_migrate.add_argument(

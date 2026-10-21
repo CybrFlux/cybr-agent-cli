@@ -1,4 +1,4 @@
-"""Tests for hermes_cli/terminal_breadcrumbs.py — per-terminal ``cybr -c``.
+"""Tests for hermes_cli/terminal_breadcrumbs.py — per-terminal ``hermes -c``.
 
 Covers terminal id derivation (tty vs env vars vs none), breadcrumb
 write/read roundtrip under a temp HERMES_HOME, stale-session fallback

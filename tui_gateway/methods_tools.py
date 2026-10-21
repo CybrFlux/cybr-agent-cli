@@ -1765,7 +1765,7 @@ def _plugins_install(rid, params):
 
 
 def _plugins_update(rid, params):
-    """The same update as the dashboard and ``cybr plugins update``: a catalog install re-pins to the
+    """The same update as the dashboard and ``hermes plugins update``: a catalog install re-pins to the
     current catalog SHA, a git install pulls. Every update is scanned. A refusal changes nothing and
     answers ``ok: false`` with what the client must show before retrying: ``consent_required`` +
     ``delta``/``delta_lines`` for a re-pin that widens the plugin (retry with ``accept_capabilities``), or
@@ -1792,7 +1792,7 @@ def _plugins_update(rid, params):
 
 
 def _plugins_remove(rid, params):
-    """Uninstall a user install (``<HERMES_HOME>/plugins/<name>``) — the same core as ``cybr plugins
+    """Uninstall a user install (``<HERMES_HOME>/plugins/<name>``) — the same core as ``hermes plugins
     remove`` and the dashboard; bundled plugins and paths outside the plugins dir are refused there."""
     name = (params.get("name") or "").strip()
     if not name:
@@ -1858,7 +1858,7 @@ _PLUGINS_ACTIONS = {"list": _plugins_list, "onboarding": _plugins_onboarding, "p
 
 @_scoped_rpc("plugins.manage", 5026, catch_resolve=False)
 def _(rid, params: dict) -> dict:
-    """TUI Plugins Hub backend (shares primitives with ``cybr plugins`` / the dashboard):
+    """TUI Plugins Hub backend (shares primitives with ``hermes plugins`` / the dashboard):
     ``list`` → {plugins, user_count, bundled_count}; ``toggle`` flips ``key``/``name`` per ``enable``;
     ``install`` git-clones ``identifier``/``repo`` or a curated ``catalog_name`` (``force``, ``enable``
     default True); ``update`` re-pins a catalog install or pulls a git install (``force`` accepts a caution scan); ``remove`` deletes

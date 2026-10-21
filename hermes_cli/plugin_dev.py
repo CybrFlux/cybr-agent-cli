@@ -1,4 +1,4 @@
-"""Runtime-backed validation behind ``cybr plugins doctor``: every manifest/import/registration
+"""Runtime-backed validation behind ``hermes plugins doctor``: every manifest/import/registration
 check routes through the real runtime contracts instead of a parallel scanner."""
 
 from __future__ import annotations
@@ -321,8 +321,8 @@ def _check_manifest_v2(report: DoctorReport, manifest: Any) -> None:
     if missing:
         report.warning(
             "declared python_dependencies not installed: " + ", ".join(missing)
-            + " — install and enable the plugin with cybr plugins. "
-            "For an enabled plugin, run cybr pm repair, then restart Cybr Agent.")
+            + " — install and enable the plugin with hermes plugins. "
+            "For an enabled plugin, run hermes pm repair, then restart Cybr Agent.")
 
     schema = getattr(manifest, "config_schema", {}) or {}
     if schema:

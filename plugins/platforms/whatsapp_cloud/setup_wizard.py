@@ -293,7 +293,7 @@ def _step_allowlist() -> None:
 def run_whatsapp_cloud_setup() -> int:
     """Interactive wizard for the WhatsApp Cloud API adapter. Returns 0 on success, 1 on abort."""
     _lines(
-        "", "☤ WhatsApp Business Cloud API Setup", "=" * 50, "",
+        "", "∿ WhatsApp Business Cloud API Setup", "=" * 50, "",
         "This wizard configures Cybr Agent to talk to WhatsApp via Meta's",
         "official Cloud API. It's the production-grade path:", "",
         "  • No QR codes, no Node.js bridge subprocess",
@@ -337,7 +337,7 @@ def run_whatsapp_cloud_setup() -> int:
         "         cloudflared tunnel --url http://localhost:8090",
         "       Note the printed https://<random>.trycloudflare.com URL.", "",
         "    3. Start the Cybr Agent gateway in another terminal:",
-        "         cybr gateway", "",
+        "         hermes gateway", "",
         "    4. Verify your local config is reachable. From a third",
         "       terminal, with the tunnel URL substituted:", "",
         "         curl 'https://YOUR-TUNNEL.trycloudflare.com/whatsapp/webhook?\\",

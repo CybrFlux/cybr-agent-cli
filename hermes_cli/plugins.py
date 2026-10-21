@@ -630,7 +630,7 @@ class PluginContext:
         self, name: str, help: str, setup_fn: Callable, handler_fn: Callable | None = None,
         description: str = "",
     ) -> PluginRegistration:
-        """Register a CLI subcommand (``cybr <name> ...``). *setup_fn* receives the argparse
+        """Register a CLI subcommand (``hermes <name> ...``). *setup_fn* receives the argparse
         subparser; *handler_fn* becomes ``set_defaults(func=...)``."""
         entry = {
             "name": name, "help": help, "description": description, "setup_fn": setup_fn,
@@ -1230,7 +1230,7 @@ class PluginManager(PluginLoaderMixin, PluginDispatchMixin, PluginLedgerMixin):
         self._persistent_carryover: list[PluginRegistration] = []
         # Deferred platforms whose client tools registered at discovery (see
         # _register_deferred_platform_tools): imported package (don't re-execute on materialize)
-        # and contributed tool names (so `cybr plugins list` still attributes them).
+        # and contributed tool names (so `hermes plugins list` still attributes them).
         self._predeclared_modules: dict[str, types.ModuleType] = {}
         self._predeclared_tools: dict[str, list[str]] = {}
 
@@ -2206,7 +2206,7 @@ def get_plugin_auxiliary_tasks() -> list[dict[str, Any]]:
 
 
 def get_plugin_toolsets() -> list[tuple]:
-    """Plugin toolsets as ``(key, label, description)`` tuples for the ``cybr tools`` TUI."""
+    """Plugin toolsets as ``(key, label, description)`` tuples for the ``hermes tools`` TUI."""
     manager = get_plugin_manager()
     if not manager._plugin_tool_names:
         return []

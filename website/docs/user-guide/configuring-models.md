@@ -18,7 +18,7 @@ This page covers configuring both from the dashboard. If you prefer config files
 :::
 
 :::note `model:` schema — empty string vs. mapping
-On a brand-new install the bundled default config has `model: ""` (an empty string sentinel meaning "not configured yet"). The first time you run `cybr setup` or `cybr model`, that key is upgraded in-place to a mapping with `provider`, `default`, `base_url`, and `api_mode` sub-keys — the shape shown throughout this page and in [`profiles.md`](./profiles.md) / [`configuration.md`](./configuration.md). If you ever see an empty string in `config.yaml`, run `cybr model` (or click **Change** in the dashboard) and Cybr Agent will write the dict form for you.
+On a brand-new install the bundled default config has `model: ""` (an empty string sentinel meaning "not configured yet"). The first time you run `hermes setup` or `hermes model`, that key is upgraded in-place to a mapping with `provider`, `default`, `base_url`, and `api_mode` sub-keys — the shape shown throughout this page and in [`profiles.md`](./profiles.md) / [`configuration.md`](./configuration.md). If you ever see an empty string in `config.yaml`, run `hermes model` (or click **Change** in the dashboard) and Cybr Agent will write the dict form for you.
 :::
 
 ## The Models page
@@ -350,7 +350,7 @@ A one-turn switch breaks the provider's prompt-cache prefix twice (switching out
 
 ### Custom aliases
 
-Define your own short names for models you reach for often, then use `/model <alias>` in a running session or `cybr chat --model <alias>` at startup. There are two equivalent formats — pick whichever fits your workflow.
+Define your own short names for models you reach for often, then use `/model <alias>` in a running session or `hermes chat --model <alias>` at startup. There are two equivalent formats — pick whichever fits your workflow.
 
 **Canonical (top-level `model_aliases:`)** — full control over provider + base_url:
 
@@ -385,7 +385,7 @@ When an alias sets neither, the key is resolved from the alias **host** —
 happened to be active before the switch, so switching to an alias cannot send
 one provider's secret to another provider's host.
 
-**Short string form (`model.aliases.<name>: provider/model`)** — convenient from the shell because `cybr config set` writes scalars and now also parses inline list/mapping literals, though this short alias form still can't carry a custom `base_url`:
+**Short string form (`model.aliases.<name>: provider/model`)** — convenient from the shell because `hermes config set` writes scalars and now also parses inline list/mapping literals, though this short alias form still can't carry a custom `base_url`:
 
 ```bash
 cybr config set model.aliases.fav anthropic/claude-opus-4.6

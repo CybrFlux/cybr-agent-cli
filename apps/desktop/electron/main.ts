@@ -1015,7 +1015,7 @@ if (process.platform === 'linux') {
 // Linux: point Chromium at the session's keychain backend so safeStorage can
 // encrypt remote gateway tokens (hardening.ts refuses to persist them without
 // it). The value arrives via HERMES_DESKTOP_PASSWORD_STORE, bridged by the
-// `cybr desktop` launcher from detection or `desktop.password_store` in
+// `hermes desktop` launcher from detection or `desktop.password_store` in
 // config.yaml. Must run before app `ready` — the switch only applies pre-launch.
 const PASSWORD_STORE = resolveLinuxPasswordStore()
 
@@ -1035,7 +1035,7 @@ if (PASSWORD_STORE.store) {
 // 0x80000003. After enough GPU deaths the browser process FATAL-exits before the
 // UI is usable. Must run before app `ready` so `--no-sandbox` applies to child
 // processes. The sticky marker recovers Start Menu / shortcut launches that
-// never go through `cybr desktop`; it is version-scoped so an app update
+// never go through `hermes desktop`; it is version-scoped so an app update
 // re-probes the sandbox instead of degrading forever.
 //
 // `windowsSandboxFallbackActive` = this process runs without the Chromium
@@ -1275,7 +1275,7 @@ if (!isPrimaryInstance) {
   app.exit(0)
 }
 
-// `cybr desktop` shortens TMPDIR only so the lock above can bind its socket (#124688). The
+// `hermes desktop` shortens TMPDIR only so the lock above can bind its socket (#124688). The
 // backend and every other child get the real one (the profile scratch dir) back.
 if (process.env.HERMES_DESKTOP_TMPDIR) {
   process.env.TMPDIR = process.env.HERMES_DESKTOP_TMPDIR
@@ -1290,7 +1290,7 @@ const HERMES_HOME: string = resolveDesktopHermesHome({
 
 // #77311: `desktop.electron_flags` and the renderer heap ceiling
 // (`desktop.renderer_max_old_space_mb`) used to reach Chromium only through
-// the `cybr desktop` launcher's argv, so a packaged app opened from its
+// the `hermes desktop` launcher's argv, so a packaged app opened from its
 // Start-menu / .desktop entry ran with no `--js-flags` at all. Apply them here
 // from config.yaml, before `ready` — Chromium copies `js-flags` to renderer
 // processes only from the browser's pre-launch command line.
@@ -1311,7 +1311,7 @@ let desktopSshPathOverride = ''
   desktopSshPathOverride = desktopLaunchConfig.sshPath || ''
 
   // `desktop.renderer_accessibility: false` must reach packaged launches too,
-  // not only the `cybr desktop` launcher's env bridge (#118271).
+  // not only the `hermes desktop` launcher's env bridge (#118271).
   if (
     desktopLaunchConfig.rendererAccessibility === false &&
     process.env.HERMES_DESKTOP_RENDERER_ACCESSIBILITY === undefined
@@ -1365,7 +1365,7 @@ const DESKTOP_WINDOW_STATE_PATH = path.join(app.getPath('userData'), 'window-sta
 const DESKTOP_BACKEND_OWNERSHIP_PATH = path.join(app.getPath('userData'), 'backend-ownership.json')
 const DESKTOP_MANAGED_SSH_RECOVERY_PATH = path.join(app.getPath('userData'), 'managed-ssh-update-recovery.json')
 // active-profile.json records which Cybr Agent profile the desktop launches its
-// local backend as. When set, startHermes() passes `cybr --profile <name>
+// local backend as. When set, startHermes() passes `hermes --profile <name>
 // dashboard …`, which deterministically pins HERMES_HOME (see
 // _apply_profile_override in hermes_cli/main.py) and bypasses the sticky
 // ~/.hermes/active_profile file. Unset (null) preserves the legacy behavior:
@@ -1839,7 +1839,7 @@ if (IS_WINDOWS) {
 
 // Seed the native About panel with the best-known Cybr Agent version. This is
 // refreshed on every open via showAboutPanelFresh, so an in-place
-// `cybr update` mid-session is reflected without an app restart; the seed
+// `hermes update` mid-session is reflected without an app restart; the seed
 // covers the first open and any non-menu invocation path. Never seed empty:
 // an empty applicationVersion falls back to the bundle version, which is the
 // 0.0.0 placeholder on local builds (#124581).
@@ -1965,7 +1965,7 @@ const backendDialClaims = new BackendDialClaims()
 let softRehomeInProgress = false
 // Cached connection DESCRIPTORS for every non-primary (connectionId, profile)
 // scope the app has dialed: canonical local gateways reached through
-// `cybr gateway ensure`, registry remotes, per-profile remote overrides.
+// `hermes gateway ensure`, registry remotes, per-profile remote overrides.
 // Never a process — the gateway owns its own lifetime; forgetting an entry only
 // forces the next ensure*() to re-dial. A user with no named profiles never
 // populates this map.
@@ -2006,7 +2006,7 @@ const rendererReloadTimesRef: { current: number[] } = { current: [] }
 // the renderer's "Reload and retry" path or by quitting the app.
 let bootstrapFailure = null
 // Latched non-bootstrap backend spawn failure — stops getConnection() from
-// respawning cybr serve backend children in a tight loop while boot is broken.
+// respawning hermes serve backend children in a tight loop while boot is broken.
 let backendStartFailure = null
 // Latched CONFIRMED remote reauth failure. Remote failures deliberately do not
 // latch via backendStartFailure (they're usually transient and must stay
@@ -2970,7 +2970,7 @@ function findOnPath(command) {
   // On Windows, try PATHEXT extensions BEFORE the bare (empty-extension) name.
   // A real command must resolve via its .exe/.cmd (Windows command-resolution
   // semantics consult PATHEXT); an extensionless file — e.g. a Git-Bash
-  // shell-script shim named `cybr` — must not shadow `hermes.cmd`/`hermes.exe`.
+  // shell-script shim named `hermes` — must not shadow `hermes.cmd`/`hermes.exe`.
   // The empty entry is kept LAST so callers that already include the extension
   // (py.exe, pwsh.exe, powershell.exe) still resolve.
   const extensions = buildPathExtCandidates(process.env.PATHEXT, IS_WINDOWS)
@@ -3009,7 +3009,7 @@ async function unwrapWindowsVenvHermesCommand(command, backendArgs) {
 }
 
 // Does the resolved runtime understand the `serve` subcommand? The desktop
-// spawns `cybr serve`; runtimes older than serve only have `dashboard`. We
+// spawns `hermes serve`; runtimes older than serve only have `dashboard`. We
 // detect support so getBackendArgsForRuntime() can route old runtimes through
 // the legacy `dashboard --no-open` form instead of crashing on an unknown
 // subcommand (would brick every user mid-upgrade — #54568 follow-up).
@@ -3828,7 +3828,7 @@ let quitPromptOpen = false
 let quitConfirmedWithActiveWork = false
 
 // Resolve the staged updater binary the desktop may hand an update to. On
-// Windows that binary owns ALL repo mutation — running `cybr update` +
+// Windows that binary owns ALL repo mutation — running `hermes update` +
 // rebuilding the desktop — so the desktop never touches its own bits while
 // running. macOS/Linux stage the same binary but deliberately do not use it;
 // see resolveStagedUpdaterBinary for the policy and for #74836. Returns null
@@ -3837,7 +3837,7 @@ function resolveUpdaterBinary() {
   return resolveStagedUpdaterBinary(HERMES_HOME, { fileExists, isWindows: IS_WINDOWS })
 }
 
-// Path to the venv shim whose lock decides whether `cybr update` can write
+// Path to the venv shim whose lock decides whether `hermes update` can write
 // fresh entry points. On Windows this is the file the running backend
 // `hermes.exe` holds open; on POSIX it's never mandatory-locked.
 function venvHermesShimPath(updateRoot) {
@@ -3879,7 +3879,7 @@ function isShimLocked(shimPath) {
 // Kill only Cybr Agent-OWNED venv daemons (the memory plugin's hindsight daemon:
 // exe under venv\Scripts AND cmdline referencing hindsight_api.main). The
 // daemon is spawned DETACHED, so it outlives the backend tree-kill and keeps
-// venv files mapped. External holders (a user terminal running `cybr`,
+// venv files mapped. External holders (a user terminal running `hermes`,
 // unrelated scripts) are NOT killed. The uninstall lock probe refuses a
 // held installation. Selection lives in the pure
 // venv-holder-select module (ordinal path-prefix, no PowerShell -like
@@ -3979,7 +3979,7 @@ function killExternalVenvHolders(updateRoot) {
 
 // Force-kill the entire process TREE rooted at each PID. Node's child.kill()
 // only signals the direct child, so on Windows a backend `hermes.exe` that
-// spawned its own grandchildren (a `cybr` REPL, a pty terminal session, the
+// spawned its own grandchildren (a `hermes` REPL, a pty terminal session, the
 // gateway) would survive and keep the venv shim locked. taskkill /T /F reaps
 // the whole tree synchronously. The command is not widened: one owned PID,
 // /T /F, nothing else. Failures propagate — close/stop must not discard them.
@@ -4388,7 +4388,7 @@ function reapOrphanedBackendsOnce() {
 
 // Stop app-owned Windows backends before replacing application outputs.
 // PM generations can retain live readers. Gateway draining/restart belongs to
-// `cybr update`; neither venv scans nor a second fleet stop belong here.
+// `hermes update`; neither venv scans nor a second fleet stop belong here.
 async function stopBackendsForUpdate(): Promise<void> {
   closeGatewayTicketBridges()
 
@@ -4497,8 +4497,8 @@ async function releaseBackendLock(updateRoot: string, tag: string): Promise<{ un
 //
 // The desktop is a pure consumer: it does NOT git pull / pip install / rebuild
 // itself (the old open-coded git dance lived here and drifted from
-// `cybr update`). Instead we spawn the staged Cybr Agent-Setup binary with
-// --update and quit, so it can run `cybr update` (which refuses while we
+// `hermes update`). Instead we spawn the staged Cybr Agent-Setup binary with
+// --update and quit, so it can run `hermes update` (which refuses while we
 // hold the venv shim) and rebuild the desktop with our exe already gone.
 //
 // Detection (checkUpdates / commit changelog / "N behind") stays in the UI;
@@ -4665,7 +4665,7 @@ function runningAppBundle() {
 
 // macOS/Linux update hand-off: spawn the repo-owned posix orchestrator
 // (scripts/desktop-update/posix.sh) detached and QUIT. The script waits us
-// out, runs `cybr update`, swaps/relaunches the app bundle, and writes
+// out, runs `hermes update`, swaps/relaunches the app bundle, and writes
 // .hermes-update-result.json for the relaunched Desktop to surface. It shows
 // its own tiny shim window (or nothing, headless) — this process only needs
 // to leave. Checkouts that predate the script get the manual card once.
@@ -4858,7 +4858,7 @@ function resolveRendererIndexWithMissing(): { index: string; missing: string[] }
     rememberLog(
       `[renderer] every renderer bundle is incomplete (${present.join(', ')}). ` +
         `The last update replaced the app while its files were locked. ` +
-        `Repair with: cybr desktop --force-build`
+        `Repair with: hermes desktop --force-build`
     )
 
     // present[0]'s own list, captured on the first loop iteration — never the
@@ -4872,7 +4872,7 @@ function resolveRendererIndexWithMissing(): { index: string; missing: string[] }
   rememberLog(
     `[renderer] index.html not found — the desktop app was packaged without a ` +
       `renderer bundle. Tried: ${candidates.join(', ')}. ` +
-      `Rebuild with: cybr desktop --force-build`
+      `Rebuild with: hermes desktop --force-build`
   )
 
   return { index: candidates[0], missing: [] }
@@ -5040,7 +5040,7 @@ async function resolveHermesBackend(backendArgs: string[]): Promise<ResolvedHerm
 
   // 2. Development source -- when running `npm run dev` from a checkout, the
   //    cloned repo at SOURCE_REPO_ROOT takes precedence over ACTIVE and any
-  //    installed `cybr` on PATH so local Python edits are actually exercised.
+  //    installed `hermes` on PATH so local Python edits are actually exercised.
   //    (In dev with no checkout, SOURCE_REPO_ROOT won't pass isHermesSourceRoot.)
   if (!IS_PACKAGED && isHermesSourceRoot(SOURCE_REPO_ROOT)) {
     const backend: SourceBackend | null = createSourcePythonBackend(
@@ -8954,7 +8954,7 @@ function isHermesProcess(pid) {
 
 // Seed active-profile.json from the best available signal when the file does
 // not yet exist.  Runs exactly once (no-op once the file exists).  Priority:
-//   1. Legacy ~/.hermes/active_profile (explicit CLI choice via cybr profile use)
+//   1. Legacy ~/.hermes/active_profile (explicit CLI choice via hermes profile use)
 //   2. Running gateway (gateway.pid with verified liveness + hermes identity)
 //   3. state.db heuristics (hybrid recency×size score picks the primary workspace)
 // The stored JSON includes _migrated:true so the renderer can optionally surface
@@ -11596,7 +11596,7 @@ function assertPoolEntryStillOwned(poolKey: string, entry: any) {
 
 // Resolve the connection descriptor for a named profile that is not the
 // primary: attach to (or start) its canonical local gateway via
-// `cybr gateway ensure`, or verify and describe its remote. Mirrors the local
+// `hermes gateway ensure`, or verify and describe its remote. Mirrors the local
 // portion of startHermes() without the boot-progress UI, bootstrap, or
 // first-run handling (those belong to the primary only). `opts.forceLocal`
 // skips remote resolution entirely (the registry 'local' entry means THIS
@@ -11676,7 +11676,7 @@ async function dialPoolBackend(profile, entry, opts: { forceLocal?: boolean; poo
   return { ...connection, profile, logs: hermesLog.slice(-80), ...getWindowState() }
 }
 
-// `cybr gateway restart` drains in-flight turns before the owner exits; the CLI client is
+// `hermes gateway restart` drains in-flight turns before the owner exits; the CLI client is
 // bounded so a wedged drain cannot hang Restart. The gateway's own drain is unaffected by the kill.
 const GATEWAY_RESTART_CLIENT_TIMEOUT_MS = 120_000
 
@@ -11693,15 +11693,15 @@ async function restartLocalGatewayOwner(ownerProfile: string): Promise<void> {
       resolveHermesCwd(),
       HERMES_HOME,
       profileBackendParentEnv({ hermesHome: HERMES_HOME, profile: ownerProfile }),
-      { timeoutMs: GATEWAY_RESTART_CLIENT_TIMEOUT_MS, label: 'cybr gateway restart' }
+      { timeoutMs: GATEWAY_RESTART_CLIENT_TIMEOUT_MS, label: 'hermes gateway restart' }
     )
   }, ownerProfile)
 
   const reason = `${result.stdout}\n${result.stderr}`.trim().split(/\r?\n/).filter(Boolean).pop()
-  rememberLog(`[gateway] cybr --profile ${ownerProfile} gateway restart exited ${result.code}${reason ? `: ${reason}` : ''}`)
+  rememberLog(`[gateway] hermes --profile ${ownerProfile} gateway restart exited ${result.code}${reason ? `: ${reason}` : ''}`)
 }
 
-// A ready gateway whose boot commit differs from this Cybr Agent (it outlived `cybr update`) is
+// A ready gateway whose boot commit differs from this Cybr Agent (it outlived `hermes update`) is
 // restarted once before attaching instead of being re-attached on every dial.
 const restartStaleLocalGateway = createStaleGatewayRestarter(restartLocalGatewayOwner, rememberLog)
 
@@ -11721,7 +11721,7 @@ async function restartAttachedLocalGateway(profile: string): Promise<void> {
 }
 
 // Forget a cached descriptor. Nothing is killed: the gateway behind it owns its
-// own lifetime (`cybr gateway ensure` attach semantics), so the next
+// own lifetime (`hermes gateway ensure` attach semantics), so the next
 // ensure*() for this key simply re-dials. Every retire path — dispatch probe
 // failure, resume revalidation, registry removal, profile delete/rename, quit —
 // funnels through here so the verb stays in one place.
@@ -12047,9 +12047,9 @@ async function startHermes(requestedProfile?: string) {
 
     // Pin the desktop's chosen profile via the global --profile flag. This is
     // deterministic (it wins over the sticky ~/.hermes/active_profile file) and
-    // resolves HERMES_HOME the same way `cybr -p <name>` does on the CLI. A
+    // resolves HERMES_HOME the same way `hermes -p <name>` does on the CLI. A
     // launch override is persisted into active-profile.json before startHermes,
-    // so Cybr Agent.exe --profile <name> and cybr -p <name> desktop both land
+    // so Cybr Agent.exe --profile <name> and hermes -p <name> desktop both land
     // here. `activeProfile` is the SAME decision that named routing above —
     // never re-read here (#108417). An unset preference keeps the legacy
     // launch so existing installs are unaffected.
@@ -12103,7 +12103,7 @@ async function startHermes(requestedProfile?: string) {
       return setup.connection
     }
 
-    // No `attachHostBackend` is wired: `cybr gateway ensure` below IS the
+    // No `attachHostBackend` is wired: `hermes gateway ensure` below IS the
     // attach-or-start step for the canonical local gateway.
     if (setup.kind === 'attached') {
       throw new Error('Unexpected attached backend outcome without a host attach step.')
@@ -14071,7 +14071,7 @@ function createWindow() {
             errorCode: details?.exitCode,
             errorDescription:
               'The desktop renderer crashed repeatedly (Windows STATUS_STACK_BUFFER_OVERRUN / 0xC0000409). GPU fallback could not recover the window.',
-            repairHint: 'cybr desktop --force-build',
+            repairHint: 'hermes desktop --force-build',
             reloadUrl: DEV_SERVER || pathToFileURL(resolveRendererIndex()).toString()
           })
 
@@ -14128,7 +14128,7 @@ function createWindow() {
           errorCode: details?.errorCode,
           url: details?.url,
           errorDescription: 'The desktop renderer failed to load repeatedly after the update.',
-          repairHint: 'cybr desktop --force-build',
+          repairHint: 'hermes desktop --force-build',
           reloadUrl: DEV_SERVER || pathToFileURL(resolveRendererIndex()).toString()
         })
       },
@@ -14189,7 +14189,7 @@ function createWindow() {
       errorCode: 'ERR_FILE_NOT_FOUND',
       errorDescription: `The desktop renderer bundle is incomplete after the last update (${tornAssets.length} missing file(s)).`,
       missingAssets: tornAssets,
-      repairHint: 'cybr desktop --force-build',
+      repairHint: 'hermes desktop --force-build',
       reloadUrl: pathToFileURL(rendererIndex).toString()
     })
   } else {
@@ -14457,13 +14457,13 @@ ipcMain.on('hermes:window:relay', (event, payload) => {
 })
 
 // Hand a session to the user's OWN terminal emulator, running the TUI against
-// it (`cybr --tui --resume <id>`). Not the in-app terminal pane: the point is
+// it (`hermes --tui --resume <id>`). Not the in-app terminal pane: the point is
 // to continue the chat in the terminal they already live in.
 //
 // The desktop's runtime is usually a venv Python invoked as
 // `python -m hermes_cli.main`, so we resolve the SAME backend the app itself
 // launches and carry its argv + PYTHONPATH into a launcher script rather than
-// hoping a `cybr` exists on the user's interactive PATH. Resolution only —
+// hoping a `hermes` exists on the user's interactive PATH. Resolution only —
 // never ensureRuntime(), which would kick off a first-run install from a menu
 // click; an unresolved runtime is reported instead.
 ipcMain.handle('hermes:window:openInTerminal', async (_event, sessionId, opts) => {
@@ -15328,7 +15328,7 @@ async function requestManagedSshUpdate(rawId) {
 
 ipcMain.handle('hermes:connections:update-managed', async (_event, rawId) => requestManagedSshUpdate(rawId))
 
-// Fan out `cybr update` to every eligible registered connection at once.
+// Fan out `hermes update` to every eligible registered connection at once.
 // Cloud entries are excluded (platform-managed); each dispatch reports
 // independently so one dead LAN box can't wedge the batch. Local reuses the
 // app's own update pipeline; Desktop-managed SSH uses the transactional
@@ -16909,7 +16909,7 @@ ipcMain.on('hermes:translucency:support', event => {
 
 // Feature-flag facts the renderer needs before first paint (same sendSync
 // pattern as translucency). Resolved in feature-flags.ts from the launch
-// argv and the artifact's channel: `--local` (from `cybr desktop --local`
+// argv and the artifact's channel: `--local` (from `hermes desktop --local`
 // or directly on Cybr Agent.exe, a shortcut edit) gates the local-models GUI on
 // stable builds, and canary builds get the same surfaces by default. Launch
 // flags survive self-relaunches because collectRelaunchArgs only strips
@@ -17374,7 +17374,7 @@ function resolveHermesVersion(scope: { connectionId?: string; profile?: string }
   return resolveGatewayVersion(path => handleHermesApiRequest({ ...scope, path, timeoutMs: 5000 }))
 }
 
-// Renderer-bundle skew: `cybr update` moves the SOURCE TREE, but the UI
+// Renderer-bundle skew: `hermes update` moves the SOURCE TREE, but the UI
 // (including bundled plugins like Bot Mode) is compiled into this binary at
 // build time. A terminal-side update — or an in-app update whose bundle-swap
 // leg failed — leaves the new runtime running under an old renderer, so About
@@ -17396,7 +17396,7 @@ async function detectRendererSkew() {
 }
 
 // Re-resolve the live Cybr Agent version and push it into the native About panel
-// just before showing it, so an in-place `cybr update` is reflected without
+// just before showing it, so an in-place `hermes update` is reflected without
 // an app restart. macOS only — `showAboutPanel()` is a no-op elsewhere, and the
 // other platforms don't use this menu item.
 function showAboutPanelFresh(): void {
@@ -17428,7 +17428,7 @@ ipcMain.handle('hermes:version', async (_event, scope?: { connectionId?: string;
     bundleCommitsBehind: skew.desktopCommitsBehind,
     // The install id: sha16 of the canonical install-root path — the key of
     // this install's per-install channel record and its installs/<sha16>/
-    // state folder. Same value `cybr update --install-id` prints; About
+    // state folder. Same value `hermes update --install-id` prints; About
     // renders it as `sha16 (path)`.
     installId: installIdForRoot(resolveUpdateRoot(), canonicalizeInstallPath),
     // The artifact kind of THIS app plus whether the runtime checkout came
@@ -17461,7 +17461,7 @@ ipcMain.handle('hermes:app:relaunch', async () => {
 })
 
 /** The latest pm/venv/plugin-operation receipt — the machine-readable
- *  surface every medium reads (CLI: `cybr pm status`). Returned as one
+ *  surface every medium reads (CLI: `hermes pm status`). Returned as one
  *  parsed JSON object: { kind, outcome, venv_rebuild, plugin_bisect,
  *  plugin_checks, ... } or null when no operation has run yet. The file
  *  lives at <HERMES_HOME>/logs/update_receipts/latest.json — written by
@@ -17498,7 +17498,7 @@ function canonicalizeInstallPath(p: string): string {
 /** True when the runtime checkout was created by a bootstrap installer
  *  (install.sh / install.ps1 / the desktop first-launch bootstrap): those all
  *  finish by writing `.hermes-bootstrap-complete` into the checkout root, and
- *  `cybr update` preserves the file, so a manual clone never grows one. A
+ *  `hermes update` preserves the file, so a manual clone never grows one. A
  *  missing checkout (sealed bundled payloads, remote backends) is not
  *  installer-created. */
 export function isInstallerCreatedCheckout(root: string | null = ACTIVE_HERMES_ROOT): boolean {
@@ -17562,7 +17562,7 @@ function resolveHermesRuntime() {
 //
 // The renderer's About → Danger Zone surfaces three options that mirror the
 // CLI exactly: GUI only, Lite (keep user data), Full. We ask the agent to do
-// the actual removal via `cybr uninstall …` so the cross-platform PATH /
+// the actual removal via `hermes uninstall …` so the cross-platform PATH /
 // registry / service / node-symlink cleanup all lives in one place
 // (hermes_cli/uninstall.py + hermes_cli/gui_uninstall.py).
 //

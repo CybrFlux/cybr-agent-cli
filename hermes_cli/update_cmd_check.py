@@ -1,4 +1,4 @@
-"""Steps of ``cybr update --check``: debris cleanup, channel target, scoped fetch, verdict.
+"""Steps of ``hermes update --check``: debris cleanup, channel target, scoped fetch, verdict.
 
 ``update_cmd._cmd_update_check`` (a frozen updater surface, see ``tests/compat``) orchestrates
 these. Facade helpers are read through ``_uc()`` at call time and origin helpers are imported
@@ -90,11 +90,11 @@ def channel_compare_branch(selected_channel: str, git_cmd: list[str], root: Path
         print(f"✓ Up to date with the latest release ({target.label}).")
     elif _git(git_cmd, root, ["merge-base", "--is-ancestor", target.commit, "HEAD"]).returncode == 0:
         print(f"→ This checkout is newer than the selected release: {target.label}.")
-        print("  `cybr update` moves it back to that release"
-              " (`cybr update --set-channel main` follows every commit).")
+        print("  `hermes update` moves it back to that release"
+              " (`hermes update --set-channel main` follows every commit).")
     else:
         print(f"→ Selected release available: {target.label}")
-        print("  Run `cybr update` to install it.")
+        print("  Run `hermes update` to install it.")
     return None
 
 
@@ -182,9 +182,9 @@ def report_shallow_verdict(git_cmd: list[str], root: Path, compare_branch: str) 
         return
     if counted is not None:
         commits_word = "commit" if counted == 1 else "commits"
-        print(f"⚕ Update available: {counted} {commits_word} behind {compare_branch}.")
+        print(f"∿ Update available: {counted} {commits_word} behind {compare_branch}.")
     else:
-        print(f"⚕ Update available (behind {compare_branch}).")
+        print(f"∿ Update available (behind {compare_branch}).")
     print(f"  Run '{recommended_update_command()}' to install.")
 
 
@@ -195,7 +195,7 @@ def report_rev_list_verdict(git_cmd: list[str], root: Path, compare_branch: str)
         print("✓ Already up to date.")
         return
     commits_word = "commit" if behind == 1 else "commits"
-    print(f"⚕ Update available: {behind} {commits_word} behind {compare_branch}.")
+    print(f"∿ Update available: {behind} {commits_word} behind {compare_branch}.")
     from hermes_cli.config import recommended_update_command
 
     print(f"  Run '{recommended_update_command()}' to install.")

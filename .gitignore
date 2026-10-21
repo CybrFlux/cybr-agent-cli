@@ -265,7 +265,7 @@ docs/superpowers/*
 # — ignore so `git status` stays clean and update's autostash skips them.
 .update-incomplete
 .update-incomplete.lock
-# Kernel lock `cybr update` holds on the checkout (hermes_cli/update_lock.py).
+# Kernel lock `hermes update` holds on the checkout (hermes_cli/update_lock.py).
 .hermes-update.lock
 .hermes-update-zip-swap.lock
 

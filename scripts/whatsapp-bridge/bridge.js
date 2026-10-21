@@ -108,7 +108,7 @@ const AUDIO_CACHE_DIR = process.env.HERMES_AUDIO_CACHE_DIR
 // Self-hash of this script file.  Reported in /health so the Python gateway
 // can detect a running bridge that predates the current bridge.js and
 // restart it instead of silently reusing stale code (stale-bridge trap:
-// `cybr update` updates bridge.js on disk but a long-lived bridge process
+// `hermes update` updates bridge.js on disk but a long-lived bridge process
 // keeps serving the old behavior forever).
 let SCRIPT_HASH = '';
 try {
@@ -126,7 +126,7 @@ const ALLOWED_USERS = parseAllowedUsers(process.env.WHATSAPP_ALLOWED_USERS || ''
 // Group authorization is by group JID, not by every participant's JID.  The
 // Python adapter still applies group policy and mention rules after intake.
 const GROUP_ALLOWED_USERS = parseAllowedUsers(process.env.WHATSAPP_GROUP_ALLOWED_USERS || '');
-const DEFAULT_REPLY_PREFIX = '☤ *Cybr Agent*\n────────────\n';
+const DEFAULT_REPLY_PREFIX = '∿ *Cybr Agent*\n────────────\n';
 const REPLY_PREFIX = process.env.WHATSAPP_REPLY_PREFIX === undefined
   ? DEFAULT_REPLY_PREFIX
   : process.env.WHATSAPP_REPLY_PREFIX.replace(/\\n/g, '\n');

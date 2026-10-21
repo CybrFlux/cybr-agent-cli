@@ -450,7 +450,7 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
             print(f"[{self.name}] Failed to install dependencies: {e}")
             detail = f" ({e})"
         self._set_fatal_error("whatsapp_npm_install_failed", f"WhatsApp bridge npm install failed{detail}. "
-                              "Run `cybr whatsapp`, then restart `cybr gateway`.", retryable=False)
+                              "Run `hermes whatsapp`, then restart `hermes gateway`.", retryable=False)
         return False
 
     def _attach_to_bridge(self, managed_process) -> None:
@@ -572,7 +572,7 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
             if connected is None:
                 print(f"[{self.name}] ⚠ WhatsApp not connected after 30s")
                 print(f"[{self.name}]   Bridge log: {self._bridge_log}")
-                print(f"[{self.name}]   If session expired, re-pair: cybr whatsapp")
+                print(f"[{self.name}]   If session expired, re-pair: hermes whatsapp")
         return True
 
     def _preflight(self) -> bool:
@@ -581,12 +581,12 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
         creds_path = self._session_path / "creds.json"
         checks = (
             (check_whatsapp_requirements, ("[%s] Node.js not found. WhatsApp requires Node.js.", self.name),
-             "whatsapp_node_missing", "Node.js is not installed — install Node.js and re-run `cybr gateway`."),
+             "whatsapp_node_missing", "Node.js is not installed — install Node.js and re-run `hermes gateway`."),
             (bridge_path.exists, ("[%s] Bridge script not found: %s", self.name, bridge_path),
              "whatsapp_bridge_missing", f"WhatsApp bridge script missing at {bridge_path}."),
             (creds_path.exists, ("[%s] WhatsApp is enabled but not paired (no creds.json at %s). Pair from the dashboard or run "
-                                 "`cybr whatsapp`; remove WHATSAPP_ENABLED from your .env to disable.", self.name, creds_path),
-             "whatsapp_not_paired", "WhatsApp enabled but not paired — pair from the dashboard or run `cybr whatsapp`."),
+                                 "`hermes whatsapp`; remove WHATSAPP_ENABLED from your .env to disable.", self.name, creds_path),
+             "whatsapp_not_paired", "WhatsApp enabled but not paired — pair from the dashboard or run `hermes whatsapp`."),
         )
         for ok, warn_args, code, message in checks:
             if not ok():
@@ -596,8 +596,8 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
         if (missing := ensure_aiohttp()) is not None:  # may install it: connect runs this off the event loop
             why, retryable = missing
             message = (f"aiohttp is unavailable ({why}); the WhatsApp bridge client needs it. "
-                       "Run `cybr pm install --extra sms` (it ships aiohttp; `cybr pm repair` for a damaged install), "
-                       "then restart `cybr gateway`.")
+                       "Run `hermes pm install --extra sms` (it ships aiohttp; `hermes pm repair` for a damaged install), "
+                       "then restart `hermes gateway`.")
             logger.warning("[%s] %s", self.name, message)
             self._set_fatal_error("whatsapp_aiohttp_missing", message, retryable=retryable)
             return False
@@ -686,7 +686,7 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
             self._bridge_log_fh = bridge_log_fh = open(self._bridge_log, "a", encoding="utf-8")  # noqa: ASYNC230 -- long-lived log handle handed to the bridge subprocess
             node = find_node_executable("node")
             if node is None:
-                raise RuntimeError("Node.js is no longer available; run `cybr pm install`")
+                raise RuntimeError("Node.js is no longer available; run `hermes pm install`")
             self._bridge_process = subprocess.Popen(  # noqa: ASYNC220 -- persistent bridge; callers use the Popen object (pid, poll)
                 [node, str(bridge_path), "--port", str(self._bridge_port), "--session", str(self._session_path),
                  "--mode", _wenv("WHATSAPP_MODE", "self-chat")], stdin=subprocess.DEVNULL, stdout=bridge_log_fh, stderr=bridge_log_fh, env=self._bridge_env(), **windows_detach_popen_kwargs())

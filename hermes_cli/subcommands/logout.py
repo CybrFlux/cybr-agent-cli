@@ -1,4 +1,4 @@
-"""``cybr logout`` subcommand parser."""
+"""``hermes logout`` subcommand parser."""
 
 from __future__ import annotations
 

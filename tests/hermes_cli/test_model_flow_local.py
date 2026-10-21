@@ -1,4 +1,4 @@
-"""``cybr model`` → Local models runs the desktop's Local Models setup in the terminal."""
+"""``hermes model`` → Local models runs the desktop's Local Models setup in the terminal."""
 
 from __future__ import annotations
 

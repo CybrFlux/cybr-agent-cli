@@ -95,7 +95,7 @@ export const pt: Translations = {
   status: {
     actionFailed: "Ação falhou",
     actionFinished: "Concluído",
-    actionFinishedOwed: "Atualizado, mas ainda pendente (execute `cybr update` novamente para concluir)",
+    actionFinishedOwed: "Atualizado, mas ainda pendente (execute `hermes update` novamente para concluir)",
     actions: "Ações",
     agent: "Agente",
     activeSessions: "Sessões ativas",
@@ -335,7 +335,7 @@ export const pt: Translations = {
       "Salvo — reinicie o gateway para aplicar a alteração.",
     forceReinstall: "Forçar reinstalação (eliminar pasta existente primeiro)",
     headline:
-      "Descobrir, instalar, ativar e atualizar plugins Cybr Agent (paridade com `cybr plugins`).",
+      "Descobrir, instalar, ativar e atualizar plugins Cybr Agent (paridade com `hermes plugins`).",
     identifierLabel: "URL Git ou owner/repo",
     inactive: "inativo",
     installBtn: "Instalar",
@@ -614,7 +614,7 @@ export const pt: Translations = {
         "Partilhar no X abre uma publicação pré-preenchida num novo separador. Clique primeiro em Copiar imagem se quiser anexar o distintivo 1200×630 — o X permite colá-lo diretamente no compositor da publicação. Transferir PNG guarda o ficheiro para utilização em qualquer lado.",
       clipboard_unsupported:
         "A cópia de imagens para a área de transferência não é suportada neste navegador — utilize Transferir.",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Cybr Agent ☤",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in Cybr Agent ∿",
     },
   },
   kanban: {

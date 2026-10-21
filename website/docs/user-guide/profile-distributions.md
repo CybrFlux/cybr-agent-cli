@@ -56,7 +56,7 @@ my-research-agent/
 Recipients run:
 
 ```bash
-cybr profile install github.com/you/my-research-agent --alias
+hermes profile install github.com/you/my-research-agent --alias
 ```
 
 …and they now have the whole agent. They fill in their own API keys (`.env.EXAMPLE` → `.env`), and they can run `my-research-agent chat` or address it through Telegram / Discord / Slack / any gateway platform. When you push a new version, they run `cybr profile update my-research-agent` and pull your changes — their memories and sessions stay put.
@@ -294,7 +294,7 @@ When omitted, the defaults above apply — which is what most distributions want
 ### Install
 
 ```bash
-cybr profile install github.com/you/research-bot --alias
+hermes profile install github.com/you/research-bot --alias
 ```
 
 What happens:
@@ -337,9 +337,9 @@ Two users wanting the same distribution under different profile names:
 
 ```bash
 # Alice
-cybr profile install github.com/acme/support-bot --name support-us --alias
+hermes profile install github.com/acme/support-bot --name support-us --alias
 # Bob (same distribution, different local name)
-cybr profile install github.com/acme/support-bot --name support-eu --alias
+hermes profile install github.com/acme/support-bot --name support-eu --alias
 ```
 
 ### Fill in env vars
@@ -458,7 +458,7 @@ git remote add origin git@github.com:you/research-bot.git
 git push -u origin main
 
 # Workstation
-cybr profile install github.com/you/research-bot --alias
+hermes profile install github.com/you/research-bot --alias
 # Fill in .env. Done.
 ```
 
@@ -478,7 +478,7 @@ git tag v1.0.0
 git push -u origin main --tags    # push to your company's internal Git host
 
 # Each engineer
-cybr profile install git@github.com:your-org/pr-reviewer.git --alias
+hermes profile install git@github.com:your-org/pr-reviewer.git --alias
 # Fill in .env with their own API key (billed to them), .env.EXAMPLE points at what's required
 pr-reviewer chat
 ```
@@ -501,7 +501,7 @@ git remote add origin https://github.com/you/hermes-polymarket-trader.git
 git push -u origin main --tags
 
 # Anyone
-cybr profile install github.com/you/hermes-polymarket-trader --alias
+hermes profile install github.com/you/hermes-polymarket-trader --alias
 ```
 
 Tweet the install command. People who try it send you issues and PRs. If someone wants to customize, they fork — same git workflow everyone already knows.
@@ -544,7 +544,7 @@ You're the ops lead. You want a temporary agent that diagnoses a production inci
 git push -u origin main
 
 # Each on-call
-cybr profile install git@github.com:your-org/incident-2026-q2.git --alias
+hermes profile install git@github.com:your-org/incident-2026-q2.git --alias
 
 # Incident resolved — tear it down
 cybr profile delete incident-2026-q2
@@ -559,7 +559,7 @@ The install-delete cycle is cheap enough to be disposable.
 ### Pin to a specific version
 
 :::note
-Git ref pinning (`#v1.2.0`) is planned but not in the initial release — install currently tracks the default branch. Track your installed version via `cybr profile info <name>` and hold off on updates until you're ready.
+Git ref pinning (`#v1.2.0`) is planned but not in the initial release — install currently tracks the default branch. Track your installed version via `hermes profile info <name>` and hold off on updates until you're ready.
 :::
 
 ### Check what version you're on vs. latest
@@ -588,7 +588,7 @@ The default update behavior already does this: `config.yaml` is preserved. To be
 ```bash
 # Nuke and re-install from scratch (loses memories/sessions too)
 cybr profile delete research-bot --yes
-cybr profile install github.com/you/research-bot --alias
+hermes profile install github.com/you/research-bot --alias
 
 # Update to current main but reset config.yaml to the distribution's default
 cybr profile update research-bot --force-config --yes
@@ -600,7 +600,7 @@ The standard git workflow — distributions are just repos:
 
 ```bash
 # Fork the repo on GitHub, then install your fork
-cybr profile install github.com/yourname/forked-research-bot --alias
+hermes profile install github.com/yourname/forked-research-bot --alias
 
 # Iterate locally in ~/.hermes/profiles/forked-research-bot/
 # Edit SOUL.md, commit, push to your fork
@@ -613,7 +613,7 @@ From the author's machine:
 
 ```bash
 # Install from a local directory (no git push needed)
-cybr profile install ~/.hermes/profiles/research-bot --name research-bot-test --alias
+hermes profile install ~/.hermes/profiles/research-bot --name research-bot-test --alias
 
 # Tweak, delete, re-install until it's right
 cybr profile delete research-bot-test --yes
@@ -676,7 +676,7 @@ cybr profile import ./research-bot.tar.gz
 cybr profile import ./research-bot.tar.gz --name research-bot-2
 ```
 
-The profile name is inferred from the archive unless you pass `--name`. Importing over an existing profile is refused — rename or delete the old one first. A shell wrapper (`research-bot` → `cybr -p research-bot`) is created when the name doesn't collide with an existing command.
+The profile name is inferred from the archive unless you pass `--name`. Importing over an existing profile is refused — rename or delete the old one first. A shell wrapper (`research-bot` → `hermes -p research-bot`) is created when the name doesn't collide with an existing command.
 
 Importing in the desktop app also applies the `desktop.json` overlay and drops you into the new profile on a fresh chat. Importing a desktop-made archive from the CLI is fine — the overlay file rides along on disk and applies the next time you open that profile in the desktop.
 
@@ -692,7 +692,7 @@ Always excluded, both profile types: `auth.json`, `.env` and the other credentia
 
 `config.yaml`, `SOUL.md`, `MEMORY.md`, `USER.md`, `todo.json`, `system_prompt.md`, `AGENTS.md`, `CLAUDE.md`, `.cursorrules`, `skills/`, `plugins/`, `cron/`, `scripts/`, `sessions/`, `memories/`, `knowledge/`, `preferences/`, and `desktop.json` when the desktop staged one.
 
-**A named profile** (`~/.hermes/profiles/<name>`) copies the whole directory minus those credential stores, `home/` (the `HOME` of Cybr Agent' tool subprocesses, where `git`, `ssh`, `gh`, `npm` and skill CLIs keep their credentials), and the recovery copies Cybr Agent keeps of them (`backups/`, `state-snapshots/`, any `auth.json.*` or `.env.bak*`, and the `config.yaml.bak-<timestamp>` copies `cybr update` writes). A copy you name yourself, such as `config.yaml.bak-my-note`, is exported, with its secrets redacted like `config.yaml`'s. That's broader — if the profile has `state.db`, logs, or caches, they go in the archive too, and the file gets big.
+**A named profile** (`~/.hermes/profiles/<name>`) copies the whole directory minus those credential stores, `home/` (the `HOME` of Cybr Agent' tool subprocesses, where `git`, `ssh`, `gh`, `npm` and skill CLIs keep their credentials), and the recovery copies Cybr Agent keeps of them (`backups/`, `state-snapshots/`, any `auth.json.*` or `.env.bak*`, and the `config.yaml.bak-<timestamp>` copies `hermes update` writes). A copy you name yourself, such as `config.yaml.bak-my-note`, is exported, with its secrets redacted like `config.yaml`'s. That's broader — if the profile has `state.db`, logs, or caches, they go in the archive too, and the file gets big.
 
 :::caution Read your archive before you send it
 An export is a snapshot of your profile, not a curated release. Unlike a distribution, it **can** include `memories/`, `sessions/`, and `USER.md` — and nothing scans skills, memories, or your persona for anything personal you wrote into them. Credentials are filtered by filename; content is not.

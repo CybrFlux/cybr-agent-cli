@@ -106,7 +106,7 @@ The install also ships `hermes-agent`, a minimal runner that sends one query and
 | `cybr import-agent` | Import a Claude Code (`~/.claude`) or Codex CLI (`~/.codex`) setup. |
 | `cybr dashboard` | Launch the web dashboard for managing config, API keys, and sessions. |
 | `cybr serve` | Start the Cybr Agent backend server (headless; powers the desktop app and remote backends). |
-| `cybr desktop` (alias `gui`) | Build and launch the native Electron desktop app. |
+| `hermes desktop` (alias `gui`) | Build and launch the native Electron desktop app. |
 | `cybr profile` | Manage profiles — multiple isolated Cybr Agent instances. |
 | `cybr completion` | Print shell completion scripts (bash/zsh/fish). |
 | `cybr --version` | Show version information. |
@@ -351,7 +351,7 @@ stopped.
 `cybr gateway enroll` accepts `--token`, `--connector-url`, `--gateway-id`, and `--wake-url`. It exchanges the enrollment token with the connector and writes the resulting `GATEWAY_RELAY_ID`, `GATEWAY_RELAY_SECRET`, `GATEWAY_RELAY_DELIVERY_KEY`, optional `GATEWAY_RELAY_URL`, and (when `--wake-url` is given) `GATEWAY_RELAY_WAKE_URL` values to the active profile's `.env`.
 
 :::tip WSL users
-Use `cybr gateway run` instead of `cybr gateway start` — WSL's systemd support is unreliable. Wrap it in tmux for persistence: `tmux new -s hermes 'cybr gateway run'`. See [WSL FAQ](./faq.md#wsl-gateway-keeps-disconnecting-or-hermes-gateway-start-fails) for details.
+Use `hermes gateway run` instead of `hermes gateway start` — WSL's systemd support is unreliable. Wrap it in tmux for persistence: `tmux new -s hermes 'hermes gateway run'`. See [WSL FAQ](./faq.md#wsl-gateway-keeps-disconnecting-or-hermes-gateway-start-fails) for details.
 :::
 
 ### Local runtime discovery and startup
@@ -421,7 +421,7 @@ Options:
 | `--quick` | On returning-user runs: only prompt for items that are missing or unset. Skip items you already have configured. |
 | `--non-interactive` | Use defaults / environment values without prompts. |
 | `--reset` | Reset configuration to defaults before setup. |
-| `--reconfigure` | Backwards-compat alias — bare `cybr setup` on an existing install now does this by default. |
+| `--reconfigure` | Backwards-compat alias — bare `hermes setup` on an existing install now does this by default. |
 | `--portal` | One-shot Nous Portal setup: log in via OAuth, set Nous as the inference provider, and opt into the [Tool Gateway](../user-guide/features/tool-gateway.md). Skips the rest of the wizard. |
 
 ## `cybr portal`
@@ -576,7 +576,7 @@ Exit codes: `0` on success, `1` on delivery/peer failure, `2` on usage errors.
 
 ```bash
 cybr secrets bitwarden <subcommand>
-cybr secrets bw <subcommand>          # short alias
+hermes secrets bw <subcommand>          # short alias
 ```
 
 Pull API keys from an external secret manager at process startup instead of storing them in `~/.hermes/.env`. Currently supports **Bitwarden Secrets Manager**. See the full guide: [Bitwarden integration](../user-guide/secrets/bitwarden.md).
@@ -1906,7 +1906,7 @@ Launch the web dashboard to manage configuration, API keys, and sessions. For a 
 
 ### `cybr dashboard register`
 
-Register this install as a self-hosted dashboard with your Nous Portal account. Creates an OAuth client, writes `HERMES_DASHBOARD_OAUTH_CLIENT_ID` into `~/.hermes/.env`, and prints how to engage the login gate. Requires being logged in (`cybr setup`).
+Register this install as a self-hosted dashboard with your Nous Portal account. Creates an OAuth client, writes `HERMES_DASHBOARD_OAUTH_CLIENT_ID` into `~/.hermes/.env`, and prints how to engage the login gate. Requires being logged in (`hermes setup`).
 
 | Option | Description |
 |--------|-------------|
@@ -1956,10 +1956,10 @@ cybr profile list
 cybr profile create work --clone
 cybr profile create work --clone --sync-imports   # also carry over the import-agent sync manifest
 cybr profile use work
-cybr profile alias work --name h-work
+hermes profile alias work --name h-work
 cybr profile export work -o work-backup.tar.gz
 cybr profile import work-backup.tar.gz --name restored
-cybr profile install github.com/user/my-distro --alias
+hermes profile install github.com/user/my-distro --alias
 cybr profile update work
 cybr -p work chat -q "Hello from work profile"
 ```
@@ -2040,7 +2040,7 @@ Additional behavior:
 - **Restart-phase recovery.** If the in-process restart phase aborts while importing the freshly pulled tree, supervised gateway profiles are retried through a clean Python process. Only restarts independently confirmed by systemd (`systemctl --user is-active`) are reported as verified; a relaunch that merely exited 0 is recorded as `relaunch_attempted` and the restart stays owed (a `gateway_restart` follow-up; the update itself still exits 0 because the code is in place). Manual gateways and serve/dashboard runtimes are never killed without a relaunch authority; they are recorded as skipped with a reason and remain in the incomplete-update report with the exact restart command.
 - **Update receipts + fleet version check.** Every run writes a machine-readable receipt to `~/.hermes/logs/update_receipts/` in the root Cybr Agent home, even from a sticky profile (pre-update fleet plan, steps, skips with reasons, restart outcome, follow-ups; `latest.json` points at the newest and reads `running` while an update is in progress). After the restart phase the updater verifies each live gateway's running code against the updated checkout and prints a per-profile version matrix. A gateway still on pre-update code does not fail the update once the new code is in place: the update prints a `⚠` line with the exact restart command, exits 0, records a `gateway_restart` follow-up, and keeps the restart owed — every CLI start warns about it and the next `cybr update` retries it.
 - **Local source changes.** For git installs, dirty tracked files and untracked files are auto-stashed before branch checkout or pull (`git stash push --include-untracked`). Interactive terminal updates ask before restoring the stash. Non-interactive updates restore it by default; set `updates.non_interactive_local_changes: discard` only on managed installs where local source edits should be thrown away after a successful pull. If stash restore conflicts or the pull fails, the stash is left in place for manual recovery.
-- **npm lockfile churn.** Before stashing or switching branches, Cybr Agent makes a best-effort cleanup of tracked `package-lock.json` diffs produced by npm install/build steps. Commit or manually stash intentional lockfile edits before running `cybr update`.
+- **npm lockfile churn.** Before stashing or switching branches, Cybr Agent makes a best-effort cleanup of tracked `package-lock.json` diffs produced by npm install/build steps. Commit or manually stash intentional lockfile edits before running `hermes update`.
 - **Pairing data snapshot.** Even when `--backup` is off, `cybr update` takes a lightweight snapshot of `~/.hermes/pairing/` and the Feishu comment rules before `git pull`. You can roll it back with `cybr backup restore --state pre-update` if a pull rewrites a file you were editing.
 - **Legacy `hermes.service` warning.** If Cybr Agent detects a pre-rename `hermes.service` systemd unit (instead of the current `hermes-gateway.service`), it prints a one-time migration hint so you can avoid flap-loop issues.
 - **Exit codes.** `0` on success, `1` on pull/install/post-install errors, `2` on unexpected working-tree changes that block `git pull`.

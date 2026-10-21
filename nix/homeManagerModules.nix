@@ -191,7 +191,7 @@
         enable = lib.mkEnableOption ''
           the Cybr Agent command line application.
 
-          This adds `cybr` to home.packages, and exports HERMES_HOME with
+          This adds `hermes` to home.packages, and exports HERMES_HOME with
           home.sessionVariables. An interactive shell then uses the same
           state as `services.hermes-agent`
         '';
@@ -273,7 +273,7 @@
           # `installPackage` moved to `programs.hermes-agent.enable`. The
           # option is dead, but it must not be silent: it defaulted to true,
           # so a person who never named it still got the command line, and a
-          # quiet removal gives them a machine with no `cybr` and no
+          # quiet removal gives them a machine with no `hermes` and no
           # message. mkOption with an assertion, and not
           # mkRemovedOptionModule, because the message must name the exact
           # replacement for the value they set.
@@ -315,7 +315,7 @@
             {
               # `installPackage` was removed in favour of the programs/services
               # split. It defaulted to true, so a quiet removal leaves a person
-              # with no `cybr` on the PATH and no message.
+              # with no `hermes` on the PATH and no message.
               assertion = cfg.installPackage == null;
               message = common.installPackageRemovedMessage cfg.installPackage;
             }

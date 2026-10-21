@@ -367,7 +367,7 @@ _CHECKPOINT_EVERY_N_WRITES = 50
 When a writer exhausts its budget the turn ends with
 `session_persistence_failed:locked` and, on Linux, `hermes_state_lockowners`
 logs a WARNING naming the process that held the lock at that moment
-(`PID 594094 (cybr --worktree --yolo) holds WAL write lock on state.db-shm`),
+(`PID 594094 (hermes --worktree --yolo) holds WAL write lock on state.db-shm`),
 read from `/proc/locks` — SQLite's byte-range `fcntl` locks encode the lock kind
 in their offset (`state.db-shm` byte 120 = WAL write, 121 = checkpoint,
 123-127 = read slots; the 1 GiB pending-byte page on `state.db` = rollback-journal

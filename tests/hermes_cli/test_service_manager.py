@@ -190,7 +190,7 @@ def test_render_run_script_uses_replace_to_take_over_stale_holder() -> None:
     """NS-505: the supervised gateway must exec ``gateway run --replace``.
 
     Without ``--replace`` a gateway started OUTSIDE s6 (a stray shell
-    ``cybr gateway run``, an agent action, the Open WebUI helper) holds
+    ``hermes gateway run``, an agent action, the Open WebUI helper) holds
     the per-HERMES_HOME PID lock; the supervised slot then execs a bare
     ``gateway run``, hits the "Another gateway instance is already
     running" guard, exits non-zero, and s6 restarts it — a restart loop
@@ -201,9 +201,9 @@ def test_render_run_script_uses_replace_to_take_over_stale_holder() -> None:
     render paths.
     """
     default_text = S6ServiceManager._render_run_script("default", {})
-    # Root profile: bare `cybr gateway run --replace` (no -p flag).
-    assert "cybr gateway run --replace" in default_text
-    assert "cybr -p default" not in default_text
+    # Root profile: bare `hermes gateway run --replace` (no -p flag).
+    assert "hermes gateway run --replace" in default_text
+    assert "hermes -p default" not in default_text
     # Every exec line that launches the gateway must carry --replace, so
     # neither the non-root nor the privilege-drop branch can spin.
     gateway_execs = [
@@ -269,7 +269,7 @@ def test_render_finish_script_does_not_restart_on_clean_exit(tmp_path) -> None:
 # ---------------------------------------------------------------------------
 # S6 stop writes a planned-stop marker (issue #42675)
 #
-# `cybr gateway stop` inside a container dispatches through
+# `hermes gateway stop` inside a container dispatches through
 # S6ServiceManager.stop() -> `s6-svc -d`, which SIGTERMs the gateway.
 # That SIGTERM is indistinguishable from the one s6/Docker sends on a
 # container restart unless we mark the intentional stop first. Without
@@ -454,14 +454,14 @@ def test_s6_log_run_creates_leaf_as_hermes_without_chown(
         f"saw: {log_text!r}"
     )
     assert 's6-setuidgid hermes mkdir -p "$log_dir"' in log_text
-    assert 's6-setuidgid cybr rm -f "$log_dir/lock"' in log_text
+    assert 's6-setuidgid hermes rm -f "$log_dir/lock"' in log_text
     assert 'else\n  mkdir -p "$log_dir"\n  rm -f "$log_dir/lock"\nfi\n' in log_text
     # Lock cleanup must not remain a bare root-context pathname op after fi.
     after_fi = log_text.split("fi\n", 1)[-1]
     assert 'rm -f "$log_dir/lock"' not in after_fi
 
     mkdir_as_hermes_idx = log_text.index('s6-setuidgid hermes mkdir -p "$log_dir"')
-    rm_as_hermes_idx = log_text.index('s6-setuidgid cybr rm -f "$log_dir/lock"')
+    rm_as_hermes_idx = log_text.index('s6-setuidgid hermes rm -f "$log_dir/lock"')
     exec_idx = log_text.index("s6-log 1 ")
     assert mkdir_as_hermes_idx < rm_as_hermes_idx < exec_idx
 
@@ -521,7 +521,7 @@ def test_s6_log_run_never_invokes_chown_with_symlinked_log_dir(tmp_path) -> None
     real_rm = "/bin/rm"
     (bin_dir / "rm").write_text(
         "#!/bin/sh\n"
-        # Privilege-dropped: no-op. Models that Cybr Agent cannot unlink a foreign
+        # Privilege-dropped: no-op. Models that hermes cannot unlink a foreign
         # root-owned lock outside the volume; avoids a realpath/rm TOCTOU in
         # the test double itself. Root-context: real rm — a residual bare
         # ``rm -f "$log_dir/lock"`` would delete victim/lock via the symlink.

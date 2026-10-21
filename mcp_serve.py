@@ -1,5 +1,5 @@
 """
-Cybr Agent MCP Server — expose messaging conversations as MCP tools (`cybr mcp serve`).
+Cybr Agent MCP Server — expose messaging conversations as MCP tools (`hermes mcp serve`).
 
 A stdio MCP server letting any MCP client (Claude Code, Cursor, Codex, ...) list
 conversations, read history, send messages, poll live events, and manage approvals.

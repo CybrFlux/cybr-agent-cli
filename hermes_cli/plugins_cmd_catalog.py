@@ -1,4 +1,4 @@
-"""``cybr plugins`` catalog surface: resolution, provenance sidecar, search/browse/info/validate,
+"""``hermes plugins`` catalog surface: resolution, provenance sidecar, search/browse/info/validate,
 catalog-aware update, plus the dashboard/TUI-facing catalog payload helpers.
 
 Sibling of :mod:`hermes_cli.plugins_cmd` (the installer core, enable/disable state and console helpers
@@ -59,7 +59,7 @@ def resolve_catalog_name(identifier: str, console) -> PluginCatalogEntry:
     if entry is None:
         _fail(console, (
             f"[red]Error:[/red] '{identifier}' is not in the Cybr Agent plugin catalog and is not a Git URL or "
-            "owner/repo shorthand. Browse entries with `cybr plugins search`."))
+            "owner/repo shorthand. Browse entries with `hermes plugins search`."))
         raise SystemExit(1)  # _fail exits; keeps type-checkers honest
     return entry
 
@@ -296,8 +296,8 @@ def refuse_if_installed_removed(name: str, plugin_dir) -> None:
     if removed is not None:
         raise PluginOperationError(
             f"Plugin '{name}' was removed from the Cybr Agent plugin catalog: "
-            f"{removed.reason or 'no reason recorded'}. Remove it with `cybr plugins remove {name}`, "
-            "or reinstall with `cybr plugins install <source> --force --allow-removed` if you trust it.")
+            f"{removed.reason or 'no reason recorded'}. Remove it with `hermes plugins remove {name}`, "
+            "or reinstall with `hermes plugins install <source> --force --allow-removed` if you trust it.")
 
 
 _PRESERVE_SKIP = ("__pycache__", ".git", CATALOG_SIDECAR)
@@ -577,7 +577,7 @@ def repin_catalog_plugin(
     if entry is None:
         raise PluginOperationError(
             f"Plugin '{catalog_name}' is no longer in the catalog — it may have been removed. "
-            "See `cybr plugins info` and the removed blocklist.")
+            "See `hermes plugins info` and the removed blocklist.")
     refuse_if_installed_removed(catalog_name, target)
     if at_catalog_pin(sidecar, entry.sha):
         return RepinResult(entry.sha, False, target.name, [])
@@ -665,7 +665,7 @@ def cmd_update_catalog(name: str, target: Path, sidecar: dict, console, *, inter
             console.print(f"    {line}")
         if not interactive or not _is_tty():
             console.print("  [yellow]Non-interactive session: update NOT applied (fail closed). "
-                          "Re-run `cybr plugins update` in a terminal to review and confirm.[/yellow]")
+                          "Re-run `hermes plugins update` in a terminal to review and confirm.[/yellow]")
             return False
         return _ask_yes("  Apply this update? [y/N]: ")
 
@@ -687,7 +687,7 @@ def cmd_update_catalog(name: str, target: Path, sidecar: dict, console, *, inter
                 else:
                     console.print(
                         f"[yellow]Plugin {result.installed_name} has new capabilities; review them with "
-                        f"`cybr plugins capabilities {result.installed_name}`.[/yellow]")
+                        f"`hermes plugins capabilities {result.installed_name}`.[/yellow]")
     return result.changed
 
 
@@ -722,7 +722,7 @@ def _render_entries(entries: list[PluginCatalogEntry], console) -> None:
     console.print()
     console.print(table)
     console.print()
-    console.print("[dim]Details:[/dim] cybr plugins info <name>    [dim]Install:[/dim] cybr plugins install <name>")
+    console.print("[dim]Details:[/dim] hermes plugins info <name>    [dim]Install:[/dim] hermes plugins install <name>")
 
 
 def cmd_search(term: str = "", *, json_output: bool = False) -> None:
@@ -756,7 +756,7 @@ def cmd_info(name: str) -> None:
     console.print()
     rows = [("Repo", entry.repo), ("Subdir", entry.subdir), ("Version", entry.version), ("Pinned SHA", entry.sha),
             ("Image", entry.image),
-            ("Maintainer", entry.maintainer), ("Requires", f"cybr {entry.requires_hermes}" if entry.requires_hermes else ""),
+            ("Maintainer", entry.maintainer), ("Requires", f"hermes {entry.requires_hermes}" if entry.requires_hermes else ""),
             ("Platforms", ", ".join(entry.platforms)), ("Docs", entry.docs_url)]
     for label, value in rows:
         if value:
@@ -771,7 +771,7 @@ def cmd_info(name: str) -> None:
         console.print(f"[red bold]✗ REMOVED from catalog: {removed.reason or 'no reason recorded'}"
                       f"{f' ({removed.date})' if removed.date else ''}[/red bold]")
         console.print()
-    console.print(f"[dim]Install:[/dim]     cybr plugins install {entry.name}")
+    console.print(f"[dim]Install:[/dim]     hermes plugins install {entry.name}")
     console.print()
 
 

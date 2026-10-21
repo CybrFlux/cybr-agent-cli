@@ -111,7 +111,7 @@ export const en: Translations = {
     diskElevatedBanner:
       "Your agent's disk is filling up. Consider clearing old sessions or expanding its storage.",
     multiplexStandaloneBanner:
-      "Your gateway serves only one profile. Not served: {profiles}. Why: {reason}. Fix: cybr gateway migrate --multiplex",
+      "Your gateway serves only one profile. Not served: {profiles}. Why: {reason}. Fix: hermes gateway migrate --multiplex",
     dismiss: "Dismiss",
     sharedMetricsTitle: "Help improve Cybr Agent?",
     sharedMetricsBody:
@@ -127,7 +127,7 @@ export const en: Translations = {
   status: {
     actionFailed: "Action failed",
     actionFinished: "Finished",
-    actionFinishedOwed: "Updated, but still owed (re-run `cybr update` to finish)",
+    actionFinishedOwed: "Updated, but still owed (re-run `hermes update` to finish)",
     actions: "Actions",
     agent: "Agent",
     activeSessions: "Active Sessions",
@@ -159,7 +159,7 @@ export const en: Translations = {
     stopped: "Stopped",
     updateHermes: "Update Cybr Agent",
     updateHermesConfirmMessage:
-      "This runs cybr update and restarts the gateway when it finishes. Active sessions keep their prompt cache until then.",
+      "This runs hermes update and restarts the gateway when it finishes. Active sessions keep their prompt cache until then.",
     updateHermesConfirmNow: "Update now",
     updateHermesConfirmTitle: "Update Cybr Agent?",
     updatingHermes: "Updating Cybr Agent…",
@@ -420,7 +420,7 @@ export const en: Translations = {
       "Saved — restart the gateway to apply the change.",
     forceReinstall: "Force reinstall (delete existing folder first)",
     headline:
-      "Discover, install, enable, and update Cybr Agent plugins (`cybr plugins` parity).",
+      "Discover, install, enable, and update Cybr Agent plugins (`hermes plugins` parity).",
     identifierLabel: "Git URL or owner/repo",
     inactive: "inactive",
     installBtn: "Install",
@@ -484,7 +484,7 @@ export const en: Translations = {
     all: "All",
     categories: "Categories",
     filters: "Filters",
-    noSkills: "No skills installed yet. Browse the skills hub or create one here; from a terminal you can also run `cybr skills search <topic>`.",
+    noSkills: "No skills installed yet. Browse the skills hub or create one here; from a terminal you can also run `hermes skills search <topic>`.",
     noSkillsMatch: "No skills match your search or filter.",
     skillCount: "{count} skill{s}",
     resultCount: "{count} result{s}",
@@ -733,7 +733,7 @@ export const en: Translations = {
         "Share on X opens a pre-filled post in a new tab. Click Copy image first if you want the 1200×630 badge attached — X lets you paste it right into the tweet composer. Download PNG saves the file for use anywhere.",
       clipboard_unsupported:
         "Clipboard image copy not supported in this browser — use Download instead.",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Cybr Agent ☤",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in Cybr Agent ∿",
     },
   },
 

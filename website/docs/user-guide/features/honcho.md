@@ -9,7 +9,7 @@ description: "AI-native persistent memory via Honcho — dialectic reasoning, mu
 [Honcho](https://github.com/plastic-labs/honcho) is an AI-native memory backend that adds dialectic reasoning and deep user modeling on top of Cybr Agent's built-in memory system. Instead of simple key-value storage, Honcho maintains a running model of who the user is — their preferences, communication style, goals, and patterns — by reasoning about conversations after they happen.
 
 :::info Honcho is a catalog Memory Provider Plugin
-Honcho is maintained by Plastic Labs and installed from the [plugin catalog](./plugins.md) (`cybr plugins install honcho`); source lives in [plastic-labs/honcho](https://github.com/plastic-labs/honcho/tree/main/hermes-plugin-honcho). It plugs into the [Memory Providers](./memory-providers.md) system, so all features below are available through the unified memory provider interface. Homes upgraded from a release that bundled Honcho get the plugin installed automatically — config and memory carry over untouched.
+Honcho is maintained by Plastic Labs and installed from the [plugin catalog](./plugins.md) (`hermes plugins install honcho`); source lives in [plastic-labs/honcho](https://github.com/plastic-labs/honcho/tree/main/hermes-plugin-honcho). It plugs into the [Memory Providers](./memory-providers.md) system, so all features below are available through the unified memory provider interface. Homes upgraded from a release that bundled Honcho get the plugin installed automatically — config and memory carry over untouched.
 :::
 
 ## What Honcho Adds
@@ -251,7 +251,7 @@ The `cybr honcho` subcommand is **only registered when Honcho is the active memo
 ```bash
 cybr memory setup honcho    # Configure Honcho directly (works before activation)
 hermes honcho status          # Connection status, config, and key settings
-hermes honcho setup           # Redirects to `cybr memory setup` (post-activation alias)
+hermes honcho setup           # Redirects to `hermes memory setup` (post-activation alias)
 hermes honcho strategy        # Show or set session strategy (per-session/per-directory/per-repo/global)
 hermes honcho peer            # Show or update peer names + dialectic reasoning level
 hermes honcho mode            # Show or set recall mode (hybrid/context/tools)

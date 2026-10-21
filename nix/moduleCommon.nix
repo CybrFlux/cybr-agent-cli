@@ -276,7 +276,7 @@ let
 
           The merge into the config.yaml on disk is also a deep merge. These
           keys replace the keys on disk. The module keeps all other keys,
-          which includes the keys that `cybr config set` and the settings
+          which includes the keys that `hermes config set` and the settings
           panes of the TUI and the desktop app write at runtime.
         '';
         example = literalExpression ''
@@ -420,7 +420,7 @@ let
         type = types.listOf types.package;
         default = [ ];
         description = ''
-          Directory-based plugin packages to symlink into the cybr plugins
+          Directory-based plugin packages to symlink into the hermes plugins
           directory. Each package must contain a plugin.yaml and __init__.py
           at its root. Cybr Agent discovers these automatically on startup.
         '';
@@ -447,7 +447,7 @@ let
           with the same Python interpreter as hermes. The interpreter
           major.minor is derived from pm/lock.json by nix/pythonLock.nix —
           take packages from config.services.hermes-agent.package.python.pkgs so the set always
-          matches the interpreter Cybr Agent was built with.
+          matches the interpreter hermes was built with.
         '';
         example = literalExpression ''
           [
@@ -484,7 +484,7 @@ let
       extraArgs = mkOption {
         type = types.listOf types.str;
         default = [ ];
-        description = "Extra command-line arguments for `cybr gateway`.";
+        description = "Extra command-line arguments for `hermes gateway`.";
       };
 
       restart = mkOption {
@@ -499,8 +499,8 @@ let
         description = "The systemd RestartSec= value. Darwin does not use this option.";
       };
 
-      # ── The backend: `cybr serve` or `cybr dashboard` ──────────────
-      # `cybr serve` and `cybr dashboard` are the same entry point,
+      # ── The backend: `hermes serve` or `hermes dashboard` ──────────────
+      # `hermes serve` and `hermes dashboard` are the same entry point,
       # hermes_cli.main:cmd_dashboard, with one flag of difference. serve runs
       # without a user interface. dashboard also serves the web application.
       # Both give the /api/ws and /api/pty sockets that Cybr Agent Desktop
@@ -508,7 +508,7 @@ let
       # Thus this option is an enum and not two booleans.
       #
       # The backend does not run the messaging gateway. web_server.py only
-      # controls an external gateway, with `cybr gateway restart`. It does
+      # controls an external gateway, with `hermes gateway restart`. It does
       # not contain a gateway.
       backend = {
         mode = mkOption {
@@ -655,7 +655,7 @@ let
   # ── The removal of installPackage ───────────────────────────────────────
   # The programs./services. split replaced this option. It defaulted to true,
   # so a person who never named it still got the command line, and a silent
-  # removal leaves them with no `cybr` on the PATH and no message. The
+  # removal leaves them with no `hermes` on the PATH and no message. The
   # module refuses the configuration with this text.
   #
   # A function, and not a literal in the module, so a check can call the same

@@ -1,4 +1,4 @@
-"""``cybr update`` subcommand parser."""
+"""``hermes update`` subcommand parser."""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ def build_update_parser(subparsers, *, cmd_update: Callable) -> None:
     )
     update_parser.add_argument(
         "--yes", "-y", action="store_true", default=False,
-        help="Run without blocking on prompts: accepts the config-migration and stash-restore prompts, skips the fork-upstream prompt without adding a remote. API-key entry is skipped; run 'cybr config migrate' separately for those.",
+        help="Run without blocking on prompts: accepts the config-migration and stash-restore prompts, skips the fork-upstream prompt without adding a remote. API-key entry is skipped; run 'hermes config migrate' separately for those.",
     )
     update_parser.add_argument(
         "--keep-stash", action="store_true", default=False,
@@ -52,7 +52,7 @@ def build_update_parser(subparsers, *, cmd_update: Callable) -> None:
     update_parser.add_argument(
         "--branch", default=None, metavar="NAME",
         help="Update against this branch instead of the default (main). "
-            "If the local checkout is on a different branch, Cybr Agent will "
+            "If the local checkout is on a different branch, hermes will "
             "switch to the requested branch first (auto-stashing any "
             "uncommitted changes).")
     update_parser.add_argument(

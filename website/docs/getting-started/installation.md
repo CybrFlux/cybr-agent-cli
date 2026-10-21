@@ -219,7 +219,7 @@ configuration, and launcher must belong to that user.
    export PATH="$HOME/.local/bin:$PATH"
    ```
 
-4. Run `cybr doctor` from that account. Use the installed wrapper, not a
+4. Run `hermes doctor` from that account. Use the installed wrapper, not a
    hardcoded `venv/bin/hermes` path.
 5. For a Linux user service that must survive logout, enable lingering as an administrator:
 

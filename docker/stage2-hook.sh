@@ -765,7 +765,7 @@ fi
 #
 # Fix: read the baked path and export ``AGENT_BROWSER_EXECUTABLE_PATH``
 # via /run/s6/container_environment so the `with-contenv` shebang on
-# main-wrapper.sh propagates it into the supervised ``cybr`` process
+# main-wrapper.sh propagates it into the supervised ``hermes`` process
 # and thence to agent-browser subprocesses.
 #
 # - Skipped when the user has already set ``AGENT_BROWSER_EXECUTABLE_PATH``

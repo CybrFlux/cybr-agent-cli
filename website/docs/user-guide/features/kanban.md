@@ -358,7 +358,7 @@ install give the user one with `sudo loginctl enable-linger <user>`.
   advance `consecutive_failures`, so a host blip never parks cards as a bare
   `blocked`; the respawn guard spaces the retries (`infrastructure_cooldown`,
   same window as the rate-limit cooldown) until the bus is back.
-- **`cybr kanban dispatch` from your own unit** (a `Type=oneshot` timer, a
+- **`hermes kanban dispatch` from your own unit** (a `Type=oneshot` timer, a
   sequencer service): the worker gets the same scope when the bus is
   reachable. Without one the worker is still spawned — inside *your* unit's
   cgroup — and the dispatcher logs once, loudly, that the unit's exit will kill
@@ -893,7 +893,7 @@ All routes are mounted under `/api/plugins/kanban/` and protected by the dashboa
 | `GET` | `/config` | Read `dashboard.kanban` preferences from `config.yaml` — `default_tenant`, `lane_by_profile`, `include_archived_by_default`, `render_markdown` |
 | `WS` | `/events?since=<event_id>` | Live stream of `task_events` rows. Without `since` the stream starts at the board's current tail (the `/board` snapshot already holds the past); pass `since=<latest_event_id>` to catch up from there, or `since=0` to replay history |
 
-Every handler is a thin wrapper — the plugin is ~700 lines of Python (router + WebSocket tail + bulk batcher + config reader) and adds no new business logic. A tiny `_conn()` helper auto-initializes `kanban.db` on every read and write, so a fresh install works whether the user opened the dashboard first, hit the REST API directly, or ran `cybr kanban init`.
+Every handler is a thin wrapper — the plugin is ~700 lines of Python (router + WebSocket tail + bulk batcher + config reader) and adds no new business logic. A tiny `_conn()` helper auto-initializes `kanban.db` on every read and write, so a fresh install works whether the user opened the dashboard first, hit the REST API directly, or ran `hermes kanban init`.
 
 ### Dashboard config
 
@@ -961,7 +961,7 @@ cybr kanban edit <id> [--title ...] [--body ...]     # edit task title / body / 
         [--priority N]
 cybr kanban promote <id>...                          # move todo/blocked tasks to ready (recovery)
 cybr kanban schedule <id> --at <ISO8601>             # set/clear a task's scheduled_at start time
-cybr kanban diagnostics [--json]                     # board health snapshot (alias: diag)
+hermes kanban diagnostics [--json]                     # board health snapshot (alias: diag)
 cybr kanban link <parent_id> <child_id>
 cybr kanban unlink <parent_id> <child_id>
 cybr kanban claim <id> [--ttl SECONDS]
@@ -1409,7 +1409,7 @@ Runs are exposed on the dashboard (Run History section in the drawer, one colour
 
 **Reclaimed runs from status changes.** If you drag a running task off `running` in the dashboard (back to `ready`, or straight to `todo`), or archive a task that was still running, the in-flight run closes with `outcome='reclaimed'` rather than being orphaned. The `task_runs` row is always in a terminal state when `tasks.current_run_id` is `NULL`, and vice versa — that invariant holds across CLI, dashboard, dispatcher, and notifier.
 
-**Synthetic runs for never-claimed completions.** Completing or blocking a task that was never claimed (e.g. a human closes a `ready` task from the dashboard with a summary, or a CLI user runs `cybr kanban complete <ready-task> --summary X`) would otherwise drop the handoff. Instead the kernel inserts a zero-duration run row (`started_at == ended_at`) carrying the summary / metadata / reason so attempt history stays complete. The `completed` / `blocked` event's `run_id` points at that row.
+**Synthetic runs for never-claimed completions.** Completing or blocking a task that was never claimed (e.g. a human closes a `ready` task from the dashboard with a summary, or a CLI user runs `hermes kanban complete <ready-task> --summary X`) would otherwise drop the handoff. Instead the kernel inserts a zero-duration run row (`started_at == ended_at`) carrying the summary / metadata / reason so attempt history stays complete. The `completed` / `blocked` event's `run_id` points at that row.
 
 **Live drawer refresh.** When the dashboard's WebSocket event stream reports new events for the task the user is currently viewing, the drawer reloads itself (via a per-task event counter threaded into its `useEffect` dependency list). Closing and reopening is no longer required to see a run's new row or updated outcome.
 

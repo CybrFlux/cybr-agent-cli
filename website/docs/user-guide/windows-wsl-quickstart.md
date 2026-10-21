@@ -70,7 +70,7 @@ Ubuntu (LTS) is what we test against. Debian works. Arch and NixOS work for peop
 
 ### Enable systemd (recommended)
 
-The cybr gateway (and anything else you want to keep running) is easier to manage with systemd. On modern WSL, enable it once inside your distro:
+The hermes gateway (and anything else you want to keep running) is easier to manage with systemd. On modern WSL, enable it once inside your distro:
 
 ```bash
 sudo tee /etc/wsl.conf >/dev/null <<'EOF'
@@ -187,7 +187,7 @@ dos2unix path/to/script.sh
 
 ### "Clone inside WSL or on `/mnt/c`?"
 
-Clone inside WSL. Always, unless you have a specific reason not to. A typical Cybr Agent workflow (`cybr chat`, tool calls that `rg`/`ripgrep` the repo, file watchers, background gateway) will be dramatically faster and more reliable against `~/code/myrepo` than `/mnt/c/Users/you/myrepo`.
+Clone inside WSL. Always, unless you have a specific reason not to. A typical Cybr Agent workflow (`hermes chat`, tool calls that `rg`/`ripgrep` the repo, file watchers, background gateway) will be dramatically faster and more reliable against `~/code/myrepo` than `/mnt/c/Users/you/myrepo`.
 
 One exception: **MCP bridges that launch Windows binaries.** If you're using `chrome-devtools-mcp` through `cmd.exe` (see [MCP guide: WSL → Windows Chrome](../guides/use-mcp-with-hermes.md#wsl2-bridge-hermes-in-wsl-to-windows-chrome)), Windows may complain with a `UNC` warning if Cybr Agent's current working directory is `~`. In that case, start Cybr Agent from somewhere under `/mnt/c/` so the Windows process has a drive-letter cwd.
 
@@ -289,7 +289,7 @@ Optional polish:
 
 ### Inside WSL with systemd (recommended)
 
-If you enabled systemd per the setup section above, `cybr gateway` and the API server work the way they do on any Linux machine. Use the gateway setup wizard:
+If you enabled systemd per the setup section above, `hermes gateway` and the API server work the way they do on any Linux machine. Use the gateway setup wizard:
 
 ```bash
 cybr gateway setup

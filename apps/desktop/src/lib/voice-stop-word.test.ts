@@ -30,7 +30,7 @@ describe('isVoiceStopCommand', () => {
   })
 
   it('matches stop commands addressed to Cybr Agent', () => {
-    for (const phrase of ['cybr stop', 'hey cybr stop', 'hey hermes, stop', 'ok stop', 'okay stop']) {
+    for (const phrase of ['hermes stop', 'hey hermes stop', 'hey hermes, stop', 'ok stop', 'okay stop']) {
       expect(isVoiceStopCommand(phrase, { mode: 'default' })).toBe(true)
     }
   })

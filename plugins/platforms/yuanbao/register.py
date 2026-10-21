@@ -39,7 +39,7 @@ def check_yuanbao_requirements() -> bool:
 
 
 def interactive_setup() -> None:
-    """``cybr gateway setup`` flow: the standard App ID / App Secret prompts."""
+    """``hermes gateway setup`` flow: the standard App ID / App Secret prompts."""
     from hermes_cli import gateway as gateway_mod
     gateway_mod._setup_standard_platform(dict(_SETUP_PLATFORM))
 

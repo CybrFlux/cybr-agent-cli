@@ -88,7 +88,7 @@ These four Cybr Agent tools require the running AIAgent context (mid-loop state)
 
 ### Kanban (multi-agent worktree dispatch)
 
-**Works on this runtime, with one subtle dependency.** The kanban dispatcher spawns each worker as a separate `cybr chat -q` subprocess that reads the user's config — which means if `model.openai_runtime: codex_app_server` is set globally, workers also come up on the codex runtime.
+**Works on this runtime, with one subtle dependency.** The kanban dispatcher spawns each worker as a separate `hermes chat -q` subprocess that reads the user's config — which means if `model.openai_runtime: codex_app_server` is set globally, workers also come up on the codex runtime.
 
 What works inside a codex-runtime worker:
 - Codex's full toolset (shell, apply_patch, update_plan, view_image, web_search) — the worker does its actual task work natively
@@ -372,7 +372,7 @@ This is the same migration `/codex-runtime codex_app_server` runs; it is idempot
 
 ## Multi-profile / multi-tenant setups
 
-By default, Cybr Agent points the codex subprocess at `~/.codex/` regardless of which Cybr Agent profile is active. This means `cybr -p work` and `cybr -p personal` share the same Codex auth, plugins, and config. For most users this is the right behavior — it matches what running `codex` CLI directly would do.
+By default, Cybr Agent points the codex subprocess at `~/.codex/` regardless of which Cybr Agent profile is active. This means `hermes -p work` and `hermes -p personal` share the same Codex auth, plugins, and config. For most users this is the right behavior — it matches what running `codex` CLI directly would do.
 
 If you want per-profile Codex isolation (separate auth, separate installed plugins, separate config), set `CODEX_HOME` explicitly per profile. The cleanest way is to point at a directory under your `HERMES_HOME`:
 

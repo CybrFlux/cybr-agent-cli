@@ -85,7 +85,7 @@ def check_bot_token(token: str) -> DiscordBotCheck:
     )
 
 
-# ── CLI wizard (cybr setup / cybr gateway setup) ─────────────────────────
+# ── CLI wizard (hermes setup / hermes gateway setup) ─────────────────────────
 
 
 def _clean_discord_user_ids(raw: str) -> list:

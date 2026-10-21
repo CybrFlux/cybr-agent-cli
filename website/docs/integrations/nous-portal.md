@@ -133,12 +133,12 @@ If you use [Cybr Agent profiles](../user-guide/profiles.md), the Portal refresh 
 ```bash
 cybr portal            # log in to Nous Portal + set it up (one-shot onboarding)
 cybr portal info       # login status, subscription info, model + gateway routing
-cybr portal status     # alias for `portal info`
+hermes portal status     # alias for `portal info`
 cybr portal tools      # detailed Tool Gateway catalog with per-tool routing
 cybr portal open       # open the subscription management page in your browser
 ```
 
-`cybr portal` (with no subcommand) is the human-readable alias for `cybr auth add nous --type oauth` — it logs you in, lets you pick a Nous model, sets Nous as your inference provider, and offers the Tool Gateway opt-in (identical to `cybr setup --portal`, and the same Nous flow as the first-time quick setup).
+`hermes portal` (with no subcommand) is the human-readable alias for `hermes auth add nous --type oauth` — it logs you in, lets you pick a Nous model, sets Nous as your inference provider, and offers the Tool Gateway opt-in (identical to `hermes setup --portal`, and the same Nous flow as the first-time quick setup).
 
 `cybr portal info` gives you the high-level overview:
 

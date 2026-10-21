@@ -1,11 +1,11 @@
 """Multiplex-only reporting: one host gateway serving N profiles must be reported as such.
 
 Invariants (all fail on origin/main):
-* ``cybr -p <served> cron status`` names the HOST gateway as the ticker and never tells the
+* ``hermes -p <served> cron status`` names the HOST gateway as the ticker and never tells the
   user to start a second process.
-* ``cybr -p <served> doctor`` reports the single host gateway + its roster, not
+* ``hermes -p <served> doctor`` reports the single host gateway + its roster, not
   "Per-profile gateways: up/total", and still checks the HOST systemd unit's linger.
-* ``cybr claw``'s destructive-action warning FIRES for a served profile.
+* ``hermes claw``'s destructive-action warning FIRES for a served profile.
 * the state.db holder line names the shared host process and the profiles it serves.
 """
 
@@ -51,8 +51,8 @@ def test_cron_status_names_the_host_gateway_for_a_served_profile(served_host, ca
     assert f"PID {os.getpid()}" in out and "served" in out
     assert "not running" not in out.lower()
     # Never route the user to a SECOND host process: per-profile install is legacy-only remediation.
-    assert "cybr gateway install" not in out
-    assert "sudo cybr gateway install --system" not in out
+    assert "hermes gateway install" not in out
+    assert "sudo hermes gateway install --system" not in out
 
 
 def test_claw_warning_fires_for_a_served_profile(served_host, capsys, monkeypatch):

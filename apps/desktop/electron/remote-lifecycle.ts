@@ -42,7 +42,7 @@ const READY_RE = READY_IN_MERGED_OUTPUT_RE // the remote log is `>> log 2>&1`: m
 const REMOTE_LOCK_DIR = '~/.hermes/desktop-ssh'
 const SUPPORTED_REMOTE_OS = new Set(['Linux', 'Darwin'])
 // On a busy remote host a healthy cold boot can take 60-150s before the
-// freshly spawned `cybr serve --isolated` prints its READY line (event-loop
+// freshly spawned `hermes serve --isolated` prints its READY line (event-loop
 // stalls of 5-27s each during spawn storms are routine). The historical 45s
 // budget gave up milliseconds before a healthy backend announced ready and
 // surfaced a timeout toast (issue #94642). A roomier default absorbs the
@@ -226,7 +226,7 @@ async function locateHermes(ssh, remoteHermesPath) {
 
     const err: any = new Error(
       `The Cybr Agent path you set is not an executable on the remote host: "${remoteHermesPath}". ` +
-        'Check the path (it must be the full path to the `cybr` binary on the remote, e.g. ' +
+        'Check the path (it must be the full path to the `hermes` binary on the remote, e.g. ' +
         '~/hermes-agent/.venv/bin/hermes), or clear it to auto-detect.'
     )
 
@@ -263,7 +263,7 @@ async function locateHermes(ssh, remoteHermesPath) {
   }
 
   const err: any = new Error(
-    'Cybr Agent is not installed on the remote host (could not find a `cybr` executable). ' +
+    'Cybr Agent is not installed on the remote host (could not find a `hermes` executable). ' +
       'Install it on the remote with:  curl -fsSL https://hermes-agent.nousresearch.com/install.sh | sh  ' +
       '— or set the Cybr Agent path explicitly in the SSH connection settings.'
   )
@@ -976,13 +976,13 @@ finally:
 
 // Run `command` under the updaters' marker lock: REMOTE_MARKER_GATE_PY holds
 // `<marker>.lock` (the sidecar Python update_lock and marker.sh flock), clears a
-// dead claim while `cybr`'s checkout lock is free, and refuses (exit 75) a
+// dead claim while `hermes`'s checkout lock is free, and refuses (exit 75) a
 // live, unreadable, or checkout-held one, then keeps the
 // lock across the spawn and the initial lockfile publication. The descriptor
 // is close-on-exec and passed only to the outer shell; each detached child
 // closes it before execing Cybr Agent. markerPath is expandRemotePath() output — a
 // complete shell word ("$HOME"'/…' or '/abs/…') embedded raw so $HOME expands
-// remotely; a second shq() would hand python the quote characters. `cybr`
+// remotely; a second shq() would hand python the quote characters. `hermes`
 // is the same kind of word (expandRemotePath of the located executable).
 function withRemoteUpdateMutex(command, markerPath, hermes) {
   return `python3 -c ${shq(REMOTE_MARKER_GATE_PY)} ${markerPath} ${shq(command)} ${hermes}`
@@ -1154,7 +1154,7 @@ function buildSpawnCommand(hermesPath, profile, opts: any = {}) {
         `${detachedSpawn}; ` +
         `${markerAbsent} || { kill "$child" 2>/dev/null || true; wait "$child" 2>/dev/null || true; exit 75; }; echo "$child"`,
       marker,
-      cybr
+      hermes
     )
   }
 
@@ -1196,7 +1196,7 @@ function buildSpawnCommand(hermesPath, profile, opts: any = {}) {
       `printf '%s' "$lock_json" > "$temporary_lock" && mv -f "$temporary_lock" "$lock" || { kill "$child" 2>/dev/null || true; wait "$child" 2>/dev/null || true; exit 76; }; ` +
       `echo "$child"`,
     marker,
-    cybr
+    hermes
   )
 }
 

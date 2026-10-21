@@ -1,4 +1,4 @@
-"""CLI handlers for the ``cybr proxy`` subcommand."""
+"""CLI handlers for the ``hermes proxy`` subcommand."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ def _err(msg: str) -> None:
 def cmd_proxy_start(args: Any) -> int:
     """Run the proxy server in the foreground."""
     if not AIOHTTP_AVAILABLE:
-        _err("cybr proxy requires aiohttp. Run `cybr setup` to install it.")
+        _err("hermes proxy requires aiohttp. Run `hermes setup` to install it.")
         return 1
     provider = getattr(args, "provider", None) or "nous"
     try:
@@ -31,7 +31,7 @@ def cmd_proxy_start(args: Any) -> int:
         _err(f"Error: {exc}")
         return 2
     if not adapter.is_authenticated():
-        auth_hint = getattr(adapter, "auth_hint", f"cybr auth add {adapter.name}")
+        auth_hint = getattr(adapter, "auth_hint", f"hermes auth add {adapter.name}")
         _err(f"Not logged into {adapter.display_name}. Run `{auth_hint}` first.")
         return 2
     from hermes_cli.url_utils import format_url_host
@@ -71,7 +71,7 @@ def cmd_proxy_status(args: Any) -> int:
             continue
         expires = f" (bearer expires {cred.expires_at})" if cred.expires_at else ""
         print(f"  [{name:8s}] {adapter.display_name} — ready{expires}")
-    print("\nStart the proxy with: cybr proxy start [--provider <name>]")
+    print("\nStart the proxy with: hermes proxy start [--provider <name>]")
     return 0
 
 
@@ -93,20 +93,20 @@ _SUBCOMMANDS = {
 
 
 def cmd_proxy(args: Any) -> int:
-    """Dispatch ``cybr proxy <subcommand>``; no/unknown subcommand prints the short help."""
+    """Dispatch ``hermes proxy <subcommand>``; no/unknown subcommand prints the short help."""
     handler = _SUBCOMMANDS.get(getattr(args, "proxy_command", None))
     if handler is not None:
         return handler(args)
     _err(
-        "cybr proxy — local OpenAI-compatible proxy that attaches your\n"
+        "hermes proxy — local OpenAI-compatible proxy that attaches your\n"
         "OAuth-authenticated provider credentials to outbound requests.\n"
         "\n"
         "Subcommands:\n"
-        "  cybr proxy start [--provider nous|xai] [--host 127.0.0.1] [--port 8645]\n"
+        "  hermes proxy start [--provider nous|xai] [--host 127.0.0.1] [--port 8645]\n"
         "      Run the proxy in the foreground.\n"
-        "  cybr proxy status\n"
+        "  hermes proxy status\n"
         "      Show which upstream adapters are ready.\n"
-        "  cybr proxy providers\n"
+        "  hermes proxy providers\n"
         "      List available upstream providers.\n"
     )
     return 0

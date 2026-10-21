@@ -170,7 +170,7 @@ cybr gateway
 机器人应在几秒内连接到钉钉的 Stream Mode。发送一条消息——单聊或已添加机器人的群聊均可——进行测试。
 
 :::tip
-你可以在后台运行 `cybr gateway`，或将其配置为 systemd 服务以持续运行。详见部署文档。
+你可以在后台运行 `hermes gateway`，或将其配置为 systemd 服务以持续运行。详见部署文档。
 :::
 
 ## 功能特性

@@ -246,4 +246,4 @@ Modal is available as an **optional add-on** through the Nous subscription, not 
 
 ### Do I need to delete my existing API keys when I enable the gateway?
 
-No — keep them in `.env`. While a tool's selection is **Nous Subscription**, direct keys for that tool are simply ignored. Pick the direct provider again in `cybr tools` and your keys become the source again. The gateway isn't a lock-in.
+No — keep them in `.env`. While a tool's selection is **Nous Subscription**, direct keys for that tool are simply ignored. Pick the direct provider again in `hermes tools` and your keys become the source again. The gateway isn't a lock-in.

@@ -208,7 +208,7 @@ def test_mcp_server_runs_on_the_managed_node_and_an_abi_mismatch_names_the_rebui
     assert not ran_js, f"the user's node ({USER_NODE_VERSION}) ran the MCP server instead of Cybr Agent's: {ran_js}"
     assert managed.startswith(str(sb.home / ".hermes")), (
         f"the MCP server did not run on Cybr Agent's managed node (ran on {managed!r}):\n" + I.describe(probe))
-    assert probe.returncode == 1, "`cybr mcp test` passed for a server that died at startup:\n" + I.describe(probe)
+    assert probe.returncode == 1, "`hermes mcp test` passed for a server that died at startup:\n" + I.describe(probe)
     # The failure reaches the user with the remedy: drop the npx entry, or rebuild with Cybr Agent's own npm
     # under Cybr Agent's own node (never "point the server at your node").
     assert "NODE_MODULE_VERSION 127" in out and f"rm -rf {sb.home / NPX_ENTRY}" in out, (

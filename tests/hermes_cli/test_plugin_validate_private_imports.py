@@ -1,4 +1,4 @@
-"""``cybr plugins validate`` warns (never fails) on imports of private Cybr Agent core modules."""
+"""``hermes plugins validate`` warns (never fails) on imports of private Cybr Agent core modules."""
 
 from __future__ import annotations
 

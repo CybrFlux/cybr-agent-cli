@@ -211,8 +211,8 @@ function gatewayIncarnationMatches(pid: number, recorded: number | null | undefi
   return started !== null && Math.abs(started - recorded / 100) < 2
 }
 
-/** The running canonical gateway (`cybr gateway run`) recorded for `homes`. Desktop reaches a
- * local backend through `cybr gateway ensure`, which attaches to that daemon or starts it
+/** The running canonical gateway (`hermes gateway run`) recorded for `homes`. Desktop reaches a
+ * local backend through `hermes gateway ensure`, which attaches to that daemon or starts it
  * detached, so it is neither an Electron descendant nor a `serve` spawn-ledger record. */
 function canonicalGateways(homes: string[], processes: NativeProcess[]): Map<number, string | undefined> {
   return new Map([...new Set(homes)].flatMap((home: string): Array<[number, string | undefined]> => {

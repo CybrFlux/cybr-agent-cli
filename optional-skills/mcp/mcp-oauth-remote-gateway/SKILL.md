@@ -79,7 +79,7 @@ gateway/bot where `/reload-mcp` triggers the flow with nobody at a prompt.
 
 A remote Cybr Agent gateway often also runs the **dashboard** web UI as a SEPARATE
 process (e.g. `cybr dashboard --host 0.0.0.0 --port <port>`; check with
-`ps aux | grep 'cybr dashboard'`). It exposes a connector/MCP console —
+`ps aux | grep 'hermes dashboard'`). It exposes a connector/MCP console —
 endpoints like `/api/mcp/servers`, `/api/mcp/status`, and `/connectors` (all
 login-gated; a cookieless curl returning 401/302 confirms they exist).
 

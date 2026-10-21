@@ -1,4 +1,4 @@
-"""``cybr connectors``: list, connect, rename and remove hosted connector accounts."""
+"""``hermes connectors``: list, connect, rename and remove hosted connector accounts."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from typing import Any, Callable, NoReturn
 
 _POLL_SECONDS = 2.0
 _DONE_STATES = frozenset({"connected", "skipped", "failed", "expired", "not_connected"})
-_SIGN_IN = "Sign in with `cybr login` to manage connectors."
+_SIGN_IN = "Sign in with `hermes login` to manage connectors."
 
 
 class _CommandError(Exception):
@@ -119,7 +119,7 @@ def _report_connect(app: str, alias: str | None, target: dict[str, Any]) -> int:
     if state == "connected":
         if alias:
             print(f"{app_title(app)} account {alias} is connected. "
-                  f"Rename it anytime: cybr connectors rename {app} {alias} --to <new-name>")
+                  f"Rename it anytime: hermes connectors rename {app} {alias} --to <new-name>")
         else:
             print(f"{app_title(app)} is connected.")
         return 0
@@ -237,7 +237,7 @@ def cmd_connectors(args) -> int:
         print(f"Unknown connectors action: {args.connectors_action}", file=sys.stderr)
         return 2
     if not connectors_available():
-        print("Connectors are not available. Sign in with `cybr login` first.", file=sys.stderr)
+        print("Connectors are not available. Sign in with `hermes login` first.", file=sys.stderr)
         return 1
     try:
         return handler(args)

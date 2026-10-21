@@ -95,7 +95,7 @@ export const fr: Translations = {
   status: {
     actionFailed: "Action échouée",
     actionFinished: "Terminé",
-    actionFinishedOwed: "Mis à jour, mais encore en attente (relancez `cybr update` pour terminer)",
+    actionFinishedOwed: "Mis à jour, mais encore en attente (relancez `hermes update` pour terminer)",
     actions: "Actions",
     agent: "Agent",
     activeSessions: "Sessions actives",
@@ -335,7 +335,7 @@ export const fr: Translations = {
       "Enregistré — redémarrez la passerelle pour appliquer la modification.",
     forceReinstall: "Forcer la réinstallation (supprimer d'abord le dossier existant)",
     headline:
-      "Découvrez, installez, activez et mettez à jour les plugins Cybr Agent (parité avec `cybr plugins`).",
+      "Découvrez, installez, activez et mettez à jour les plugins Cybr Agent (parité avec `hermes plugins`).",
     identifierLabel: "URL Git ou owner/repo",
     inactive: "inactif",
     installBtn: "Installer",
@@ -613,7 +613,7 @@ export const fr: Translations = {
         "Partager sur X ouvre une publication préremplie dans un nouvel onglet. Cliquez d'abord sur Copier l'image si vous voulez joindre le badge 1200×630 — X vous laisse le coller directement dans l'éditeur de tweet. Télécharger le PNG enregistre le fichier pour l'utiliser n'importe où.",
       clipboard_unsupported:
         "La copie d'image dans le presse-papiers n'est pas prise en charge par ce navigateur — utilisez Télécharger à la place.",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Cybr Agent ☤",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in Cybr Agent ∿",
     },
   },
   kanban: {

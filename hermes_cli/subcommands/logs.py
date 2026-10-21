@@ -1,4 +1,4 @@
-"""``cybr logs`` subcommand parser."""
+"""``hermes logs`` subcommand parser."""
 
 from __future__ import annotations
 
@@ -15,20 +15,20 @@ def build_logs_parser(subparsers, *, cmd_logs: Callable) -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""\
 Examples:
-    cybr logs                    Show last 50 lines of agent.log
-    cybr logs -f                 Follow agent.log in real time
-    cybr logs errors             Show last 50 lines of errors.log
-    cybr logs gateway -n 100     Show last 100 lines of gateway.log
-    cybr logs gui -f             Follow gui.log in real time
-    cybr logs desktop -f         Follow desktop.log (Electron app boot/backend)
-    cybr logs update             Show last 50 lines of update.log (cybr update mirror)
-    cybr logs handoff            Show last 50 lines of desktop-update-handoff.log
-    cybr logs --level WARNING    Only show WARNING and above
-    cybr logs --session abc123   Filter by session ID
-    cybr logs --component tools  Only show tool-related lines
-    cybr logs --since 1h         Lines from the last hour
-    cybr logs --since 30m -f     Follow, starting from 30 min ago
-    cybr logs list               List available log files with sizes
+    hermes logs                    Show last 50 lines of agent.log
+    hermes logs -f                 Follow agent.log in real time
+    hermes logs errors             Show last 50 lines of errors.log
+    hermes logs gateway -n 100     Show last 100 lines of gateway.log
+    hermes logs gui -f             Follow gui.log in real time
+    hermes logs desktop -f         Follow desktop.log (Electron app boot/backend)
+    hermes logs update             Show last 50 lines of update.log (hermes update mirror)
+    hermes logs handoff            Show last 50 lines of desktop-update-handoff.log
+    hermes logs --level WARNING    Only show WARNING and above
+    hermes logs --session abc123   Filter by session ID
+    hermes logs --component tools  Only show tool-related lines
+    hermes logs --since 1h         Lines from the last hour
+    hermes logs --since 30m -f     Follow, starting from 30 min ago
+    hermes logs list               List available log files with sizes
 """)
     logs_parser.add_argument(
         "log_name",

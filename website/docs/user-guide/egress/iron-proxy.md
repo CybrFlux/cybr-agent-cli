@@ -191,7 +191,7 @@ No `.env` edits. No Cybr Agent restart on the host. The proxy daemon is the only
 
 ### Fail-loud at start
 
-When `credential_source: bitwarden`, `cybr egress start` pre-checks at the wizard layer AND `_build_proxy_subprocess_env` re-checks at the daemon layer:
+When `credential_source: bitwarden`, `hermes egress start` pre-checks at the wizard layer AND `_build_proxy_subprocess_env` re-checks at the daemon layer:
 
 - BWS access token env var is unset → refuse to start with a hint to `unset` and re-run, or `cybr egress setup --no-bitwarden` to switch back to env mode
 - `secrets.bitwarden.project_id` is empty → refuse to start with a hint to run `cybr secrets bitwarden setup`
@@ -527,14 +527,14 @@ Two common causes:
 
 ### "Address in use" after the parent process died
 
-The parent Cybr Agent process died during `cybr egress start` (Ctrl-C during the listening probe, OOM, panic). The new fix-up logic writes the pidfile immediately after `Popen` so the orphan is recoverable:
+The parent Cybr Agent process died during `hermes egress start` (Ctrl-C during the listening probe, OOM, panic). The new fix-up logic writes the pidfile immediately after `Popen` so the orphan is recoverable:
 
 ```bash
 cybr egress stop   # finds the orphan via the pidfile, kills it
 cybr egress start
 ```
 
-If `cybr egress stop` says "iron-proxy was not running" but you can still see the daemon in `ps`, the pidfile got out of sync. Manual recovery:
+If `hermes egress stop` says "iron-proxy was not running" but you can still see the daemon in `ps`, the pidfile got out of sync. Manual recovery:
 
 ```bash
 pkill -TERM iron-proxy

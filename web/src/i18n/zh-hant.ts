@@ -95,7 +95,7 @@ export const zhHant: Translations = {
   status: {
     actionFailed: "動作失敗",
     actionFinished: "已完成",
-    actionFinishedOwed: "已更新，但仍有待完成的步驟（重新執行 `cybr update` 以完成）",
+    actionFinishedOwed: "已更新，但仍有待完成的步驟（重新執行 `hermes update` 以完成）",
     actions: "動作",
     agent: "代理",
     activeSessions: "使用中工作階段",
@@ -333,7 +333,7 @@ export const zhHant: Translations = {
       "已儲存 — 重新啟動閘道以套用變更。",
     forceReinstall: "強制重新安裝（先刪除既有資料夾）",
     headline:
-      "探索、安裝、啟用並更新 Cybr Agent 外掛（對齊 `cybr plugins` CLI）。",
+      "探索、安裝、啟用並更新 Cybr Agent 外掛（對齊 `hermes plugins` CLI）。",
     identifierLabel: "Git 網址或 owner/repo",
     inactive: "未啟用",
     installBtn: "安裝",
@@ -612,7 +612,7 @@ export const zhHant: Translations = {
         "「在 X 上分享」會在新分頁中開啟預先填寫的貼文。若想附上 1200×630 的徽章，請先點擊「複製圖片」—— X 允許你直接貼到推文編輯器中。「下載 PNG」會將檔案儲存下來，可在任何地方使用。",
       clipboard_unsupported:
         "此瀏覽器不支援剪貼簿圖片複製 —— 請改用「下載」。",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Cybr Agent ☤",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in Cybr Agent ∿",
     },
   },
   kanban: {

@@ -352,7 +352,7 @@ cybr gateway
 The bot should connect to your homeserver and start syncing within a few seconds. Send it a message — either a DM or in a room it has joined — to test.
 
 :::tip
-You can run `cybr gateway` in the background or as a systemd service for persistent operation. See the deployment docs for details.
+You can run `hermes gateway` in the background or as a systemd service for persistent operation. See the deployment docs for details.
 :::
 
 ## End-to-End Encryption (E2EE)

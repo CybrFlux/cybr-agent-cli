@@ -1,4 +1,4 @@
-"""``cybr checkpoints`` subcommand parser."""
+"""``hermes checkpoints`` subcommand parser."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ def build_checkpoints_parser(subparsers) -> None:
     checkpoints_parser = subparsers.add_parser(
         "checkpoints", help="Inspect / prune / clear ~/.hermes/checkpoints/",
         description="Manage the filesystem checkpoint store — the shadow git "
-        "repo Cybr Agent uses to snapshot working directories before "
+        "repo hermes uses to snapshot working directories before "
         "write_file/patch/terminal calls. Lets you see how much "
         "space checkpoints occupy, force a prune, or wipe the base.")
     from hermes_cli.checkpoints import register_cli as _register_checkpoints_cli

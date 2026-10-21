@@ -1,4 +1,4 @@
-"""Regression test: cybr update must not load cryptography eagerly."""
+"""Regression test: hermes update must not load cryptography eagerly."""
 
 import sys
 import subprocess
@@ -76,7 +76,7 @@ sys.exit(0)
         )
 
     def test_update_check_no_cryptography(self) -> None:
-        """Running cybr update --check should NOT load cryptography._rust."""
+        """Running hermes update --check should NOT load cryptography._rust."""
         # Write a small script in the repo root so hermes_cli is importable,
         # and use a filename that doesn't trigger the live-system guard.
         repo_root = Path(__file__).parent.parent.parent

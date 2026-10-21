@@ -67,7 +67,7 @@ WECOM_CALLBACK_ALLOWED_USERS=user1,user2
 cybr gateway
 ```
 
-(Use `cybr gateway start` only after `cybr gateway install` has registered the systemd/launchd service.)
+(Use `hermes gateway start` only after `hermes gateway install` has registered the systemd/launchd service.)
 
 The callback adapter starts an HTTP server on the configured port. WeCom will verify the callback URL via a GET request, then begin sending messages via POST.
 

@@ -20,7 +20,7 @@ class StorageFailure:
     action: str     # what to do, one sentence naming the exact command
 
 
-_DOCTOR = "Run `cybr {profile_arg}doctor --fix` to diagnose and repair."
+_DOCTOR = "Run `hermes {profile_arg}doctor --fix` to diagnose and repair."
 
 # cause -> (code, gloss, action). "disk" is split by is_disk_full_error at lookup time.
 _STORAGE_FAILURES: dict[str, tuple[str, str, str]] = {
@@ -28,7 +28,7 @@ _STORAGE_FAILURES: dict[str, tuple[str, str, str]] = {
         "storage_locked",
         "the session database is locked by another Cybr Agent process",
         "Wait a moment and try again; if it persists, stop the other Cybr Agent process "
-        "(`cybr {profile_arg}gateway stop`).",
+        "(`hermes {profile_arg}gateway stop`).",
     ),
     "disk_full": (
         "disk_full",
@@ -43,22 +43,22 @@ _STORAGE_FAILURES: dict[str, tuple[str, str, str]] = {
     "corrupt": (
         "storage_corrupt",
         "the session database file is damaged",
-        _DOCTOR + " Recovery: `cybr {profile_arg}sessions recover --source <state.db> --inspect-only`.",
+        _DOCTOR + " Recovery: `hermes {profile_arg}sessions recover --source <state.db> --inspect-only`.",
     ),
     "session_row_missing": (
         "storage_session_missing",
         "this session's database row was deleted while the chat was still open and could not be recreated",
-        "Try again; if it persists, run `cybr {profile_arg}doctor`.",
+        "Try again; if it persists, run `hermes {profile_arg}doctor`.",
     ),
     "fts_index": (
         "storage_index_corrupt",
         "the session search index is damaged (the messages themselves are intact)",
-        "Run `cybr {profile_arg}doctor --fix` (or `cybr {profile_arg}sessions repair`) to rebuild it.",
+        "Run `hermes {profile_arg}doctor --fix` (or `hermes {profile_arg}sessions repair`) to rebuild it.",
     ),
     "replaced": (
         "storage_replaced",
         "the session database file was replaced while Cybr Agent was running",
-        "Stop Cybr Agent (`cybr {profile_arg}gateway stop`), run `cybr {profile_arg}doctor`, then start it again.",
+        "Stop Cybr Agent (`hermes {profile_arg}gateway stop`), run `hermes {profile_arg}doctor`, then start it again.",
     ),
     # Code stays `storage_replaced` (GUI clients key on it); the copy names the real remedy: every writer
     # on the profile must stop, doctor names the ones still holding the retired log (#110054).
@@ -67,7 +67,7 @@ _STORAGE_FAILURES: dict[str, tuple[str, str, str]] = {
         "another Cybr Agent process still holds an old copy of the session database's write-ahead log, "
         "so Cybr Agent stopped writing to keep the file safe",
         "Nothing is lost. Quit every Cybr Agent process on this profile (Desktop app, "
-        "`cybr {profile_arg}gateway stop`, dashboard, cron), run `cybr {profile_arg}doctor` — it names "
+        "`hermes {profile_arg}gateway stop`, dashboard, cron), run `hermes {profile_arg}doctor` — it names "
         "any process still holding the log — then start Cybr Agent again. Do not run `doctor --fix` or delete "
         "any state.db files while they run. Guide: " + STORAGE_RECOVERY_DOCS_URL,
     ),

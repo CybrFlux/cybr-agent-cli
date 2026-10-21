@@ -31,7 +31,7 @@ def lightpanda_engine_status() -> tuple[bool, str]:
 
     ``(False, "")`` when the engine isn't lightpanda; else the reason names the setting shadowing
     it or the driver running it. Mirrors ``_should_inject_engine`` / ``_resolve_backend_cdp``
-    precedence with config-only gates (no network I/O) for ``/browser status`` / ``cybr doctor``.
+    precedence with config-only gates (no network I/O) for ``/browser status`` / ``hermes doctor``.
     """
     _bt = _origin()
     if not _using_lightpanda_engine():
@@ -144,7 +144,7 @@ def _run_chrome_fallback_command(task_id: str, command: str, args: list[str], ti
                     "pull the latest image: docker pull ghcr.io/nousresearch/hermes-agent:latest")
         else:
             hint = ("Chrome fallback requires Chromium, but it is missing. Install it with: "
-                    "cybr pm install chromium")
+                    "hermes pm install chromium")
         return {"success": False, "error": hint}
 
     base_args = _session._agent_browser_argv(browser_cmd) + ["--engine", "chrome", "--session", tmp_session, "--json"]

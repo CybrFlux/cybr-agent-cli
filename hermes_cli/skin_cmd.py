@@ -1,4 +1,4 @@
-"""``cybr skin`` — list, switch, and tweak skins from the CLI.
+"""``hermes skin`` — list, switch, and tweak skins from the CLI.
 
 ``set`` is the load-bearing verb: it changes ONE color of the ACTIVE skin **in place**, so tweaking
 (say) the tool marker never disturbs the rest of the look — background included. Editing the file
@@ -80,7 +80,7 @@ def _skin_list() -> int:
 
 
 def skin_command(args) -> None:
-    """Dispatch ``cybr skin <verb>``."""
+    """Dispatch ``hermes skin <verb>``."""
     verb = getattr(args, "skin_command", None)
     if verb == "set":
         sys.exit(_skin_set(args.key, args.value, getattr(args, "skin", None)))

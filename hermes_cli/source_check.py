@@ -229,12 +229,12 @@ def _unsupported_reason(stamp: dict, root: Path, *, explicit_root: bool, embedde
 
 
 def _installed_git(git: str) -> str:
-    """``git`` as given, unless it is a bare ``git`` PATH lacks: then the git ``cybr update`` runs.
+    """``git`` as given, unless it is a bare ``git`` PATH lacks: then the git ``hermes update`` runs.
 
     A Windows source install's only git is often the copy install.ps1 staged in PM's store, which
-    is on PATH only inside ``cybr update`` (``expose_pm_git``). Desktop and the dashboard pass a
+    is on PATH only inside ``hermes update`` (``expose_pm_git``). Desktop and the dashboard pass a
     bare ``git`` there, it dies with WinError 2, and the check reports ``head-unavailable``, which
-    Desktop shows as "couldn't reach the update server" while ``cybr update`` works.
+    Desktop shows as "couldn't reach the update server" while ``hermes update`` works.
     """
     if git != "git" or shutil.which(git):
         return git

@@ -1,7 +1,7 @@
 """CLI rendering of missed-run dispatch visibility (#99879).
 
-`cybr cron list` shows a Dispatch line (scheduled vs actual, lateness,
-disposition) and `cybr cron status` calls out jobs whose last dispatch
+`hermes cron list` shows a Dispatch line (scheduled vs actual, lateness,
+disposition) and `hermes cron status` calls out jobs whose last dispatch
 was a late/missed-fire catch-up.
 """
 

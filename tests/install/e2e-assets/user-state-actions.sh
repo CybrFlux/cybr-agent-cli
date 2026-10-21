@@ -91,7 +91,7 @@ user_state_produce() {
       auth_label=(--label e2e-preservation)
     fi
     for provider in openrouter anthropic; do
-      printf '=== cybr auth add %s ===\n' "$provider" >> "$LOG_DIR/user-state-auth.log"
+      printf '=== hermes auth add %s ===\n' "$provider" >> "$LOG_DIR/user-state-auth.log"
       HERMES_DISABLE_LAZY_INSTALLS=1 \
         "$hermes" auth add "$provider" --type api-key \
         --api-key "e2e-preservation-not-a-real-key" "${auth_label[@]}" \

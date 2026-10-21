@@ -159,7 +159,7 @@ Cybr Agent requires a model with at least **64,000 tokens** of context. Models w
 :::
 
 :::tip
-You can switch providers at any time with `cybr model` — no lock-in. For a full list of all supported providers and setup details, see [AI Providers](../integrations/providers.md).
+You can switch providers at any time with `hermes model` — no lock-in. For a full list of all supported providers and setup details, see [AI Providers](../integrations/providers.md).
 :::
 
 ### How settings are stored

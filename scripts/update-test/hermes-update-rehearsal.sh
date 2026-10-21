@@ -284,7 +284,7 @@ cmd_pre() {
   out="$(HERMES_HOME="$HERMES_HOME" "$hermes_exe" backup -o "$SNAP/hermes-backup.zip" 2>&1)" || code=$?
   if [ "$code" = 1 ] && [ -f "$SNAP/hermes-backup.zip" ]; then
     printf '    %s\n' "$out"
-    warn "cybr backup finished INCOMPLETE ($((SECONDS - started))s): the files listed above are not in $SNAP/hermes-backup.zip"
+    warn "hermes backup finished INCOMPLETE ($((SECONDS - started))s): the files listed above are not in $SNAP/hermes-backup.zip"
   elif [ "$code" != 0 ] || [ ! -f "$SNAP/hermes-backup.zip" ]; then
     printf '    %s\n' "$out"
     die "cybr backup failed (exit $code) — nothing else was done"

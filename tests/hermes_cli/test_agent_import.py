@@ -1,4 +1,4 @@
-"""Tests for hermes_cli.agent_import — ``cybr import-agent``.
+"""Tests for hermes_cli.agent_import — ``hermes import-agent``.
 
 Covers: source detection, Claude Code and Codex parsing, mapping into the
 real Cybr Agent stores (memories/MEMORY.md, config.yaml command_allowlist /

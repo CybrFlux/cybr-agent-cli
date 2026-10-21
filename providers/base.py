@@ -55,7 +55,7 @@ class ProviderProfile:
     # True when the provider is pre-release / not for public listing. Discovery surfaces (provider
     # pickers, the setup provider list, the dashboard accounts tab) skip it unless ``listed()``
     # says otherwise; resolution by name is untouched, so an explicit ``model.provider`` /
-    # ``cybr auth add <name>`` keeps working.
+    # ``hermes auth add <name>`` keeps working.
     hidden: bool = False
 
     # ── Auth & endpoints ─────────────────────────────────────
@@ -68,7 +68,7 @@ class ProviderProfile:
     supports_model_listing: bool = True
 
     # ── Provider-owned auth (optional; non-api-key plugins) ──────────
-    # ``auth_handler(action, args) -> bool``: ``cybr auth add|status|logout|refresh <name>`` calls it
+    # ``auth_handler(action, args) -> bool``: ``hermes auth add|status|logout|refresh <name>`` calls it
     # FIRST with the parsed CLI namespace; truthy = the plugin owned the action, falsy = built-in path.
     # ``refresh_credential(entry) -> Mapping | None``: the credential pool's refresh of a pooled OAuth
     # row — return the rotated fields (``access_token``, ``refresh_token``, ``expires_at_ms`` …) or raise.
@@ -315,7 +315,7 @@ class ProviderProfile:
         """Whether discovery surfaces may offer this provider.
 
         Every non-``hidden`` profile is listed. A ``hidden`` (pre-release) one surfaces once the user
-        opted in by name (``cybr auth add <name>`` put a row in its credential pool), so the
+        opted in by name (``hermes auth add <name>`` put a row in its credential pool), so the
         pickers can then offer it. Reads auth.json only: it runs on every picker build.
         """
         if not self.hidden:

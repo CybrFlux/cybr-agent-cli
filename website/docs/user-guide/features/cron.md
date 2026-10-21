@@ -25,7 +25,7 @@ All of this is available to Cybr Agent itself through the `cronjob_manage` tool,
 :::tip
 **Which model does a cron job run on?** Resolution at fire time is: per-job pin → `cron.model` in `config.yaml` → the main agent model from `cybr model`.
 
-- **Per-job pin** — a job that carries its own model. Set it to a specific model via the dashboard, `cybr cron create/edit --model … --provider …`, or by editing `~/.hermes/cron/jobs.json`; or **lock in the current main model** with `cybr cron create/edit --pin` (the agent's `cronjob_manage` tool can do this too with `pinned=true`, but only when you ask it to). `--unpin` (`pinned=false`) releases the lock. The agent cannot point a job at a *different* model — inference pins are user-owned.
+- **Per-job pin** — a job that carries its own model. Set it to a specific model via the dashboard, `hermes cron create/edit --model … --provider …`, or by editing `~/.hermes/cron/jobs.json`; or **lock in the current main model** with `hermes cron create/edit --pin` (the agent's `cronjob_manage` tool can do this too with `pinned=true`, but only when you ask it to). `--unpin` (`pinned=false`) releases the lock. The agent cannot point a job at a *different* model — inference pins are user-owned.
 - **`cron.model` / `cron.model_provider`** — a cron-fleet default: every unpinned job runs on this model, independent of your chat model. Set it once (`cybr config set cron.model <name>`) and switching your chat model with `cybr model` or `/model` never touches your cron fleet.
 - **Main agent model** — when neither of the above is set, a job runs on whatever `cybr model` / `/model` is set to **at the moment it fires**. Change your main model and every unpinned job follows on its next run.
 
@@ -138,7 +138,7 @@ An unpinned job follows the main agent model, so `cybr model` moves your cron fl
 When you want a job to *stay* on a model:
 
 ```bash
-cybr cron edit <job_id> --pin                                   # lock the current main model onto one job
+hermes cron edit <job_id> --pin                                   # lock the current main model onto one job
 cybr cron edit <job_id> --provider <provider> --model <model>   # pin an explicit model
 cybr cron edit <job_id> --unpin                                 # follow the main model again
 cybr config set cron.model <model>                              # every unpinned job, without touching chat
@@ -424,7 +424,7 @@ tools or streaming, so a healthy multi-hour job is never reclaimed mid-run, whil
 a worker deadlocked on a lock stops stamping and is released once the bound
 passes. Unknown attempts are audit records and are never automatically rerun.
 
-Inspect recent attempts with `cybr cron runs [job-id] --limit 20` (alias:
+Inspect recent attempts with `hermes cron runs [job-id] --limit 20` (alias:
 `history`). Terminal history is bounded; active attempts are never pruned. The
 ledger is included in quick backups.
 

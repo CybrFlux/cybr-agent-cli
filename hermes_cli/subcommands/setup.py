@@ -1,4 +1,4 @@
-"""``cybr setup`` subcommand parser."""
+"""``hermes setup`` subcommand parser."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ def build_setup_parser(subparsers, *, cmd_setup: Callable) -> None:
         "setup", help="Interactive setup wizard",
         description="Configure Cybr Agent with an interactive wizard. "
         "Run a specific section: "
-        "cybr setup model|tts|terminal|gateway|tools|telemetry|agent")
+        "hermes setup model|tts|terminal|gateway|tools|telemetry|agent")
     setup_parser.add_argument(
         "section", nargs="?",
         choices=["model", "tts", "terminal", "gateway", "tools", "telemetry", "agent"],
@@ -25,7 +25,7 @@ def build_setup_parser(subparsers, *, cmd_setup: Callable) -> None:
         "--reconfigure", action="store_true",
         help="(Default on existing installs.) Re-run the full wizard, "
         "showing current values as defaults. Kept for backwards "
-        "compatibility — a bare 'cybr setup' now does this.")
+        "compatibility — a bare 'hermes setup' now does this.")
     setup_parser.add_argument(
         "--quick", action="store_true",
         help="On existing installs: only prompt for items that are missing "

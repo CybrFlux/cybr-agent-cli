@@ -69,7 +69,7 @@ def generate_bash(parser: argparse.ArgumentParser) -> str:
     cases_str = "\n".join(cases)
     return f"""# Cybr Agent bash completion
 # Add to ~/.bashrc:
-#   eval "$(cybr completion bash)"
+#   eval "$(hermes completion bash)"
 
 _hermes_profiles() {{
     local profiles_dir="$HOME/.hermes/profiles"
@@ -155,7 +155,7 @@ def generate_zsh(parser: argparse.ArgumentParser) -> str:
     return f"""#compdef hermes
 # Cybr Agent zsh completion
 # Add to ~/.zshrc:
-#   eval "$(cybr completion zsh)"
+#   eval "$(hermes completion zsh)"
 
 _hermes_profiles() {{
     local -a profiles
@@ -183,7 +183,7 @@ _hermes() {{
             subcmds=(
 {top_cmds_str}
             )
-            _describe 'cybr command' subcmds
+            _describe 'hermes command' subcmds
             ;;
         args)
             case ${{line[1]}} in
@@ -203,7 +203,7 @@ def generate_fish(parser: argparse.ArgumentParser) -> str:
     lines: list[str] = [
         "# Cybr Agent fish completion",
         "# Add to your config:",
-        "#   cybr completion fish | source",
+        "#   hermes completion fish | source",
         "",
         "# Helper: list available profiles",
         "function __hermes_profiles",
@@ -216,16 +216,16 @@ def generate_fish(parser: argparse.ArgumentParser) -> str:
         "end",
         "",
         "# Disable file completion by default",
-        "complete -c cybr -f",
+        "complete -c hermes -f",
         "",
         "# Complete profile names after -p / --profile",
-        "complete -c cybr -f -s p -l profile"
+        "complete -c hermes -f -s p -l profile"
         " -d 'Profile name' -xa '(__hermes_profiles)'",
         "",
         "# Top-level subcommands"]
     for cmd, info in subcommands:
         lines.append(
-            f"complete -c cybr -f "
+            f"complete -c hermes -f "
             f"-n 'not __fish_seen_subcommand_from {top_cmds_str}' "
             f"-a {cmd} -d '{_clean(info.get('help', ''))}'")
     lines += ["", "# Subcommand completions"]
@@ -235,13 +235,13 @@ def generate_fish(parser: argparse.ArgumentParser) -> str:
         lines.append(f"# {cmd}")
         for sc, sinfo in sorted(info["subcommands"].items()):
             lines.append(
-                f"complete -c cybr -f "
+                f"complete -c hermes -f "
                 f"-n '__fish_seen_subcommand_from {cmd}' "
                 f"-a {sc} -d '{_clean(sinfo.get('help', ''))}'")
         if cmd == "profile":  # profile names for the actions that take one
             for action in sorted(_PROFILE_NAME_ACTIONS):
                 lines.append(
-                    f"complete -c cybr -f "
+                    f"complete -c hermes -f "
                     f"-n '__fish_seen_subcommand_from {action}; "
                     f"and __fish_seen_subcommand_from profile' "
                     f"-a '(__hermes_profiles)' -d 'Profile name'")

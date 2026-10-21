@@ -3007,7 +3007,7 @@ def _cli_turn(session_id: str, parent_session_id: str = "") -> None:
 
 
 def test_finite_cli_runs_report_their_own_entrypoint(direct_runtime, tmp_path, monkeypatch):
-    """`cybr -z` / `chat -q` / `-Q` runs (HERMES_SINGLE_QUERY_SESSION) report `one_shot`, a
+    """`hermes -z` / `chat -q` / `-Q` runs (HERMES_SINGLE_QUERY_SESSION) report `one_shot`, a
     dispatcher-spawned one (kanban worker, A2A forward) `background`; the REPL stays `interactive`,
     and a delegated child or a non-CLI surface keeps its own entrypoint inside a finite run."""
     monkeypatch.delenv("HERMES_SINGLE_QUERY_SESSION", raising=False)
@@ -3041,7 +3041,7 @@ def test_finite_cli_runs_report_their_own_entrypoint(direct_runtime, tmp_path, m
 
 
 def test_oneshot_hard_exit_cleanup_records_the_session_summary(direct_runtime, tmp_path, monkeypatch):
-    """`cybr -z` leaves through os._exit, past the atexit hook that closes the metrics session; its
+    """`hermes -z` leaves through os._exit, past the atexit hook that closes the metrics session; its
     pre-exit cleanup must write the run's session.count itself."""
     from hermes_cli import main as hermes_main
 

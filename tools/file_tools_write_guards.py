@@ -170,7 +170,7 @@ def _check_sensitive_path(filepath: str, task_id: str = "default") -> str | None
         return (
             f"Refusing to write to Cybr Agent config file: {filepath}\n"
             "Agent cannot modify security-sensitive configuration. "
-            "Edit ~/.hermes/config.yaml directly or use 'cybr config' instead.")
+            "Edit ~/.hermes/config.yaml directly or use 'hermes config' instead.")
     return None
 
 

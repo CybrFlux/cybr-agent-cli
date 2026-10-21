@@ -109,7 +109,7 @@ def gui_toolset_label(label: str) -> str:
 # toolsets (catalog / bundled plugin) that stay opt-in once installed.
 _DEFAULT_OFF_TOOLSETS = {"spotify", "discord", "discord_admin", "video", "video_gen", "x_search", "a2a", "kanban"}
 
-# Config-only capabilities: provider setup in `cybr tools` (TOOL_CATEGORIES) but not model toolsets — zero
+# Config-only capabilities: provider setup in `hermes tools` (TOOL_CATEGORIES) but not model toolsets — zero
 # schemas, own switch (``stt.enabled``), never in ``platform_toolsets`` or the per-platform checklist.
 _CONFIG_ONLY_TOOLSETS = {"stt"}
 
@@ -182,7 +182,7 @@ def _get_plugin_toolset_keys() -> set:
 
 
 def _checklist_toolset_keys(platform: str) -> set[str]:
-    """Toolset keys the ``cybr tools`` checklist offers for ``platform`` (mirrors ``_prompt_toolset_checklist``);
+    """Toolset keys the ``hermes tools`` checklist offers for ``platform`` (mirrors ``_prompt_toolset_checklist``);
     read-time-resolved toolsets (recovered composites, MCP names) are NOT here."""
     return {
         ts_key for ts_key, _, _ in _get_effective_configurable_toolsets()
@@ -429,7 +429,7 @@ def enabled_mcp_server_names(config: dict) -> set[str]:
 
 
 #: Toolsets young enough that absence from a saved ``platform_toolsets`` list means "never offered", not
-#: "declined": saving ``cybr tools`` freezes a platform's composite into an explicit list nothing adds to, so
+#: "declined": saving ``hermes tools`` freezes a platform's composite into an explicit list nothing adds to, so
 #: a later toolset stays off forever for picker users while ``[hermes-cli]`` users inherit it.
 #: MUST ship in the same release as the toolset and be emptied in the next: once a released build has put the
 #: toolset on a checklist, an unchecking user's config is byte-identical to one saved before it existed and this
@@ -543,7 +543,7 @@ def _context_engine_active(config: dict) -> bool:
 def _coerce_platform_toolsets_value(value, platform: str):
     """Read a list-literal string saved for ``platform_toolsets.<platform>`` as the list it encodes.
 
-    The parser is shared with ``cybr doctor`` and ``cybr plugins`` (``toolset_validation``
+    The parser is shared with ``hermes doctor`` and ``hermes plugins`` (``toolset_validation``
     ``parse_platform_toolsets_value``) so every surface agrees on the user's selection (#115866).
     Any other non-list value is warned about once (naming the expected shape) and left as-is, so
     the default fallback below is loud rather than silent.
@@ -558,7 +558,7 @@ def _coerce_platform_toolsets_value(value, platform: str):
         logger.warning(
             "platform_toolsets.%s is %r, expected a YAML list of toolset names "
             "(e.g. [terminal, file, web]) - falling back to the platform default. "
-            "Run `cybr tools` to reconfigure.", platform, value)
+            "Run `hermes tools` to reconfigure.", platform, value)
     return value
 
 
@@ -641,7 +641,7 @@ def _get_platform_tools(config: dict, platform: str, *, include_default_mcp_serv
         enabled_toolsets.add("kanban")
 
     # agent.disabled_toolsets is a global suppression list (#86661) and runs LAST so it overrides everything
-    # above. It may arrive as a JSON-array string ("['memory']") from `cybr config set` or a JSON-mode editor.
+    # above. It may arrive as a JSON-array string ("['memory']") from `hermes config set` or a JSON-mode editor.
     disabled_toolsets = (config.get("agent") or {}).get("disabled_toolsets")
     if disabled_toolsets:
         from agent.skill_utils import parse_config_string_list
@@ -658,7 +658,7 @@ def _prune_toolsets_stripped_by_disabled(enabled_toolsets: set[str], disabled_na
 
     The agent subtracts ``agent.disabled_toolsets`` at TOOL granularity (``model_tools._select_tool_names``),
     so disabling a composite like ``debugging`` removes the terminal/web/file tools even though those names
-    never appear in the list. A name-only subtraction here left inspection surfaces (``cybr tools
+    never appear in the list. A name-only subtraction here left inspection surfaces (``hermes tools
     --summary``, banner, ``/tools``) showing toolsets as enabled that no session could call (#97015).
     Passthrough entries (MCP server names) and toolsets with no static tools (``context_engine``) are kept.
     """
@@ -720,7 +720,7 @@ def _merge_mcp_servers(
 
 
 def _warn_all_invalid_platform_toolsets(platform: str, explicit: list) -> None:
-    """Warn once when an explicit platform list has only invalid names (``cybr`` for ``hermes-cli`` → no
+    """Warn once when an explicit platform list has only invalid names (``hermes`` for ``hermes-cli`` → no
     native tools), at session tool resolution rather than only in update/doctor."""
     from toolsets import validate_toolset
 
@@ -729,7 +729,7 @@ def _warn_all_invalid_platform_toolsets(platform: str, explicit: list) -> None:
         _warned_invalid_platform_toolsets.add(platform)
         logger.warning(
             "platform '%s' has no valid toolsets configured (unknown "
-            "name(s): %s) - tools will be unavailable. Run `cybr tools` "
+            "name(s): %s) - tools will be unavailable. Run `hermes tools` "
             "to reconfigure. See issue #38798.",
             platform, ", ".join(named))
 
@@ -977,9 +977,9 @@ def _platform_menu_label(config: dict, pkey: str) -> str:
 
 
 def _print_tools_summary(config: dict, enabled_platforms: list[str]) -> None:
-    """``cybr tools --summary``: enabled toolsets per platform, non-interactive."""
+    """``hermes tools --summary``: enabled toolsets per platform, non-interactive."""
     total = len(_get_effective_configurable_toolsets())
-    print(color("☤ Tool Summary", Colors.CYAN, Colors.BOLD))
+    print(color("∿ Tool Summary", Colors.CYAN, Colors.BOLD))
     print()
     for pkey, enabled in _platform_toolset_summary(config, enabled_platforms).items():
         print(color(f"  {PLATFORMS[pkey]['label']}", Colors.BOLD) + color(f"  ({len(enabled)}/{total})", Colors.DIM))
@@ -1076,7 +1076,7 @@ def _configure_platforms(config: dict, platform_keys: list[str], *, all_platform
 
 
 def tools_command(args=None, first_install: bool = False, config: dict | None = None):
-    """Entry point for `cybr tools` / `cybr setup tools`. ``first_install`` skips the menu (checklist + key
+    """Entry point for `hermes tools` / `hermes setup tools`. ``first_install`` skips the menu (checklist + key
     prompts); a wizard-passed ``config`` receives platform_toolsets so its final save_config() keeps them."""
     if config is None:
         config = load_config()
@@ -1086,7 +1086,7 @@ def tools_command(args=None, first_install: bool = False, config: dict | None = 
     if getattr(args, "summary", False):
         _print_tools_summary(config, enabled_platforms)
         return
-    print(color("☤ Cybr Agent Tool Configuration", Colors.CYAN, Colors.BOLD))
+    print(color("∿ Cybr Agent Tool Configuration", Colors.CYAN, Colors.BOLD))
     print(color("  Enable or disable tools per platform.", Colors.DIM))
     print(color("  Tools that need API keys will be configured when enabled.", Colors.DIM))
     print(color("  Guide: https://hermes-agent.nousresearch.com/docs/user-guide/features/tools", Colors.DIM))

@@ -28,7 +28,7 @@
     "url": "https://x.com/nixxin/status/2101315665504452959",
     "date": "2026-09-19",
     "category": "enterprise",
-    "headline": "A tech-policy publication runs Cybr Agent agents for editorial suggestions and client proposals",
+    "headline": "A tech-policy publication runs Cybr Agents for editorial suggestions and client proposals",
     "quote": "Built mechanisms for Ed (MediaNama’s Cybr Agent editorial assistant) to recommend speakers, guest authors and commentators for MediaNama events and stories … Created an Cybr Agent led RTI agent on MediaNama OS … Added Cybr Agent Ev for drafting first drafts of client proposals",
     "size": "md"
   },
@@ -51,7 +51,7 @@
     "date": "2026-07-15",
     "category": "business-ops",
     "headline": "A business added a Cybr Agent IT-support agent that now solves 90% of issues on its own",
-    "quote": "Integrated a bunch of slack Cybr Agent agents for my business. … Ended up creating a hermes agent that does IT support. 90% of issues solved on its own now. Gave it a guidelines it needs to follow. works great",
+    "quote": "Integrated a bunch of slack Cybr Agents for my business. … Ended up creating a hermes agent that does IT support. 90% of issues solved on its own now. Gave it a guidelines it needs to follow. works great",
     "size": "md"
   },
   {
@@ -347,7 +347,7 @@
     "url": "https://x.com/rlaope/status/2096111328528318713",
     "date": "2026-09-05",
     "category": "enterprise",
-    "headline": "Korean AI company runs dozens of Cybr Agent agents on a Mac Mini farm across every team",
+    "headline": "Korean AI company runs dozens of Cybr Agents on a Mac Mini farm across every team",
     "quote": "our CEO went absolute beast mode and bought a ton of Mac Minis to set up a full Mac Mini farm—literally building a Cybr Agent production factory for us. We already have dozens of agents working actively inside Sionic. … From Service Development and DevOps to AI Research and Strategy & BD, we’re applying it across the board without exception.",
     "size": "lg"
   },
@@ -666,7 +666,7 @@
     "url": "https://x.com/LoicBerthelot/status/2057432738764881996",
     "date": "2026-05-21",
     "category": "business-ops",
-    "headline": "Startup founder runs support, banking, Stripe and SEO through Cybr Agent agents",
+    "headline": "Startup founder runs support, banking, Stripe and SEO through Cybr Agents",
     "quote": "I've been running Cybr Agent as the backbone of my company for months now. Support systems, banking, Stripe, analytics, marketing, SEO, and everything else. It's all managed by agents that get smarter without me touching them. … That's why it's the backbone of Dropmagic.",
     "size": "md"
   },
@@ -1085,7 +1085,7 @@
     "date": "2026-06-26",
     "category": "research",
     "headline": "A synthetic hippocampus that forgets on purpose",
-    "quote": "You have a great conversation on Monday, and by Friday your agent looks at you like you're a stranger who wandered into its context window. … So I built Synapse a temporal knowledge graph memory system for Cybr Agent agents.",
+    "quote": "You have a great conversation on Monday, and by Friday your agent looks at you like you're a stranger who wandered into its context window. … So I built Synapse a temporal knowledge graph memory system for Cybr Agents.",
     "size": "md"
   },
   {
@@ -1228,7 +1228,7 @@
     "date": "2026-06-29",
     "category": "creative",
     "headline": "Design skills so agent-generated UI stops looking generic",
-    "quote": "I built a tool that helps you let your Cybr Agent agents build better UI by using design skills that lets you build UI in a certain style.",
+    "quote": "I built a tool that helps you let your Cybr Agents build better UI by using design skills that lets you build UI in a certain style.",
     "size": "sm"
   },
   {
@@ -1568,8 +1568,8 @@
     "url": "https://github.com/teknium1/nous-discord-archive/blob/main/archives/hermes-agent.txt",
     "date": "2026-03-22",
     "category": "privacy",
-    "headline": "Sharing a local SearXNG container across my Cybr Agent agents",
-    "quote": "I set up my Cybr Agent Agents with local SearXNG (in a container that they share) before ddgs (duckduckgo) was added, because I thought all API use of DDG was paid. I've been pretty happy with searxng so far.",
+    "headline": "Sharing a local SearXNG container across my Cybr Agents",
+    "quote": "I set up my Cybr Agents with local SearXNG (in a container that they share) before ddgs (duckduckgo) was added, because I thought all API use of DDG was paid. I've been pretty happy with searxng so far.",
     "size": "sm"
   },
   {
@@ -2525,7 +2525,7 @@
     "url": "https://github.com/teknium1/nous-discord-archive/blob/main/archives/plugins-skills-and-skins/1502632110345818123-Attest---onchain-identity-and-proof-of-work-for-Hermes-agents-via-EAS.txt",
     "date": "",
     "category": "integrations",
-    "headline": "Onchain identity and proof-of-work for Cybr Agent agents",
+    "headline": "Onchain identity and proof-of-work for Cybr Agents",
     "quote": "Built a skill that connects Cybr Agent to Ethereum Attestation Service on Base mainnet. The agent autonomously creates onchain identity and proof-of-work attestations.",
     "size": "sm"
   },
@@ -3614,7 +3614,7 @@
     "url": "https://github.com/teknium1/nous-discord-archive/blob/main/archives/community-projects-showcase/1499716570878840882-Hermes-Multi-Agent-Setup---4-Agents-on-a-Laptop.txt",
     "date": "",
     "category": "meta",
-    "headline": "Running 4 Cybr Agent agents 24/7 on a 32GB Ubuntu laptop",
+    "headline": "Running 4 Cybr Agents 24/7 on a 32GB Ubuntu laptop",
     "quote": "Running a 4-agent Cybr Agent system 24/7 on a 32GB Ubuntu laptop, managed by systemd + custom watchdog. default (PM) — Feishu WebSocket; dev (Developer) — ACP delegated; devops (Ops) — ACP delegated; ip-agent (Content) — Cron scheduled. 5 MCP Servers, 34 tools total. Self-learning ACP v1.5 with auto distillation cron at 04:30 daily.",
     "size": "lg"
   },
@@ -3703,7 +3703,7 @@
     "date": "2026",
     "category": "integrations",
     "headline": "Agent-to-agent commerce via Merxex",
-    "quote": "I'm building Merxex, an agent-to-agent commerce platform that lets agents buy and sell services/work seamlessly. Cybr Agent agents could benefit from a native monetization layer.",
+    "quote": "I'm building Merxex, an agent-to-agent commerce platform that lets agents buy and sell services/work seamlessly. Cybr Agents could benefit from a native monetization layer.",
     "size": "sm"
   },
   {
@@ -3922,8 +3922,8 @@
     "url": "https://www.youtube.com/watch?v=YqLcMmzl3Yg",
     "date": "2026",
     "category": "dev-workflow",
-    "headline": "GLADIATOR: 9 Cybr Agent agents, two rival AI companies, one GitHub stars war",
-    "quote": "Two fully autonomous AI companies competing head-to-head to maximize GitHub stars. 9 Cybr Agent agents split into rival companies. Cybr Agent agents actually learn and improve — they wrote code, created skills, grew memory, committed to git. All on their own.",
+    "headline": "GLADIATOR: 9 Cybr Agents, two rival AI companies, one GitHub stars war",
+    "quote": "Two fully autonomous AI companies competing head-to-head to maximize GitHub stars. 9 Cybr Agents split into rival companies. Cybr Agents actually learn and improve — they wrote code, created skills, grew memory, committed to git. All on their own.",
     "size": "md"
   },
   {
@@ -3945,7 +3945,7 @@
     "date": "2026-04-07",
     "category": "dev-workflow",
     "headline": "Cybr Agent and OpenClaw in XFCE desktop containers, side by side",
-    "quote": "Been using both OpenClaw and Cybr Agent agents recently, and Cybr Agent is quickly taking over the most important parts of my workflow. I have Cybr Agent and OpenClaw both running in their own XFCE desktop containers w/ full desktop Chrome.",
+    "quote": "Been using both OpenClaw and Cybr Agents recently, and Cybr Agent is quickly taking over the most important parts of my workflow. I have Cybr Agent and OpenClaw both running in their own XFCE desktop containers w/ full desktop Chrome.",
     "size": "md"
   },
   {

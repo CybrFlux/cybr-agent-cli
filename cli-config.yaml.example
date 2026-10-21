@@ -599,7 +599,7 @@ terminal:
 #   # Language servers only load code a project ships (its .venv interpreter,
 #   # node_modules TypeScript, svelte.config.js, cargo/Gradle/mix build files)
 #   # in the git worktree of the directory you launched Cybr Agent in or opened
-#   # the session in (cybr -w, a Desktop project, terminal.cwd), or under a
+#   # the session in (hermes -w, a Desktop project, terminal.cwd), or under a
 #   # directory listed here. In other checkouts, such as a repository the agent
 #   # cloned, only servers that run no project code start (pinned to
 #   # Cybr Agent-side tools) and the npx tsc / rustfmt lint fallbacks are skipped.

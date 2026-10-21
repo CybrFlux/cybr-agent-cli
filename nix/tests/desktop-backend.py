@@ -79,8 +79,8 @@ with tempfile.TemporaryDirectory(prefix="hermes-desktop-backend-") as temporary:
                     output += desktop_log.read_text()
                 assert "WRONG_BACKEND_SELECTED" not in output, output
                 assert child.poll() is None, output
-                # Desktop attaches to `cybr gateway ensure` (the daemon serves the dashboard), so
-                # readiness is Desktop's own attach line, not a spawned `cybr serve` sentinel.
+                # Desktop attaches to `hermes gateway ensure` (the daemon serves the dashboard), so
+                # readiness is Desktop's own attach line, not a spawned `hermes serve` sentinel.
                 if "[backend] Cybr Agent gateway is ready" in output:
                     assert f"[backend] using existing Cybr Agent CLI at {expected}" in output, output
                     print("PASS: packaged desktop selected its pinned backend over the mutable install")
@@ -95,7 +95,7 @@ with tempfile.TemporaryDirectory(prefix="hermes-desktop-backend-") as temporary:
             except subprocess.TimeoutExpired:
                 os.killpg(child.pid, signal.SIGKILL)
                 child.wait(timeout=5)
-            # The desktop spawns its backend in its own session (cybr serve outlives a
+            # The desktop spawns its backend in its own session (hermes serve outlives a
             # window close on purpose), so killing cage's group leaves that gateway writing
             # under HERMES_HOME while the tempdir is removed. Stop everything still rooted
             # in this home before cleanup; the sandbox has no other processes to confuse.

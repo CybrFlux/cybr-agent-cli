@@ -3,7 +3,7 @@
 ``provider: copilot-acp`` makes Cybr Agent spawn an external ACP agent (``copilot --acp --stdio``) per model
 call and speak the Agent Client Protocol to it over stdio. Here the agent is
 ``tests/fakes/providers/copilot_acp.py``, a fake that validates every request against the published
-ACP schema and replays scripted turns. Everything on the Cybr Agent side is real: the ``cybr chat -q``
+ACP schema and replays scripted turns. Everything on the Cybr Agent side is real: the ``hermes chat -q``
 process, runtime resolution from ``config.yaml`` + the profile ``.env`` (``HERMES_COPILOT_ACP_COMMAND``
 / ``HERMES_COPILOT_ACP_ARGS``), the ACP client, the agent loop, the ``read_file`` tool and ``state.db``.
 

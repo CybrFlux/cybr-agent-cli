@@ -95,7 +95,7 @@ export const es: Translations = {
   status: {
     actionFailed: "Acción fallida",
     actionFinished: "Finalizado",
-    actionFinishedOwed: "Actualizado, pero aún pendiente (vuelve a ejecutar `cybr update` para terminar)",
+    actionFinishedOwed: "Actualizado, pero aún pendiente (vuelve a ejecutar `hermes update` para terminar)",
     actions: "Acciones",
     agent: "Agente",
     activeSessions: "Sesiones activas",
@@ -335,7 +335,7 @@ export const es: Translations = {
       "Guardado: reinicia el gateway para aplicar el cambio.",
     forceReinstall: "Forzar reinstalación (eliminar carpeta existente primero)",
     headline:
-      "Descubre, instala, habilita y actualiza complementos de Cybr Agent (equivalente a `cybr plugins`).",
+      "Descubre, instala, habilita y actualiza complementos de Cybr Agent (equivalente a `hermes plugins`).",
     identifierLabel: "URL de Git u owner/repo",
     inactive: "inactivo",
     installBtn: "Instalar",
@@ -613,7 +613,7 @@ export const es: Translations = {
         "Compartir en X abre una publicación predefinida en una nueva pestaña. Haz clic primero en Copiar imagen si quieres adjuntar la insignia 1200×630: X te permite pegarla directamente en el redactor del tuit. Descargar PNG guarda el archivo para usarlo en cualquier lugar.",
       clipboard_unsupported:
         "Este navegador no admite copiar imágenes al portapapeles: usa Descargar en su lugar.",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Cybr Agent ☤",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in Cybr Agent ∿",
     },
   },
   kanban: {

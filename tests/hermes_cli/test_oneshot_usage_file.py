@@ -1,4 +1,4 @@
-"""Tests for cybr -z --usage-file (per-run JSON usage report)."""
+"""Tests for hermes -z --usage-file (per-run JSON usage report)."""
 
 import json
 

@@ -50,7 +50,7 @@ _PASSTHROUGH_ENV = frozenset({
 
 
 TURN_TIMEOUT = 240.0
-# `cybr gateway stop` waits for the daemon's planned exit (MCP teardown included).
+# `hermes gateway stop` waits for the daemon's planned exit (MCP teardown included).
 STOP_TIMEOUT = 120.0
 
 
@@ -460,9 +460,9 @@ def terminate(proc: subprocess.Popen, timeout: float = 30.0) -> int | None:
 
 
 def stop_profile_gateway(ph: ParityHome, timeout: float = STOP_TIMEOUT) -> bool:
-    """The normal stop for the profile's ``gateway run`` daemon: ``cybr gateway stop``.
+    """The normal stop for the profile's ``gateway run`` daemon: ``hermes gateway stop``.
 
-    ``cybr -z``, ``cybr chat -q``, ``cybr acp`` and ``cybr cron run`` are clients of the
+    ``hermes -z``, ``hermes chat -q``, ``hermes acp`` and ``hermes cron run`` are clients of the
     unified gateway runtime: their first connect spawns the profile's daemon (``ensure_gateway_runtime``
     → ``spawn_unmanaged_gateway``), the daemon owns the agent — and with it the MCP server tree — and it
     keeps serving after the client exits (cron, messaging, the next client). So the surface's
@@ -474,7 +474,7 @@ def stop_profile_gateway(ph: ParityHome, timeout: float = STOP_TIMEOUT) -> bool:
         hermes_argv("gateway", "stop"), cwd=ph.project, env=ph.env(), capture_output=True, text=True,
         timeout=timeout, stdin=subprocess.DEVNULL, check=False
     )
-    assert proc.returncode == 0, f"cybr gateway stop exited {proc.returncode}: {proc.stderr[-2000:]}"
+    assert proc.returncode == 0, f"hermes gateway stop exited {proc.returncode}: {proc.stderr[-2000:]}"
     return "Stopped gateway" in proc.stdout
 
 

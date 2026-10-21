@@ -141,9 +141,9 @@ All of the following resolve to `minimax-oauth`:
 
 ```bash
 cybr --provider minimax-oauth    # canonical
-cybr --provider minimax-portal   # alias
-cybr --provider minimax-global   # alias
-cybr --provider minimax_oauth    # alias (underscore form)
+hermes --provider minimax-portal   # alias
+hermes --provider minimax-global   # alias
+hermes --provider minimax_oauth    # alias (underscore form)
 ```
 
 ## Environment Variables

@@ -136,9 +136,9 @@ async function canImportHermesCli(
 /**
  * Return true iff `<hermesCommand> --version` exits 0.
  *
- * Used to gate the "existing `cybr` on PATH" rung. Without this, a
+ * Used to gate the "existing `hermes` on PATH" rung. Without this, a
  * stale hermes.cmd shim left behind by an uninstalled pip install (or
- * a half-built venv whose `cybr` entry-point points at a deleted
+ * a half-built venv whose `hermes` entry-point points at a deleted
  * Python) survives findOnPath() and gets selected as the backend.
  *
  * We intentionally avoid invoking the command with the dashboard args

@@ -1407,7 +1407,7 @@ function Invoke-UserStateActions {
             }
             $added = $false
             foreach ($provider in @('openrouter', 'anthropic')) {
-                Add-Content -LiteralPath $authLog -Value "=== cybr auth add $provider ==="
+                Add-Content -LiteralPath $authLog -Value "=== hermes auth add $provider ==="
                 & $cybr auth add $provider --type api-key `
                     --api-key 'e2e-preservation-not-a-real-key' @labelFlags 2>&1 |
                     Out-File -Encoding UTF8 -Append $authLog

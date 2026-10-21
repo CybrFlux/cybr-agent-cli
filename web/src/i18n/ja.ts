@@ -95,7 +95,7 @@ export const ja: Translations = {
   status: {
     actionFailed: "アクションが失敗しました",
     actionFinished: "完了",
-    actionFinishedOwed: "更新済みですが未完了の処理があります（完了するには `cybr update` を再実行してください）",
+    actionFinishedOwed: "更新済みですが未完了の処理があります（完了するには `hermes update` を再実行してください）",
     actions: "アクション",
     agent: "エージェント",
     activeSessions: "アクティブなセッション",
@@ -333,7 +333,7 @@ export const ja: Translations = {
       "保存しました — 変更を適用するにはゲートウェイを再起動してください。",
     forceReinstall: "強制再インストール (既存のフォルダを先に削除)",
     headline:
-      "Cybr Agent プラグインを発見、インストール、有効化、更新します (`cybr plugins` 相当)。",
+      "Cybr Agent プラグインを発見、インストール、有効化、更新します (`hermes plugins` 相当)。",
     identifierLabel: "Git URL または owner/repo",
     inactive: "非アクティブ",
     installBtn: "インストール",
@@ -612,7 +612,7 @@ export const ja: Translations = {
         "「X で共有」は事前入力された投稿を新しいタブで開きます。1200×630 のバッジを添付したい場合は、先に「画像をコピー」を押してください — X では投稿エディタに直接貼り付けられます。「PNG をダウンロード」はファイルとして保存し、どこでも使えるようにします。",
       clipboard_unsupported:
         "このブラウザではクリップボードへの画像コピーがサポートされていません — 代わりに「ダウンロード」をご利用ください。",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Cybr Agent ☤",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in Cybr Agent ∿",
     },
   },
   kanban: {

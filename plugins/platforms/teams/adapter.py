@@ -193,7 +193,7 @@ async def _standalone_send(
 ) -> dict[str, Any]:
     """Acquire a Bot Framework bearer token and POST a single message activity; used by
     ``send_message_tool._send_via_adapter`` when the gateway runner is not in this process
-    (``cybr cron``). ``TEAMS_SERVICE_URL`` is allowlisted and ``chat_id`` charset-checked
+    (``hermes cron``). ``TEAMS_SERVICE_URL`` is allowlisted and ``chat_id`` charset-checked
     (SSRF/path traversal). ``media_files`` / ``force_document`` are signature parity only — text-only."""
     extra = getattr(pconfig, "extra", {}) or {}
     client_id, client_secret, tenant_id = _credentials(pconfig)
@@ -828,12 +828,12 @@ def interactive_setup() -> None:
     print()
     print_success("Teams configuration saved to ~/.hermes/.env")
     print_info("Install the app in Teams:  teams app install --id <teamsAppId>")
-    print_info("Restart the gateway:       cybr gateway restart")
+    print_info("Restart the gateway:       hermes gateway restart")
 
 
 def _install_hint() -> str:
     """Point to the setup flow that requests PM's declared Teams extra."""
-    return "Teams SDK missing — run `cybr setup`, configure Teams, then restart the gateway"
+    return "Teams SDK missing — run `hermes setup`, configure Teams, then restart the gateway"
 
 
 def register(ctx) -> None:

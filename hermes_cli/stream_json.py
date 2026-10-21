@@ -1,4 +1,4 @@
-"""``cybr chat -q … --format stream-json``: one JSON object per stdout line.
+"""``hermes chat -q … --format stream-json``: one JSON object per stdout line.
 
 CI runners and orchestrators consume a one-shot run without scraping human-formatted text:
 ``system/init`` → ``text`` deltas / ``tool_use`` / ``tool_result`` → one terminal ``result``

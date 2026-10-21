@@ -95,7 +95,7 @@ export const hu: Translations = {
   status: {
     actionFailed: "Művelet sikertelen",
     actionFinished: "Befejezve",
-    actionFinishedOwed: "Frissítve, de még függőben (futtasd újra a `cybr update` parancsot a befejezéshez)",
+    actionFinishedOwed: "Frissítve, de még függőben (futtasd újra a `hermes update` parancsot a befejezéshez)",
     actions: "Műveletek",
     agent: "Ügynök",
     activeSessions: "Aktív munkamenetek",
@@ -334,7 +334,7 @@ export const hu: Translations = {
       "Mentve — indítsa újra az átjárót a módosítás alkalmazásához.",
     forceReinstall: "Kényszerített újratelepítés (a meglévő mappa előbb törlődik)",
     headline:
-      "Cybr Agent-bővítmények felfedezése, telepítése, engedélyezése és frissítése (a `cybr plugins` paritás).",
+      "Cybr Agent-bővítmények felfedezése, telepítése, engedélyezése és frissítése (a `hermes plugins` paritás).",
     identifierLabel: "Git URL vagy owner/repo",
     inactive: "inaktív",
     installBtn: "Telepítés",
@@ -613,7 +613,7 @@ export const hu: Translations = {
         "A „Megosztás az X-en” új lapon nyit meg egy előre kitöltött bejegyzést. Először kattints a „Kép másolása” gombra, ha az 1200×630-as jelvényt is csatolnád — az X engedi, hogy közvetlenül beillesszd a bejegyzésszerkesztőbe. A „PNG letöltése” bárhol felhasználható fájlként menti.",
       clipboard_unsupported:
         "A kép vágólapra másolása nem támogatott ebben a böngészőben — használd inkább a Letöltést.",
-      tweet_text: "Just unlocked {tier_part}\"{name}\" in Cybr Agent ☤",
+      tweet_text: "Just unlocked {tier_part}\"{name}\" in Cybr Agent ∿",
     },
   },
   kanban: {

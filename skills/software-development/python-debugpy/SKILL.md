@@ -296,7 +296,7 @@ See Recipe 3. The wrapper captures subprocess output, so run pytest directly for
 In the prepared debug checkout, add `breakpoint()` near the suspect line, then
 run `python hermes`. Control returns to your terminal at the pause point.
 
-### `tui_gateway` subprocess (spawned by `cybr --tui`)
+### `tui_gateway` subprocess (spawned by `hermes --tui`)
 The gateway runs as a child of the Node TUI. Options:
 
 **A. Source-edit the gateway:**

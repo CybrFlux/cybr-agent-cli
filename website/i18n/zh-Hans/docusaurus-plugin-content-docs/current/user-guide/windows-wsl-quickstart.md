@@ -186,7 +186,7 @@ dos2unix path/to/script.sh
 
 ### "在 WSL 内 clone 还是在 `/mnt/c` 上 clone？"
 
-在 WSL 内 clone。始终如此，除非有特殊原因。典型的 Cybr Agent 工作流（`cybr chat`、调用 `rg`/`ripgrep` 搜索仓库的工具、文件监听器、后台 gateway）在 `~/code/myrepo` 下会比在 `/mnt/c/Users/you/myrepo` 下快得多，也更可靠。
+在 WSL 内 clone。始终如此，除非有特殊原因。典型的 Cybr Agent 工作流（`hermes chat`、调用 `rg`/`ripgrep` 搜索仓库的工具、文件监听器、后台 gateway）在 `~/code/myrepo` 下会比在 `/mnt/c/Users/you/myrepo` 下快得多，也更可靠。
 
 一个例外：**启动 Windows 二进制文件的 MCP bridge。** 如果你通过 `cmd.exe` 使用 `chrome-devtools-mcp`（参见 [MCP 指南：WSL → Windows Chrome](../guides/use-mcp-with-hermes.md#wsl2-bridge-hermes-in-wsl-to-windows-chrome)），当 Cybr Agent 的当前工作目录是 `~` 时，Windows 可能会报 `UNC` 警告。此时请从 `/mnt/c/` 下的某个目录启动 Cybr Agent，以便 Windows 进程拥有一个带盘符的工作目录。
 
@@ -262,7 +262,7 @@ Cybr Agent 的 [Tool Gateway](./features/tool-gateway.md) 和 API 服务器都�
 
 ### 在 WSL 内使用 systemd（推荐）
 
-如果你按照上面的安装步骤启用了 systemd，`cybr gateway` 和 API 服务器的使用方式与任何 Linux 机器上完全相同。使用 gateway 设置向导：
+如果你按照上面的安装步骤启用了 systemd，`hermes gateway` 和 API 服务器的使用方式与任何 Linux 机器上完全相同。使用 gateway 设置向导：
 
 ```bash
 cybr gateway setup

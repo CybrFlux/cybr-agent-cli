@@ -174,7 +174,7 @@ All env vars are documented in `plugin.yaml`. The most important:
   bubble/screen effects through `spectrum-ts`' iMessage `effect(...)` builder
   via the sidecar's `/send-effect` endpoint.
 - **Cron/standalone sends require a running gateway.** Processes outside
-  the gateway (cron subprocesses, `cybr send`) cannot spawn the sidecar;
+  the gateway (cron subprocesses, `hermes send`) cannot spawn the sidecar;
   they authenticate to the gateway's live sidecar via the runtime record at
   `<hermes-home>/runtime/photon-sidecar.json` (written after the sidecar's
   `/healthz` readiness check, `0600`, removed on stop/failed start). Also

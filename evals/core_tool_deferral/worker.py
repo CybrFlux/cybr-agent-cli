@@ -27,7 +27,7 @@ if not os.environ.get("OPENROUTER_API_KEY"):
     print("ABORT: OPENROUTER_API_KEY missing", file=sys.stderr)
     sys.exit(3)
 
-# --- hermetic env BEFORE any cybr import -------------------------------
+# --- hermetic env BEFORE any hermes import -------------------------------
 for var in list(os.environ):
     if var.endswith(("_API_KEY", "_TOKEN")) and var != "OPENROUTER_API_KEY":
         os.environ.pop(var, None)

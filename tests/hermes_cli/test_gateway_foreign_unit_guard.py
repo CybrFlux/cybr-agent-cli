@@ -1,6 +1,6 @@
-"""`cybr gateway stop|restart|start` from a sandbox home must never operate ANOTHER install's systemd unit.
+"""`hermes gateway stop|restart|start` from a sandbox home must never operate ANOTHER install's systemd unit.
 
-Real incident: an e2e helper ran `cybr gateway stop` with a throwaway ``HOME`` and
+Real incident: an e2e helper ran `hermes gateway stop` with a throwaway ``HOME`` and
 ``HERMES_HOME=$HOME/.hermes`` on a host whose production gateway is the system unit
 ``hermes-gateway.service`` (``Environment=HERMES_HOME=/root/.hermes``). The sandbox home is the
 "default" home relative to its own ``HOME``, so the service name resolved to the bare

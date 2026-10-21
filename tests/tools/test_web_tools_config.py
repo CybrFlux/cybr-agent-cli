@@ -225,7 +225,7 @@ class TestBackendSelection:
     """Test suite for _get_backend() backend selection logic.
 
     The backend is configured via config.yaml (web.backend), set by
-    ``cybr tools``.  Falls back to key-based detection for legacy/manual
+    ``hermes tools``.  Falls back to key-based detection for legacy/manual
     setups.
     """
 

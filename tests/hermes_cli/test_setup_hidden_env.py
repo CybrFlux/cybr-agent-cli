@@ -50,7 +50,7 @@ class TestChannelCards:
 
 
 class TestCliWizard:
-    """`cybr setup gateway` drops the same knobs. Real wizard, scripted
+    """`hermes setup gateway` drops the same knobs. Real wizard, scripted
     stdin, real .env writes under a temp HERMES_HOME."""
 
     @pytest.fixture

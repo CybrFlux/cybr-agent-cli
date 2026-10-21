@@ -67,7 +67,7 @@ describe('VersionDetails', () => {
       visible: ['Desktop app (installer)'],
       absent: ['Desktop app (MSIX)', 'Microsoft Store']
     },
-    // `cybr desktop` packs the same bootstrap payload from a source checkout;
+    // `hermes desktop` packs the same bootstrap payload from a source checkout;
     // a locally built stamp names the source install, never the installer.
     {
       version: {
@@ -77,12 +77,12 @@ describe('VersionDetails', () => {
         source: 'local',
         installedByScript: true
       },
-      visible: ['Source (install script) + cybr desktop'],
+      visible: ['Source (install script) + hermes desktop'],
       absent: ['Desktop app (installer)']
     },
     {
       version: { distribution: 'desktop-app', updateMechanism: 'self', payload: 'bootstrap', source: 'local' },
-      visible: ['Source + cybr desktop'],
+      visible: ['Source + hermes desktop'],
       absent: ['Desktop app (installer)']
     },
     // install.sh / install.ps1 checkout (receipt present) vs a manual git

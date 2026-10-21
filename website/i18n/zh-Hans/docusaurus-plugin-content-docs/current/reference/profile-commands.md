@@ -193,10 +193,10 @@ SOUL.md: exists
 Alias:   ~/.local/bin/work
 ```
 
-## `cybr profile alias`
+## `hermes profile alias`
 
 ```bash
-cybr profile alias <name> [options]
+hermes profile alias <name> [options]
 ```
 
 重新生成位于 `~/.local/bin/<name>` 的 shell alias 脚本。适用于 alias 被意外删除，或移动 Cybr Agent 安装目录后需要更新的情况。
@@ -210,13 +210,13 @@ cybr profile alias <name> [options]
 **示例：**
 
 ```bash
-cybr profile alias work
+hermes profile alias work
 # 创建/更新 ~/.local/bin/work
 
-cybr profile alias work --name mywork
+hermes profile alias work --name mywork
 # 创建 ~/.local/bin/mywork
 
-cybr profile alias work --remove
+hermes profile alias work --remove
 # 移除 wrapper 脚本
 ```
 
@@ -226,7 +226,7 @@ cybr profile alias work --remove
 cybr profile rename <old-name> <new-name>
 ```
 
-重命名 profile，同时更新目录和 shell alias。以旧名称安装的网关服务（`cybr -p <old-name> gateway install`）无论网关是否在运行都会被移除，因为它会在下次登录时启动旧名称；请用 `cybr -p <new-name> gateway install` 重新安装。在 Docker 镜像内，s6 网关槽位会迁移到新名称。
+重命名 profile，同时更新目录和 shell alias。以旧名称安装的网关服务（`hermes -p <old-name> gateway install`）无论网关是否在运行都会被移除，因为它会在下次登录时启动旧名称；请用 `hermes -p <new-name> gateway install` 重新安装。在 Docker 镜像内，s6 网关槽位会迁移到新名称。
 
 | 参数 | 描述 |
 |----------|-------------|
@@ -304,7 +304,7 @@ cybr profile import ./work-2026-03-29.tar.gz --name work-restored
 ### `cybr profile install`
 
 ```bash
-cybr profile install <source> [--name <name>] [--alias] [--force] [--yes]
+hermes profile install <source> [--name <name>] [--alias] [--force] [--yes]
 ```
 
 从 git URL 或本地目录安装 profile 发行版。
@@ -313,7 +313,7 @@ cybr profile install <source> [--name <name>] [--alias] [--force] [--yes]
 |--------|-------------|
 | `<source>` | Git URL（`github.com/user/repo`、`https://...`、`git@...`、`ssh://`、`git://`）或包含 `distribution.yaml` 的本地目录根路径。 |
 | `--name NAME` | 覆盖 manifest 中的 profile 名称。 |
-| `--alias` | 同时创建 shell wrapper（例如 `telemetry` → `cybr -p telemetry`）。 |
+| `--alias` | 同时创建 shell wrapper（例如 `telemetry` → `hermes -p telemetry`）。 |
 | `--force` | 覆盖同名的已有 profile。用户数据仍会保留。 |
 | `-y`, `--yes` | 跳过 manifest 预览确认提示。 |
 
@@ -323,7 +323,7 @@ cybr profile install <source> [--name <name>] [--alias] [--force] [--yes]
 
 ```bash
 # 从 GitHub 仓库安装（简写）
-cybr profile install github.com/kyle/telemetry-distribution --alias
+hermes profile install github.com/kyle/telemetry-distribution --alias
 
 # 从完整 HTTPS git URL 安装
 cybr profile install https://github.com/kyle/telemetry-distribution.git

@@ -205,7 +205,7 @@ hermes teams-pipeline subscribe \
 
 :::warning Graph subscriptions expire in 72 hours
 
-Microsoft Graph caps webhook subscriptions at 72 hours and will not auto-renew them. You MUST schedule `cybr teams-pipeline maintain-subscriptions` before going live, or notifications will silently stop three days after any manual subscription creation. See [Automating subscription renewal](../../guides/operate-teams-meeting-pipeline.md#automating-subscription-renewal-required-for-production) in the operator runbook — three options (Cybr Agent cron, systemd timer, plain crontab).
+Microsoft Graph caps webhook subscriptions at 72 hours and will not auto-renew them. You MUST schedule `hermes teams-pipeline maintain-subscriptions` before going live, or notifications will silently stop three days after any manual subscription creation. See [Automating subscription renewal](../../guides/operate-teams-meeting-pipeline.md#automating-subscription-renewal-required-for-production) in the operator runbook — three options (Cybr Agent cron, systemd timer, plain crontab).
 
 :::
 

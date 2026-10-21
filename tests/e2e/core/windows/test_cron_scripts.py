@@ -1,7 +1,7 @@
-"""Cron script jobs on native Windows (``cybr cron create --script`` + ``cybr cron run``).
+"""Cron script jobs on native Windows (``hermes cron create --script`` + ``hermes cron run``).
 
 A no-agent script job runs its script through an interpreter picked by extension and
-delivers stdout as the job result. ``cybr cron run <id>`` executes it synchronously
+delivers stdout as the job result. ``hermes cron run <id>`` executes it synchronously
 through ``cron.scheduler.run_job`` (the ticker's code path) when no gateway owns the store.
 
 The ``.sh`` case launches Cybr Agent with the PATH a NATIVE Windows process has (Start menu,

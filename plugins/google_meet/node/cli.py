@@ -1,4 +1,4 @@
-"""`cybr meet node ...` subcommand tree, wired under the ``cybr meet`` parser."""
+"""`hermes meet node ...` subcommand tree, wired under the ``hermes meet`` parser."""
 
 from __future__ import annotations
 
@@ -92,7 +92,7 @@ _COMMANDS = {
 
 
 def node_command(args: argparse.Namespace) -> int:
-    """Dispatch for ``cybr meet node ...``; returns a process exit code."""
+    """Dispatch for ``hermes meet node ...``; returns a process exit code."""
     cmd = getattr(args, "node_cmd", None)
     handler = _COMMANDS.get(cmd or "")
     if handler is None:

@@ -705,9 +705,9 @@ def print_credential_summary(emit: Any = print) -> None:
         "Photon iMessage status",
         "──────────────────────",
         "  device token        : " + (
-            "✓ stored" if load_photon_token() else "✗ missing (run `cybr photon setup`)"),
+            "✓ stored" if load_photon_token() else "✗ missing (run `hermes photon setup`)"),
         "  project id          : " + (sid if sid else "✗ missing"),
         "  project secret      : " + ("✓ stored" if sec else "✗ missing"),
-        "  my number           : " + (phone if phone else "✗ missing (run `cybr photon setup --phone ...`)"),
-        "  assigned number     : " + (assigned if assigned else "✗ missing (run `cybr photon setup`)")]
+        "  my number           : " + (phone if phone else "✗ missing (run `hermes photon setup --phone ...`)"),
+        "  assigned number     : " + (assigned if assigned else "✗ missing (run `hermes photon setup`)")]
     emit("\n".join(rows))

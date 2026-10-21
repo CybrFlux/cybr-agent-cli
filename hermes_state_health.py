@@ -67,7 +67,7 @@ def mark_storage_corrupt(db_path, reason: object) -> None:
     logger.error(
         "state.db at %s is structurally corrupt (%s); session storage is reported as corrupt "
         "until Cybr Agent restarts on a recovered or restored file. Stop Cybr Agent, then run "
-        "`cybr sessions recover --source %s --inspect-only` or restore a snapshot.",
+        "`hermes sessions recover --source %s --inspect-only` or restore a snapshot.",
         db_path, reason, db_path,
     )
 

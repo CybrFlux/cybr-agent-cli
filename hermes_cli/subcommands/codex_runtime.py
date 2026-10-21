@@ -1,8 +1,8 @@
-"""``cybr codex-runtime`` — noninteractive counterpart of the ``/codex-runtime`` slash command.
+"""``hermes codex-runtime`` — noninteractive counterpart of the ``/codex-runtime`` slash command.
 
-``cybr codex-runtime migrate [--dry-run] [--json]`` runs the same ``~/.codex/config.toml``
+``hermes codex-runtime migrate [--dry-run] [--json]`` runs the same ``~/.codex/config.toml``
 migration the slash command triggers when the codex app-server runtime is enabled, on the
-selected profile home (``cybr -p NAME codex-runtime migrate``), so automation no longer has to
+selected profile home (``hermes -p NAME codex-runtime migrate``), so automation no longer has to
 import ``hermes_cli.codex_runtime_plugin_migration`` directly (issue #79023).
 """
 

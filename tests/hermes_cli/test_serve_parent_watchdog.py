@@ -1,4 +1,4 @@
-"""Regression tests for Desktop-owned ``cybr serve`` lifecycle tracking."""
+"""Regression tests for Desktop-owned ``hermes serve`` lifecycle tracking."""
 
 import pytest
 

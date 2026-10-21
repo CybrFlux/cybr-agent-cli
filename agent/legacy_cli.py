@@ -13,9 +13,9 @@ from __future__ import annotations
 try:
     import hermes_bootstrap
 except ModuleNotFoundError:
-    pass  # partial `cybr update` — only skips the Windows UTF-8 stdio setup
+    pass  # partial `hermes update` — only skips the Windows UTF-8 stdio setup
 
-# The `hermes-agent` console script lands here without hermes_cli.main: repair a `cybr update` killed
+# The `hermes-agent` console script lands here without hermes_cli.main: repair a `hermes update` killed
 # while git wrote the new tree before importing anything else from the checkout.
 from hermes_cli import _early_recovery
 
@@ -31,7 +31,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     parser = argparse.ArgumentParser(
         prog="hermes-agent",
-        description="Legacy single-query Cybr Agent runner. For the full CLI use `cybr`.",
+        description="Legacy single-query Cybr Agent runner. For the full CLI use `hermes`.",
     )
     parser.add_argument("--version", action="version", version=f"Cybr Agent v{__version__} ({__release_date__})")
     parser.add_argument("prompt", nargs="*", help="query to run (same as --query)")
@@ -71,7 +71,7 @@ def main(argv: Optional[list[str]] = None, *, run: Optional[Callable[..., object
     query = args.query or positional or None
     if query is None and not args.list_tools:
         parser.print_help()
-        print("\nNo query given: pass one with --query (or run `cybr` for the interactive CLI).")
+        print("\nNo query given: pass one with --query (or run `hermes` for the interactive CLI).")
         return 0
 
     if run is None:

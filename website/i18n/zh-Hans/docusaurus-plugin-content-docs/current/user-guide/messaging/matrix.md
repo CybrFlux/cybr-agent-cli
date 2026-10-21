@@ -234,7 +234,7 @@ cybr gateway
 机器人应在几秒内连接到你的 homeserver 并开始同步。发送一条消息——DM 或机器人已加入的房间——进行测试。
 
 :::tip
-你可以在后台运行 `cybr gateway`，或将其作为 systemd 服务以持续运行。详情请参阅部署文档。
+你可以在后台运行 `hermes gateway`，或将其作为 systemd 服务以持续运行。详情请参阅部署文档。
 :::
 
 ## 端对端加密（E2EE）

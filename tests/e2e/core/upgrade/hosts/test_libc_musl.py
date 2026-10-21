@@ -2,7 +2,7 @@
 
 Failure class: libc. Cybr Agent's PM store pins glibc (``-linux-gnu``) builds of uv, CPython and
 Node. On a musl host those binaries either fail to exec or, with the ``gcompat`` shim, load and
-segfault, so an install or update that publishes them leaves every later ``cybr`` command dead
+segfault, so an install or update that publishes them leaves every later ``hermes`` command dead
 (#123682). The acceptable outcomes are: musl-compatible tools that run, or a refusal that tells
 the user why (names musl) and publishes nothing unrunnable.
 

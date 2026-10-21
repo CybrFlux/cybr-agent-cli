@@ -78,7 +78,7 @@ before PM switches them to 3.14; it is not a runtime support range.
 The source default is the `all` extra, not the desktop bundle's `--all-extras`.
 
 Activation composes the installed tool environment and defines `cybr` as this
-worktree's CLI. The function hides an older `cybr` command or MSIX alias and
+worktree's CLI. The function hides an older `hermes` command or MSIX alias and
 refuses outside the worktree.
 `deactivate` restores the shell environment and removes the function when you finish.
 

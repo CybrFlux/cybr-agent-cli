@@ -1081,7 +1081,7 @@ def _is_connected(config) -> bool:
 
 
 def _interactive_setup() -> None:
-    """``cybr gateway setup`` entry: the same wizard ``cybr whatsapp-cloud`` runs."""
+    """``hermes gateway setup`` entry: the same wizard ``hermes whatsapp-cloud`` runs."""
     from .setup_wizard import run_whatsapp_cloud_setup
     run_whatsapp_cloud_setup()
 

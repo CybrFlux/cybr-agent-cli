@@ -162,7 +162,7 @@ The redirect never made it back to the remote listener. Check the tunnel is stil
 
 ### Tokens land in the wrong `~/.hermes`
 
-The tokens are written under the Linux user that ran `cybr auth add ...`. If your gateway / systemd service runs as a different user (e.g. `root` or a dedicated `cybr` user), authenticate as **that** user so the tokens land in their `~/.hermes/auth.json`. `sudo -u cybr -i` or equivalent.
+The tokens are written under the Linux user that ran `hermes auth add ...`. If your gateway / systemd service runs as a different user (e.g. `root` or a dedicated `hermes` user), authenticate as **that** user so the tokens land in their `~/.hermes/auth.json`. `sudo -u hermes -i` or equivalent.
 
 ## See Also
 

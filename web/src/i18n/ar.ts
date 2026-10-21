@@ -95,7 +95,7 @@ export const ar = defineLocale({
   status: {
     actionFailed: "فشلت الإجراء",
     actionFinished: "انتهى",
-    actionFinishedOwed: "تم التحديث، لكن لا تزال هناك خطوات معلّقة (أعد تشغيل `cybr update` لإكمالها)",
+    actionFinishedOwed: "تم التحديث، لكن لا تزال هناك خطوات معلّقة (أعد تشغيل `hermes update` لإكمالها)",
     actions: "إجراءات",
     agent: "العامل",
     activeSessions: "الجلسات النشطة",
@@ -274,7 +274,7 @@ export const ar = defineLocale({
       "تم الحفظ — أعد تشغيل البوابة لتطبيق التغيير.",
     forceReinstall: "إعادة تثبيت إجباري (حذف المجلد الموجود أولاً)",
     headline:
-      "اكتشف وثبِّت وفعِّل وحدِّث مكوِّنات Cybr Agent الإضافية (مطابقة `cybr plugins`).",
+      "اكتشف وثبِّت وفعِّل وحدِّث مكوِّنات Cybr Agent الإضافية (مطابقة `hermes plugins`).",
     identifierLabel: "رابط Git أو owner/repo",
     inactive: "غير نشط",
     installBtn: "تثبيت من Git",
@@ -540,7 +540,7 @@ export const ar = defineLocale({
         "المشاركة على X تفتح منشورًا معدَّلاً مسبقًا في تبويب جديد. انقر نسخ الصورة أولاً إذا أردت شارة الإنجاز 1200×630 مرفقة — يسمح X باللصق مباشرة في مؤلف التغريد. تنزيل PNG يحفظ الملف للاستخدام anywhere.",
       clipboard_unsupported:
         "نسخ صورة الحافظة غير مدعوم في هذا المتصفح — استخدم التنزيل بدلاً من ذلك.",
-      tweet_text: "فتحت للتو {tier_part}\"{name}\" في Cybr Agent ☤"
+      tweet_text: "فتحت للتو {tier_part}\"{name}\" في Cybr Agent ∿"
     },
   },
 

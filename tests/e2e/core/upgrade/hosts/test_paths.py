@@ -7,8 +7,8 @@ survive a space and non-ASCII bytes.
 
 One real install through HEAD's ``scripts/install.sh`` with the whole sandbox (HOME, HERMES_HOME,
 TMPDIR) under ``José Müller 漢字 dir``; then a one-shot turn, a new login shell resolving
-``cybr``, an upstream release and ``cybr update``, a turn on the new commit and
-``cybr gateway run``. The symlinked-home shapes live in ``test_paths_symlinked.py`` so the two
+``hermes``, an upstream release and ``hermes update``, a turn on the new commit and
+``hermes gateway run``. The symlinked-home shapes live in ``test_paths_symlinked.py`` so the two
 installs run in parallel.
 """
 
@@ -62,7 +62,7 @@ def test_install_update_gateway_and_turn_under_a_non_ascii_spaced_home(odd_home,
     assert not X.reran_completion(t1), "the first launch after install re-ran the completion:\n" + I.describe(t1)
 
     # A new login shell finds the launcher through the rc line the installer wrote.
-    probe = X.login_shell(sb, "command -v hermes; cybr --version >/dev/null && echo LAUNCH-OK")
+    probe = X.login_shell(sb, "command -v hermes; hermes --version >/dev/null && echo LAUNCH-OK")
     assert probe.returncode == 0, H.describe(probe)
     lines = probe.stdout.strip().splitlines()
     assert lines and lines[0] == sb.hermes and "LAUNCH-OK" in lines, (
@@ -77,7 +77,7 @@ def test_install_update_gateway_and_turn_under_a_non_ascii_spaced_home(odd_home,
                               {"docs/e2e-host-paths-marker.txt": "release 1\n"})
     up = sb.cli("update", "--yes", "--branch", "main", timeout=X.UPDATE_TIMEOUT)
     assert up.returncode == 0 and I.TRACEBACK not in up.stdout + up.stderr, (
-        "cybr update failed under a non-ASCII, spaced HOME:\n" + I.describe(up))
+        "hermes update failed under a non-ASCII, spaced HOME:\n" + I.describe(up))
     assert I.git("rev-parse", "HEAD", cwd=sb.checkout) == target, "update exited 0 but HEAD is not the new release"
     t2 = X.turn(sb, provider, "turn after updating under a non-ASCII home")
     assert not X.reran_completion(t2), "the first launch after a finished update re-ran the completion:\n" + I.describe(t2)

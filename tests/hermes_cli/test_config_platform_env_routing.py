@@ -1,4 +1,4 @@
-"""``cybr config set/get/unset`` route every name Cybr Agent registers as an environment variable to
+"""``hermes config set/get/unset`` route every name Cybr Agent registers as an environment variable to
 ``.env`` — the file the platform setup flows and ``/sethome`` already write (#111848)."""
 
 import pytest

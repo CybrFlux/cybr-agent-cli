@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Profiles: Running Multiple Agents
 
-Run multiple independent Cybr Agent agents on the same machine — each with its own config, API keys, memory, sessions, skills, and gateway state.
+Run multiple independent Cybr Agents on the same machine — each with its own config, API keys, memory, sessions, skills, and gateway state.
 
 ## What are profiles?
 
@@ -45,7 +45,7 @@ These terms describe different parts of Cybr Agent:
 ## Quick start
 
 ```bash
-cybr profile create coder       # creates profile + "coder" command alias
+hermes profile create coder       # creates profile + "coder" command alias
 coder setup                       # configure API keys and model
 coder chat                        # start chatting
 ```
@@ -188,7 +188,7 @@ coder skills list             # list coder's skills
 coder config set model.default anthropic/claude-sonnet-4
 ```
 
-The alias works with every hermes subcommand — it's just `cybr -p <name>` under the hood.
+The alias works with every hermes subcommand — it's just `hermes -p <name>` under the hood.
 
 ### The `-p` flag
 
@@ -345,7 +345,7 @@ fails that step for the whole install — see
 ```bash
 cybr profile list           # show all profiles with status
 cybr profile show coder     # detailed info for one profile
-cybr profile rename coder dev-bot   # rename (updates alias; removes the old name's gateway service)
+hermes profile rename coder dev-bot   # rename (updates alias; removes the old name's gateway service)
 cybr profile migrate-identity coder dev-bot   # retry a rename's identity migration
 cybr profile purge-identity dev-bot   # retry a delete's identity purge
 cybr profile export coder   # pack into coder.tar.gz (shareable; keys stripped)
@@ -456,7 +456,7 @@ cybr profile import ./coder.tar.gz --name coder
 
 ```bash
 # Install a whole agent from a git repo
-cybr profile install github.com/you/research-bot --alias
+hermes profile install github.com/you/research-bot --alias
 
 # Update later when the author ships a new version (keeps your memories + .env)
 cybr profile update research-bot

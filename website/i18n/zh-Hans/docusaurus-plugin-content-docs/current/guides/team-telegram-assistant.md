@@ -174,7 +174,7 @@ tail -f ~/.hermes/logs/gateway.log
 ```
 
 :::tip macOS PATH
-launchd plist 在安装时捕获你的 Shell PATH，以便 gateway 子进程能找到 Node.js 和 ffmpeg 等工具。如果之后安装了新工具，请重新运行 `cybr gateway install` 以更新 plist。
+launchd plist 在安装时捕获你的 Shell PATH，以便 gateway 子进程能找到 Node.js 和 ffmpeg 等工具。如果之后安装了新工具，请重新运行 `hermes gateway install` 以更新 plist。
 :::
 
 ### 验证运行状态

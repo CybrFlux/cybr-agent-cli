@@ -1,4 +1,4 @@
-"""``cybr doctor`` names cache-root dirs that no pruner covers once they are big enough."""
+"""``hermes doctor`` names cache-root dirs that no pruner covers once they are big enough."""
 
 from hermes_cli.doctor_state import unpruned_cache_hogs
 

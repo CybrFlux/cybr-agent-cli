@@ -230,7 +230,7 @@ cybr gateway <subcommand>
 | `--no-supervise` | 在 `run` 时：在 s6-overlay Docker 镜像内部，跳过 s6 自动监管，退回到 pre-s6 前台语义——gateway 作为容器主进程运行，无自动重启。在 s6 镜像之外为空操作。等同于设置 `HERMES_GATEWAY_NO_SUPERVISE=1`。 |
 
 :::tip WSL 用户
-使用 `cybr gateway run` 而非 `cybr gateway start`——WSL 的 systemd 支持不稳定。用 tmux 包裹以保持持久运行：`tmux new -s hermes 'cybr gateway run'`。详见 [WSL FAQ](./faq.md#wsl网关持续断开连接或-hermes-gateway-start-失败)。
+使用 `hermes gateway run` 而非 `hermes gateway start`——WSL 的 systemd 支持不稳定。用 tmux 包裹以保持持久运行：`tmux new -s hermes 'hermes gateway run'`。详见 [WSL FAQ](./faq.md#wsl网关持续断开连接或-hermes-gateway-start-失败)。
 :::
 
 ## `cybr lsp`
@@ -1195,10 +1195,10 @@ cybr profile <subcommand>
 cybr profile list
 cybr profile create work --clone
 cybr profile use work
-cybr profile alias work --name h-work
+hermes profile alias work --name h-work
 cybr profile export work -o work-backup.tar.gz
 cybr profile import work-backup.tar.gz --name restored
-cybr profile install github.com/user/my-distro --alias
+hermes profile install github.com/user/my-distro --alias
 cybr profile update work
 cybr -p work chat -q "Hello from work profile"
 ```

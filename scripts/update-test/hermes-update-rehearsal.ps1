@@ -347,7 +347,7 @@ function Invoke-Pre {
   $elapsed = [int]((Get-Date) - $started).TotalSeconds
   if ($code -eq 1 -and (Test-Path -LiteralPath $zip)) {
     $out | ForEach-Object { Write-Host "    $_" }
-    Warn "cybr backup finished INCOMPLETE (${elapsed}s): the files listed above are not in $zip"
+    Warn "hermes backup finished INCOMPLETE (${elapsed}s): the files listed above are not in $zip"
   }
   elseif ($code -ne 0 -or -not (Test-Path -LiteralPath $zip)) {
     $out | ForEach-Object { Write-Host "    $_" }
