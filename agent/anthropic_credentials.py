@@ -1,9 +1,9 @@
 """Anthropic credential sources, OAuth flows, and token resolution.
 
 ``resolve_anthropic_token()`` order: ``ANTHROPIC_TOKEN`` / ``CLAUDE_CODE_OAUTH_TOKEN``,
-``ANTHROPIC_API_KEY``, Hermes-owned OAuth grants in the ``auth.json`` credential
+``ANTHROPIC_API_KEY``, Cybr Agent-owned OAuth grants in the ``auth.json`` credential
 pool, then ``~/.claude/.credentials.json`` / macOS Keychain as a borrowed fallback.
-``~/.hermes/.anthropic_oauth.json`` (Hermes PKCE) and
+``~/.hermes/.anthropic_oauth.json`` (Cybr Agent PKCE) and
 the Claude Code file are *singletons*: ``credential_pool._seed_from_singletons()``
 re-reads them on every ``load_pool()``, so a failed write here is a failed refresh
 (``CredentialPersistError``), not a cache miss.
@@ -25,10 +25,9 @@ import time
 from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Dict, Optional
-from urllib.parse import urlparse
 
 from hermes_constants import get_hermes_home
-from utils import atomic_json_write
+from utils import atomic_json_write, base_url_hostname
 from agent.secret_scope import get_secret as _get_secret
 
 logger = logging.getLogger(__name__)
@@ -43,7 +42,7 @@ _OAUTH_TOKEN_URLS = [
 _OAUTH_TOKEN_USER_AGENT = "axios/1.7.9"
 _OAUTH_REDIRECT_URI = "https://console.anthropic.com/oauth/code/callback"
 _OAUTH_SCOPES = "org:create_api_key user:profile user:inference"
-# Claude Code's macOS Keychain entry (generic password). Hermes reads it
+# Claude Code's macOS Keychain entry (generic password). Cybr Agent reads it
 # (_read_claude_code_credentials_from_keychain) and, since #98334, mirrors the
 # refresh write into it so the two stores stop diverging on a single-use rotation.
 _CLAUDE_CODE_KEYCHAIN_SERVICE = "Claude Code-credentials"
@@ -61,10 +60,19 @@ def _first_env(*names: str) -> str:
 
 
 def _is_oauth_token(key: str) -> bool:
-    """True for Anthropic OAuth/setup tokens (sk-ant-*, eyJ JWTs, cc-); False for sk-ant-api* Console keys."""
-    if not key or key.startswith("sk-ant-api"):
+    """True for Anthropic OAuth/setup tokens (sk-ant-oat*, eyJ JWTs, cc-); False for the Console
+    API-key families sk-ant-api*, sk-ant-usr*, sk-ant-svc* and sk-ant-admin* (#133856) — they pay
+    per token and authenticate as x-api-key, so the Claude Code identity must not ride along.
+    Unknown sk-ant-* prefixes still classify as OAuth so OAuth prefixes Anthropic ships later keep working."""
+    if not key or key.startswith(("sk-ant-api", "sk-ant-usr", "sk-ant-svc", "sk-ant-admin")):
         return False
     return key.startswith(("sk-ant-", "eyJ", "cc-"))
+
+
+def is_native_anthropic_host(base_url: Any) -> bool:
+    """True when *base_url* is exactly ``api.anthropic.com`` (an empty base_url is the native default)."""
+    text = str(base_url or "").strip()
+    return not text or base_url_hostname(text) == "api.anthropic.com"
 
 
 def anthropic_route_is_oauth(base_url: Any, credential: Any, *, provider: Optional[str] = None) -> bool:
@@ -78,9 +86,7 @@ def anthropic_route_is_oauth(base_url: Any, credential: Any, *, provider: Option
     materialized once for the shape test (``CommandTokenSource`` caches, so this never double-mints)
     and a mint failure classifies as non-OAuth — the wire client surfaces the real error.
     """
-    text = str(base_url or "").strip()
-    native_host = not text or (urlparse(text).hostname or "").lower().rstrip(".") == "api.anthropic.com"
-    if not (native_host or (provider or "").strip().lower() == "anthropic"):
+    if not (is_native_anthropic_host(base_url) or (provider or "").strip().lower() == "anthropic"):
         return False
     if callable(credential) and not isinstance(credential, str):
         try:
@@ -136,7 +142,7 @@ _SPENT_ROTATION_FINGERPRINTS: OrderedDict[str, None] = OrderedDict()
 _SPENT_ROTATION_MAX_TRACKED = 64
 _SPENT_ROTATION_SIDECAR_COMMENT = (
     "Non-secret one-way fingerprints of Anthropic OAuth credentials whose rotation was "
-    "consumed server-side but never durably committed. Written by Hermes so sibling "
+    "consumed server-side but never durably committed. Written by Cybr Agent so sibling "
     "processes sharing this credential source fail closed instead of replaying a spent "
     "single-use refresh token."
 )
@@ -502,8 +508,8 @@ def _refresh_oauth_token(creds: dict[str, Any]) -> Optional[str]:
                 if is_terminal_anthropic_refresh_error(e):
                     _DEAD_REFRESH_TOKEN_FINGERPRINTS.add(fingerprint)
                     logger.warning(
-                        "Claude Code OAuth refresh token is terminally invalid (%s); Hermes cannot use this "
-                        "login. Run 'hermes auth add anthropic' to give Hermes its own login.", e)
+                        "Claude Code OAuth refresh token is terminally invalid (%s); Cybr Agent cannot use this "
+                        "login. Run 'hermes auth add anthropic' to give Cybr Agent its own login.", e)
                 else:
                     logger.debug("Failed to refresh Claude Code token: %s", e)
                 return None
@@ -518,7 +524,7 @@ def _refresh_oauth_token(creds: dict[str, Any]) -> Optional[str]:
                 logger.error(
                     "Anthropic OAuth refresh rotated the single-use token but could not "
                     "commit it to %s (%s) — treating the refresh as failed; "
-                    "run 'hermes auth add anthropic' to give Hermes its own login",
+                    "run 'hermes auth add anthropic' to give Cybr Agent its own login",
                     cred_path, e,
                 )
                 mark_rotation_consumed_uncommitted(
@@ -576,7 +582,7 @@ def _merge_keychain_credential_payload(
 def _mirror_claude_code_credentials_to_keychain(
     access_token: str, refresh_token: str, expires_at_ms: int, *, spent_refresh_token: str
 ) -> None:
-    """After a Hermes refresh, write the rotated pair into the Claude Code Keychain item too (#98334).
+    """After a Cybr Agent refresh, write the rotated pair into the Claude Code Keychain item too (#98334).
 
     Claude Code on macOS reads the login Keychain first. Refresh tokens are single-use, so a refresh
     that only updates the file leaves the Keychain holding a spent token and Claude Code logs itself
@@ -626,12 +632,12 @@ def _resolve_claude_code_token_from_credentials(creds: Optional[dict[str, Any]] 
     logger.debug("Claude Code credentials expired — attempting refresh")
     refreshed = _refresh_oauth_token(creds)
     if not refreshed:
-        logger.debug("Token refresh failed — run 'hermes auth add anthropic' to give Hermes its own login")
+        logger.debug("Token refresh failed — run 'hermes auth add anthropic' to give Cybr Agent its own login")
     return refreshed or None
 
 
 def _prefer_refreshable_claude_code_token(env_token: str, creds: Optional[dict[str, Any]]) -> Optional[str]:
-    """Prefer refreshable Claude Code creds over a static env OAuth token: Hermes historically persisted setup tokens
+    """Prefer refreshable Claude Code creds over a static env OAuth token: Cybr Agent historically persisted setup tokens
     into ANTHROPIC_TOKEN, and that static token would otherwise win before the refreshable file is inspected."""
     if not (env_token and _is_oauth_token(env_token) and isinstance(creds, dict) and creds.get("refreshToken")):
         return None
@@ -729,7 +735,7 @@ def run_oauth_setup_token() -> Optional[str]:
     return _first_env("CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_TOKEN") or None
 
 
-# ── Hermes-native PKCE OAuth flow (~/.hermes/.anthropic_oauth.json); mirrors Claude Code / pi-ai / OpenCode ──
+# ── Cybr Agent-native PKCE OAuth flow (~/.hermes/.anthropic_oauth.json); mirrors Claude Code / pi-ai / OpenCode ──
 
 
 def _get_hermes_oauth_file() -> Path:
@@ -755,7 +761,7 @@ def _generate_pkce() -> tuple:
 
 
 def run_hermes_oauth_login_pure() -> Optional[dict[str, Any]]:
-    """Run Hermes-native OAuth PKCE flow and return credential state."""
+    """Run Cybr Agent-native OAuth PKCE flow and return credential state."""
     import webbrowser
     from urllib.parse import urlencode
     verifier, challenge = _generate_pkce()
@@ -766,7 +772,7 @@ def run_hermes_oauth_login_pure() -> Optional[dict[str, Any]]:
     }
     auth_url = f"https://claude.ai/oauth/authorize?{urlencode(params)}"
     print("\n".join([
-        "", "Authorize Hermes with your Claude Pro/Max subscription.", "",
+        "", "Authorize Cybr Agent with your Claude Pro/Max subscription.", "",
         "╭─ Claude Pro/Max Authorization ────────────────────╮",
         "│                                                   │",
         "│  Open this link in your browser:                  │",
@@ -810,8 +816,8 @@ def run_hermes_oauth_login_pure() -> Optional[dict[str, Any]]:
 
 
 def read_hermes_oauth_credentials() -> Optional[dict[str, Any]]:
-    """Read Hermes-managed OAuth credentials from ~/.hermes/.anthropic_oauth.json."""
-    data = _load_json_if_exists(_get_hermes_oauth_file(), "Hermes OAuth credentials")
+    """Read Cybr Agent-managed OAuth credentials from ~/.hermes/.anthropic_oauth.json."""
+    data = _load_json_if_exists(_get_hermes_oauth_file(), "Cybr Agent OAuth credentials")
     return data if data is not None and data.get("accessToken") else None
 
 
@@ -825,5 +831,5 @@ def _write_hermes_oauth_credentials(
     _commit_private_json(
         target if target is not None else _get_hermes_oauth_file(),
         {"accessToken": access_token, "refreshToken": refresh_token, "expiresAt": expires_at_ms},
-        "Hermes OAuth credentials",
+        "Cybr Agent OAuth credentials",
     )

@@ -107,7 +107,7 @@ def _emergency_cleanup_all_sessions():
 
 @contextlib.contextmanager
 def _session_owner_scope(task_id: str):
-    """Run under the Hermes home + secret scope owning ``task_id``'s session (no-op if unrecorded).
+    """Run under the Cybr Agent home + secret scope owning ``task_id``'s session (no-op if unrecorded).
 
     The janitor thread is process-global, so each teardown must re-enter its OWN
     profile's scope rather than inherit the spawning profile's; never falls
@@ -467,7 +467,7 @@ def _stop_browser_cleanup_thread():
 
 
 def _update_session_activity(task_id: str):
-    """Touch the activity timestamp and record the owning Hermes home on first sight (the
+    """Touch the activity timestamp and record the owning Cybr Agent home on first sight (the
     janitor tears down under the owner's scope). Does NOT reset ``_cleanup_failures``.
 
     See #86402.
@@ -532,7 +532,7 @@ def _legacy_kill_process_tree(proc: subprocess.Popen) -> None:
         pgid = None
     # Signal the group only when the child leads it (start_new_session / process_group=0):
     # a child spawned into our group resolves pgid to OUR process group and killpg would
-    # take the whole Hermes tree down with it, and a recycled PID can resolve to a foreign
+    # take the whole Cybr Agent tree down with it, and a recycled PID can resolve to a foreign
     # group. The direct child still gets proc.kill() either way. Same ownership check as
     # hermes_cli/_subprocess_compat._legacy_kill_process_tree.
     descendants = []
@@ -660,15 +660,20 @@ def _release_session_resources(task_id: str, session_info: dict[str, Any]) -> No
     force-reap path (#100738), which skips the polite agent-browser/Camofox ``close`` that kept failing but
     must still release the cloud session and the local Chromium.
     """
-    bb_session_id = session_info.get("bb_session_id", "unknown")
     _forget_session_tracking(task_id, session=True)
+    _release_session_backend(task_id, session_info)
 
+
+def _release_session_backend(task_id: str, session_info: dict[str, Any]) -> None:
+    """Close ``session_info``'s cloud provider session and kill its daemon, by object: no shared
+    session map is read or written (an unpublished session releases through this alone)."""
+    bb_session_id = session_info.get("bb_session_id", "unknown")
     if bb_session_id:  # cloud only — local sidecars have bb_session_id=None
         provider = _cloud._get_cloud_provider()
         if provider is not None:
             try:
                 provider.close_session(bb_session_id)
-            except Exception as e:
+            except Exception as e:  # health: allow BLE001 -- teardown boundary moved unchanged from _release_session_resources; a provider error must never abort the daemon kill below
                 _bt.logger.warning("Could not close cloud browser session: %s", e)
 
     session_name = session_info.get("session_name", "")
@@ -740,6 +745,29 @@ def _cleanup_single_browser_session(task_id: str) -> None:
 
     _release_session_resources(task_id, session_info)
     _bt.logger.debug("Removed task %s from active sessions", task_id)
+
+
+def cleanup_profile_browsers(home_key: str) -> None:
+    """Close one profile home's browser sessions, CDP supervisors and harness daemons, and drop its
+    cached config slots (``/browser connect`` on a multiplexed gateway). Other profiles' browsers stay."""
+    with _bt._cleanup_lock:
+        task_ids = [task for task, info in _bt._active_sessions.items() if info.get("home_key") == home_key]
+    for task_id in task_ids:
+        _cleanup_single_browser_session(task_id)
+        _drop_last_active_binding(task_id)
+
+    def _stop_supervisors():
+        from tools.browser_supervisor import SUPERVISOR_REGISTRY  # type: ignore[import-not-found]
+        SUPERVISOR_REGISTRY.stop_home(home_key)
+    _best_effort("CDP supervisor stop", _stop_supervisors)
+
+    def _stop_harness():
+        from tools.browser_use_cli import stop_harness_daemons
+        stop_harness_daemons(home_key)
+    _best_effort("Browser Use harness daemon stop", _stop_harness)
+    for cache in ("_cached_command_timeout", "_cached_snapshot_threshold"):
+        with contextlib.suppress(AttributeError, TypeError):
+            getattr(_bt, cache).pop(home_key, None)
 
 
 def cleanup_all_browsers() -> None:

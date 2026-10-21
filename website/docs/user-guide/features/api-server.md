@@ -11,7 +11,7 @@ The API server exposes hermes-agent as an OpenAI-compatible HTTP endpoint. Any f
 Your agent handles requests with its full toolset (terminal, file operations, web search, memory, skills) and returns the final response. When streaming, tool progress indicators appear inline so frontends can show what the agent is doing.
 
 :::tip One backend covers models + tools
-Hermes itself needs a configured provider and tool backends for the API server to be useful. A [Nous Portal](./tool-gateway.md) subscription handles both — 300+ models plus web/image/TTS/browser via the Tool Gateway. Run `hermes setup --portal` once before starting the API server and frontends like Open WebUI or LobeChat get a fully tool-equipped backend.
+Cybr Agent itself needs a configured provider and tool backends for the API server to be useful. A [Nous Portal](./tool-gateway.md) subscription handles both — 300+ models plus web/image/TTS/browser via the Tool Gateway. Run `cybr setup --portal` once before starting the API server and frontends like Open WebUI or LobeChat get a fully tool-equipped backend.
 :::
 
 ## Quick Start
@@ -23,14 +23,14 @@ Add to `~/.hermes/.env`:
 ```bash
 API_SERVER_ENABLED=true
 API_SERVER_KEY=change-me-local-dev
-# Optional: only if a browser must call Hermes directly
+# Optional: only if a browser must call Cybr Agent directly
 # API_SERVER_CORS_ORIGINS=http://localhost:3000
 ```
 
 ### 2. Start the gateway
 
 ```bash
-hermes gateway
+cybr gateway
 ```
 
 You'll see:
@@ -52,6 +52,106 @@ curl http://localhost:8642/v1/chat/completions \
 ```
 
 Or connect Open WebUI, LobeChat, or any other frontend — see the [Open WebUI integration guide](../messaging/open-webui.md) for step-by-step instructions.
+
+## Conversation and terminal-result semantics
+
+API requests use the gateway's durable admission queue. Structured image content stays
+structured through execution; it is not interpreted as a gateway slash command.
+
+- `/v1/runs` and `/v1/responses` retain the conversation declared by
+  `X-Hermes-Session-Key`. An explicit session or response chain takes precedence and
+  does not transfer its conversation identity to a different header.
+- A nonempty `/v1/runs` `conversation_history` is authoritative, even with an explicit
+  `session_id`. Otherwise session continuation loads history when the turn executes,
+  after earlier queued work finishes.
+- Runs polling and SSE agree on `cancelled` or `failed`. Responses uses the same
+  terminal status and `response.cancelled` / `response.failed` events, including when
+  diagnostic text is present. Chat Completions reports `finish_reason: "cancelled"`
+  for interrupted turns and `"error"` for failures, not a successful `"stop"`.
+- Session-chat replies include `status`; their streams report matching terminal run
+  events. An assistant finalization frame is not itself proof of successful execution.
+
+## Idempotency keys {#idempotency-keys}
+
+`POST /v1/chat/completions` and `POST /v1/responses` accept an `Idempotency-Key` header.
+What a key guarantees depends on the execution mode:
+
+- **Canonical mode** (the gateway runs a session authority): a key is a durable admission
+  identity. The first request with it is admitted and runs once, and the key belongs to
+  that admission from then on. Keys are scoped to the authenticated API profile and
+  credential, so another profile or a rotated `API_SERVER_KEY` reusing the same client
+  key is a new request. The rest of this section describes this mode.
+- **Legacy mode** (no session authority): non-streaming requests are deduplicated by a
+  5-minute in-memory cache. Streaming requests are not deduplicated.
+
+`/v1/runs` keys have their own ledger and 24-hour retention (see the Runs API below).
+
+**Exact retries and conflicts.** A retry is exact when it repeats the key with the same
+identity fields and the same declared target. Changing an identity field, or sending the
+key to another session, is a conflict: it is refused with `admission_conflict` and
+nothing runs. How the refusal arrives depends on the request:
+
+- **Responses** (JSON or streaming) and **non-streaming Chat Completions:** HTTP 409
+  with error code `admission_conflict`.
+- **Streaming Chat Completions:** the stream has already opened with HTTP 200, so the
+  refusal is its last chunk, with `finish_reason: "error"` and `error.message`
+  `"admission_conflict"`, followed by `data: [DONE]`. Check that chunk, not the status.
+
+The identity fields differ by endpoint:
+
+- **Responses:** `input`, `instructions`, `previous_response_id`, `conversation`,
+  `conversation_history`, `model`, `provider`, `model_options` and `tools`, plus
+  `truncation` when sent.
+- **Chat Completions:** the last user message, the earlier messages (unless
+  `X-Hermes-Session-Id` is sent, in which case history comes from the session), the
+  system prompt, and the turn settings such as the requested model, provider and
+  `model_options`. `tools` and `tool_choice` are not part of it: a retry that changes
+  only those replays the original answer instead of a conflict.
+
+Delivery mode is not part of the identity on either endpoint: a retry may switch
+between JSON and `stream: true` and gets the same answer in the requested form.
+
+**Replay and duplicate prevention are separate.** An exact retry replays the original
+answer only while the server still holds the key's request identity together with its
+replay record or a terminal admission the answer can be rebuilt from. Once replay is no
+longer possible, the key still does not run again while its admission evidence remains:
+the retry is refused as a conflict and nothing executes. A Responses retry can instead
+get HTTP 409 `unknown_execution`: the store holds the key's claim (for example one
+recorded by an older release) but no answer, so whether the first attempt ran is
+unknown. It is not permission to resend the work under a new key; the first attempt may
+already have run.
+
+After a session is deleted (`DELETE /api/sessions/{id}`), its admissions are kept as
+tombstones. Seven days after the delete they become eligible for pruning; they are
+removed only when a prune pass runs, and until then the key behaves as below.
+
+- **Chat Completions:** an exact retry replays the original answer without recreating
+  the session, and the key sent to any other session is refused as a conflict.
+  Once the tombstones are pruned, the key can name new work on a valid new target.
+- **Responses:** replay also needs the response store to keep the key's identity, so
+  it can end before the seven days: settled identities are retained in a bounded
+  number, and `DELETE /v1/responses/{id}` removes one at once. A key whose identity is
+  gone answers 409 `admission_conflict`, even on a live session. Once its identity is
+  gone and its tombstones are pruned, the key can name new work.
+
+:::note
+By default the response store retains the 1,000 most recently settled identities per
+profile (10 per stored-response slot). Pending or running identities are not counted
+and are never dropped, and deleting a response removes its identity sooner. This is a
+current default, not a replay guarantee.
+:::
+
+An explicit `X-Hermes-Session-Id` is never remapped. The deleted session's id stays
+retired even after pruning. An exact keyed retry whose identity is still retained there
+replays, and a changed one is refused as a conflict. A request with no retained
+identity there, such as a fresh request or a retry whose identity was pruned, is refused
+with `not_found`.
+
+A Chat Completions request without `X-Hermes-Session-Id` derives its session from the
+system prompt and first user message. A deleted session's id is never reused, so a new
+conversation that opens like a deleted one gets a new session, and its later turns land
+on that same session, including after a restart. An exact keyed retry of a turn from the
+deleted conversation is not moved; it replays as described above.
 
 ## Endpoints
 
@@ -106,13 +206,13 @@ Standard OpenAI Chat Completions format. Stateless — the full conversation is 
 
 Uploaded files (`file` / `input_file` / `file_id`) and non-image `data:` URLs return `400 unsupported_content_type`.
 
-**Streaming** (`"stream": true`): Returns Server-Sent Events (SSE) with token-by-token response chunks. For **Chat Completions**, the stream uses standard `chat.completion.chunk` events plus Hermes' custom `hermes.tool.progress` event for tool-start UX. For **Responses**, the stream uses OpenAI Responses event types such as `response.created`, `response.output_text.delta`, `response.output_item.added`, `response.output_item.done`, and `response.completed`.
+**Streaming** (`"stream": true`): Returns Server-Sent Events (SSE) with token-by-token response chunks. For **Chat Completions**, the stream uses standard `chat.completion.chunk` events plus Cybr Agent' custom `hermes.tool.progress` event for tool-start UX. For **Responses**, the stream uses OpenAI Responses event types such as `response.created`, `response.output_text.delta`, `response.output_item.added`, `response.output_item.done`, and `response.completed`.
 
 All SSE streams (Chat Completions, Responses, `/api/sessions/{id}/chat/stream`, `/v1/runs/{id}/events`) emit a `: keepalive` comment line whenever no event has been sent for 10 seconds, so long tool calls do not trip client idle timeouts. Standard SSE clients ignore comment lines; custom parsers must skip lines that start with `:`.
 
 **Tool progress in streams**:
-- **Chat Completions**: Hermes emits `event: hermes.tool.progress` for tool-start visibility without polluting persisted assistant text. Strict OpenAI clients that choke on named SSE events can turn these frames off with `gateway.platforms.api_server.tool_progress_events: false` (default `true`); content chunks are unaffected. The opt-out applies only to Chat Completions — `/v1/runs/{id}/events` always emits tool events, which is what the `tool_progress_events` feature in `/v1/capabilities` describes.
-- **Responses**: Hermes emits spec-native `function_call` and `function_call_output` output items during the SSE stream, so clients can render structured tool UI in real time.
+- **Chat Completions**: Cybr Agent emits `event: hermes.tool.progress` for tool-start visibility without polluting persisted assistant text. Strict OpenAI clients that choke on named SSE events can turn these frames off with `gateway.platforms.api_server.tool_progress_events: false` (default `true`); content chunks are unaffected. The opt-out applies only to Chat Completions — `/v1/runs/{id}/events` always emits tool events, which is what the `tool_progress_events` feature in `/v1/capabilities` describes.
+- **Responses**: Cybr Agent emits spec-native `function_call` and `function_call_output` output items during the SSE stream, so clients can render structured tool UI in real time.
 
 **Model reasoning** (emitted only when the model actually produces reasoning and the resolved `reasoning` config allows it; the input-side opt-out is `model_options.reasoning.enabled: false`):
 - **Chat Completions**: reasoning deltas arrive as `choices[0].delta.reasoning_content` chunks (the DeepSeek-style field Open WebUI, opencode and the Vercel AI SDK render as a thinking block); answer text stays in `delta.content`.
@@ -151,7 +251,7 @@ OpenAI Responses API format. Supports server-side conversation state via `previo
 }
 ```
 
-Tool calls in the `output` array were already executed server-side by the Hermes agent — they are replayed with `"status": "completed"` for structured tool UI, never as pending calls for the client to execute.
+Tool calls in the `output` array were already executed server-side by the Cybr Agent — they are replayed with `"status": "completed"` for structured tool UI, never as pending calls for the client to execute.
 
 With `"stream": true`, mid-turn assistant commentary (the `openai-codex` backend's `phase="commentary"` progress preambles, or text a model writes alongside its tool calls) arrives as its own completed `message` output item carrying `"phase": "commentary"` (`response.output_item.added` + `response.output_item.done`, also listed in `response.completed`). It is never merged into the final answer item, so clients can render it as live progress and skip it when assembling the reply. Private reasoning never reaches this item. `display.interim_assistant_messages: false` (or the `display.platforms.api_server` override) suppresses it on every API-server surface.
 
@@ -187,7 +287,7 @@ Chain responses to maintain full context (including tool calls) across turns:
 
 The server reconstructs the full conversation from the stored response chain — all previous tool calls and results are preserved. Chained requests also share the same session, so multi-turn conversations appear as a single entry in the dashboard and session history.
 
-Each response's `output` lists only that turn's items (its `function_call` / `function_call_output` entries and final `message`), never earlier turns' tool calls — including when Hermes repaired the supplied history before the call (merged consecutive `assistant` or `user` items, dropped orphan tool results) or compacted it mid-chain. The stored chain is that repaired transcript, so the history does not grow by a second copy on every turn.
+Each response's `output` lists only that turn's items (its `function_call` / `function_call_output` entries and final `message`), never earlier turns' tool calls — including when Cybr Agent repaired the supplied history before the call (merged consecutive `assistant` or `user` items, dropped orphan tool results) or compacted it mid-chain. The stored chain is that repaired transcript, so the history does not grow by a second copy on every turn.
 
 #### Named conversations
 
@@ -214,12 +314,12 @@ Delete a stored response.
 Lists the agent as an available model. The advertised model name defaults to the [profile](../profiles.md) name (or `hermes-agent` for the default profile). Required by most frontends for model discovery.
 
 `/v1/models` is intentionally the cheap OpenAI-compat surface. It does **not**
-enumerate every authenticated provider/model combination Hermes can route to,
+enumerate every authenticated provider/model combination Cybr Agent can route to,
 and it does not do pricing or capability enrichment.
 
 ### GET /api/model/options
 
-Hermes-aware clients can request the same curated provider/model inventory used
+Cybr Agent-aware clients can request the same curated provider/model inventory used
 by the dashboard and TUI. This route uses the API server's normal bearer
 authentication and returns provider rows, model capability hints, and pricing
 metadata that do not belong in the OpenAI-compatible `/v1/models` response:
@@ -234,7 +334,7 @@ That payload is the same substrate the dashboard Models page and the TUI
 `model.options` RPC use. It returns authenticated providers, curated model
 lists, per-model pricing, and model capability hints.
 
-Normal opens are intentionally conservative for custom providers: Hermes probes
+Normal opens are intentionally conservative for custom providers: Cybr Agent probes
 only the **currently selected** custom endpoint so a stale or offline saved
 endpoint does not block the picker. An explicit refresh flips to full probing
 and busts the provider model cache:
@@ -247,7 +347,7 @@ curl \
 
 Use `/v1/models` when an OpenAI-compatible client only needs a model name to
 send back in chat/responses requests. Use `/api/model/options` when an
-authenticated UI needs the richer Hermes-specific picker metadata.
+authenticated UI needs the richer Cybr Agent-specific picker metadata.
 
 ### GET /v1/capabilities
 
@@ -271,12 +371,12 @@ Returns a machine-readable description of the API server's stable surface for ex
 }
 ```
 
-Use this endpoint when integrating dashboards, browser UIs, or control planes so they can discover whether the running Hermes version supports runs, streaming, cancellation, and session continuity without depending on private Python internals.
+Use this endpoint when integrating dashboards, browser UIs, or control planes so they can discover whether the running Cybr Agent version supports runs, streaming, cancellation, and session continuity without depending on private Python internals.
 
 ## Browser-extension control
 
-Hermes can route browser tools through an authenticated extension that controls
-the browser session associated with the current Hermes session. The feature is
+Cybr Agent can route browser tools through an authenticated extension that controls
+the browser session associated with the current Cybr Agent session. The feature is
 disabled by default; set `browser.extension_control.enabled` to `true` to opt in:
 
 ```yaml
@@ -286,7 +386,7 @@ browser:
 ```
 
 The local API path also requires the API server bearer key. A controller may
-register only for an existing server session. Hermes derives the controller
+register only for an existing server session. Cybr Agent derives the controller
 principal from authenticated server state; a client-supplied `principal_id` is
 ignored.
 
@@ -313,19 +413,19 @@ script evaluation, console access, uploads, image extraction, and vision are not
 part of the controller protocol.
 
 When a request has no bound controller identity, or when the feature is disabled,
-Hermes preserves the existing browser backend. Once the gateway binds a
+Cybr Agent preserves the existing browser backend. Once the gateway binds a
 controller principal and transport family to the request, that extension lane
 is authoritative: missing, ambiguous, disconnected, or incapable controllers
 fail closed instead of silently switching to a different local/cloud browser.
 After an exact controller is selected, its result or error is authoritative and
-Hermes never retries the same action through another backend.
+Cybr Agent never retries the same action through another backend.
 
 ### Local API registration
 
 1. Send an authenticated `POST /v1/browser-control/register` with
    `protocol_version`, `session_id`, `controller_id`, `browser_profile_id`, and
    the requested `capabilities`.
-2. Hermes returns a single-use ticket with a 30-second TTL and the filtered,
+2. Cybr Agent returns a single-use ticket with a 30-second TTL and the filtered,
    server-bound controller scope.
 3. Open `GET /v1/browser-control/ws` with both WebSocket subprotocols:
    `hermes-browser-control-v1` and
@@ -336,7 +436,7 @@ malformed tickets fail before WebSocket upgrade.
 
 ### Controller frames
 
-Hermes sends `browser.controller.command` frames containing `command_id`,
+Cybr Agent sends `browser.controller.command` frames containing `command_id`,
 `action`, immutable `arguments`, browser/controller ids, and the originating
 `tool_call_id`. The controller replies with `browser.controller.result`, the
 same `command_id`, an exact boolean `ok`, and either `result` or `error`.
@@ -364,11 +464,11 @@ retried through a different browser backend.
 
 ## Per-request model selection
 
-Authenticated clients can override Hermes' default model selection per request
+Authenticated clients can override Cybr Agent' default model selection per request
 by sending:
 
 - `model` — the target model id for this turn
-- `provider` — the Hermes provider slug to resolve credentials/runtime for this turn
+- `provider` — the Cybr Agent provider slug to resolve credentials/runtime for this turn
 - `model_options` — request-scoped reasoning / service-tier controls
 
 The same request fields are accepted on:
@@ -389,7 +489,7 @@ Precedence is deterministic:
 
 `model_options` stays request-scoped regardless of which model/provider wins.
 If a request sends a `provider` that conflicts with a configured `model_routes`
-alias, Hermes rejects the request with `400` instead of silently remixing route
+alias, Cybr Agent rejects the request with `400` instead of silently remixing route
 credentials with another provider.
 
 **Bare `model` values on the OpenAI-compatible endpoints are opt-in.** Generic
@@ -405,7 +505,7 @@ gateway:
       direct_model_requests: true
 ```
 
-Requests that include an explicit `provider` — and the Hermes-native
+Requests that include an explicit `provider` — and the Cybr Agent-native
 `/v1/runs` and session-chat endpoints — always honor the requested model
 regardless of this flag.
 
@@ -456,14 +556,32 @@ Create a new agent run. Returns a `run_id` that can be used to subscribe to prog
 }
 ```
 
-Runs accept a simple `input` string and optional `session_id`, `instructions`, `conversation_history`, or `previous_response_id`. When `session_id` is provided, Hermes surfaces it in the run status so external UIs can correlate runs with their own conversation IDs.
+Runs accept a simple `input` string and optional `session_id`, `instructions`, `conversation_history`, or `previous_response_id`. When `session_id` is provided, Cybr Agent surfaces it in the run status so external UIs can correlate runs with their own conversation IDs.
 
-For safely retryable creation, send an `Idempotency-Key` header (1–255 visible ASCII characters). Hermes durably reserves the key before starting work. An identical retry returns the original `run_id` with HTTP 202 and `Idempotency-Replayed: true`, including after a gateway restart and after the run has completed, failed, or been cancelled. Reusing the same key with a different JSON payload returns HTTP 409 with code `idempotency_key_conflict`. Keys are isolated by authenticated API profile/credential and retained for 24 hours after their last status update; clients should use unique, unguessable keys and must not reuse them for unrelated operations. Requests without the header retain the legacy behavior and always create a new run.
+For safely retryable creation, send an `Idempotency-Key` header (1–255 visible ASCII characters). Cybr Agent durably reserves the key before starting work. An identical retry returns the original `run_id` with HTTP 202 and `Idempotency-Replayed: true`, including after a gateway restart and after the run has completed, failed, or been cancelled. Reusing the same key with a different JSON payload returns HTTP 409 with code `idempotency_key_conflict`. Keys are isolated by authenticated API profile/credential and retained for 24 hours after their last status update; clients should use unique, unguessable keys and must not reuse them for unrelated operations. Requests without the header retain the legacy behavior and always create a new run.
 
-When `session_id` identifies an existing Hermes session and no explicit
+A run the gateway could not admit keeps no reservation, so an exact retry is safe. While the profile is
+draining or retiring, or when the state database stays locked past the write timeout, `POST /v1/runs`
+and the run controls answer HTTP 503 (`runtime_draining` or `storage_unavailable`) with `Retry-After`;
+a malformed control body answers 400 `invalid_params`; ownership, generation and identity refusals
+stay 409.
+
+When `session_id` identifies an existing Cybr Agent session and no explicit
 `conversation_history` or `previous_response_id` is supplied, the run loads
 that session's active transcript. Session turn leases serialize concurrent
 writers and refresh the transcript after a contended wait.
+
+**API sessions are their own sessions.** `session_id` (here) and the
+`X-Hermes-Session-Id` header (on `/v1/chat/completions` and `/v1/responses`) may
+name a session the API server created or one it may create; they cannot bind a
+session that another surface owns — a CLI, TUI, Desktop, ACP or messaging
+conversation. Such a request is refused with HTTP 409 and error code
+`permission_denied` before any admission: no run is created, no
+`Idempotency-Key` reservation is kept, and an exact retry answers 409 again. This
+replaces the previous behavior where the API server ran its own agent on the
+foreign transcript in parallel with its live owner. To work on a chat from
+another surface, attach through the gateway WebSocket (a `prompt.submit` on the
+shared session) instead of the OpenAI-compatible routes.
 
 ### GET /v1/runs/\{run_id\}
 
@@ -484,9 +602,9 @@ Poll the current run state. This is useful for dashboards that need status witho
 
 `model` echoes what the request asked for. On a completed run, `runtime` is the provider/model pair that actually served the turn — after a [fallback provider](fallback-providers.md) switch it names the fallback pair, so a cost-attribution poller books the run to the right provider. `usage.cache_read_tokens` / `usage.cache_write_tokens` are the session's prompt-cache reads and writes, so cached input is not priced as full-price input. `runtime` has the same shape as on `/v1/chat/completions` and `/v1/responses`: `route_source` says how the runtime was chosen (`global`, `raw_request`, `model_routes`), and a request that named a `model`/`provider` also gets `requested: {provider, model}` so the asked-for and served pairs can be compared. The `run.completed` event on the events stream carries the same `usage` and `runtime` fields.
 
-Statuses are retained briefly after terminal states (`completed`, `failed`, `cancelled`, or `interrupted`) for polling and UI reconciliation. When the gateway shuts down while a run is active, the run is persisted as `interrupted` (error `Gateway shutdown interrupted the run.`, terminal event `run.interrupted`) before the agent is asked to stop, so a durable run never survives a restart as `running`; a late result from the interrupted turn cannot overwrite it.
+Statuses are retained briefly after terminal states (`completed`, `failed`, `cancelled`, or `interrupted`) for polling and UI reconciliation. When the gateway shuts down while a run is active, the run is persisted as `interrupted` (error `Gateway shutdown interrupted the run.`, terminal event `run.interrupted`) before the agent is asked to stop, so a durable run never survives a restart as `running`; a late result from the interrupted turn cannot overwrite it. A canonical run whose owner restarted mid-turn reports `unknown` instead, which is not terminal: later turns in that session wait until it is acknowledged with `POST /v1/runs/{run_id}/resolve-unknown` (below).
 
-While the gateway is still draining (a `hermes gateway stop`/`restart` or SIGTERM with a turn in flight), every non-terminal run additionally carries `shutdown_requested_at` (Unix seconds) from the moment new turns are refused. `status` stays `running` because the turn is still being served; a poller that sees the field knows the process is on its way out and the run will end `interrupted` at the latest when the drain budget expires. Terminal runs never gain the field.
+While the gateway is still draining (a `cybr gateway stop`/`restart` or SIGTERM with a turn in flight), every non-terminal run additionally carries `shutdown_requested_at` (Unix seconds) from the moment new turns are refused. `status` stays `running` because the turn is still being served; a poller that sees the field knows the process is on its way out and the run will end `interrupted` at the latest when the drain budget expires. Terminal runs never gain the field.
 
 ### GET /v1/runs/\{run_id\}/events
 
@@ -551,9 +669,58 @@ still executing remains visible to status polling, approval, stop control, and
 concurrency accounting until its executor work actually exits. A connected SSE
 subscriber continues draining normally.
 
+### POST /v1/runs/\{run_id\}/resolve-unknown
+
+After an authority-owner restart, a turn that was already claimed has an
+unknown execution outcome, and `GET /v1/runs/{run_id}` reports it as
+`"status": "unknown"` (not terminal). Cybr Agent pauses later work in that session
+rather than risk replaying the lost head. Read the exact `admission_id` and
+`execution_generation` from that body, then acknowledge that the
+lost execution will not finish:
+
+```json
+{
+  "admission_id": "adm_abc123",
+  "execution_generation": 7
+}
+```
+
+The request is authenticated and run-owner scoped like the other run controls;
+hosted-room callers need the existing `stop` grant. A successful response is the
+canonical terminal receipt (`outcome: "interrupted"`) plus `run_id`. It releases
+the FIFO once and schedules the queued follower without replaying the unknown
+head. An exact repeat of a resolution that already committed returns the same
+receipt (200), so a retry after a lost response is safe. A stale or non-integer
+generation, or a run that is not currently unknown, returns `409 stale_generation`;
+an admission ID that does not belong to the path run returns `409 not_found`. The
+body must contain exactly those two fields, or the server returns `400 invalid_params`.
+
+Hosted-room homes resolve a member's `unknown` run this way on their next poll and
+settle the room task as interrupted ("member gateway restarted"). A room home on an
+older release does not know the `unknown` status and reports a mismatched run status
+until it is upgraded.
+
+This recovery control is advertised as `features.run_unknown_resolution` and as
+the `run_unknown_resolution` endpoint only when the canonical session authority
+is active. Legacy API execution mode does not advertise it. Ordinary
+`POST /v1/runs/{run_id}/stop` deliberately remains separate and returns
+`409 unknown_execution` for an unknown admission.
+
+For admissions created by this version, the opaque run-owner scope is stored
+atomically with the canonical admission and retained for that admission's
+control/status lifetime, including terminal state. It is private server state,
+not a bearer credential, model input, or API response field. Non-keyed requests
+remain non-idempotent, so matching request bodies still create separate runs.
+Older non-keyed admissions have no persisted owner scope and continue to fail
+closed after an adapter restart; they cannot be safely backfilled. Older keyed
+runs continue to use the existing idempotency ledger. Explicit session
+retirement removes the canonical admission payload and its recoverable owner.
+The replay ledger and canonical admission are separate database transactions;
+this recovery control does not promise global exactly-once execution.
+
 ### POST /v1/runs/\{run_id\}/stop
 
-Interrupt a running agent turn. The endpoint returns immediately with `{"status": "stopping"}` while Hermes asks the active agent to stop at the next safe interruption point.
+Interrupt a running agent turn. The endpoint returns immediately with `{"status": "stopping"}` while Cybr Agent asks the active agent to stop at the next safe interruption point.
 The run stays tracked as `stopping` until the executor-backed work exits, then
 settles as `cancelled`; requesting stop never hides a worker that is still
 running.
@@ -562,6 +729,23 @@ running.
 
 Resolve a pending approval for a run that is waiting on a human decision (for example, a tool call gated behind an approval policy). The body carries the approval decision; the run resumes once the decision is recorded. This endpoint is advertised in `/v1/capabilities` as the `run_approval` feature so external UIs can detect support before surfacing an approval prompt.
 
+With the canonical gateway owner, `GET /v1/runs/{run_id}` exposes
+`pending_controls`, using the same `prompt_id` and `execution_generation` as
+attached WebSocket viewers. Respond with the exact current identity:
+
+```json
+{"request_id": "<prompt_id>", "execution_generation": 3, "choice": "once"}
+```
+
+Canonical controls do not accept identityless or bulk responses. Stale generations,
+foreign prompt IDs, and settled runs return HTTP 409. Existing run authentication
+and hosted-room approval restrictions still apply.
+
+### POST /v1/runs/\{run_id\}/clarify
+
+Answer a canonical clarification with `request_id`, `execution_generation`, and
+`answer` (a string). This authenticated endpoint and WebSocket `clarify.respond`
+resolve the same waiting tool; answering does not submit another inference turn.
 MCP trust-gate consent — a write-capable tool on a server configured `trust: untrusted` — surfaces the same way: the run emits an `approval.request` event and parks in `waiting_for_approval` until this endpoint resolves it (`once` runs the tool, `deny` blocks it).
 
 ## Jobs API (background scheduled work)
@@ -574,7 +758,7 @@ List all scheduled jobs.
 
 ### POST /api/jobs
 
-Create a new scheduled job. Body accepts the same shape as `hermes cron` — prompt, schedule, skills, provider override, delivery target.
+Create a new scheduled job. Body accepts the same shape as `cybr cron` — prompt, schedule, skills, provider override, delivery target.
 
 ### GET /api/jobs/\{job_id\}
 
@@ -602,7 +786,7 @@ Trigger the job to run immediately, out of schedule.
 
 ## Sessions API (session control over REST)
 
-External UIs can manage Hermes sessions over REST without standing up the dashboard. All endpoints are gated by `API_SERVER_KEY` and live under `/api/sessions/*`.
+External UIs can manage Cybr Agent sessions over REST without standing up the dashboard. All endpoints are gated by `API_SERVER_KEY` and live under `/api/sessions/*`.
 
 | Method | Path | Description |
 |--------|------|-------------|
@@ -649,7 +833,7 @@ curl http://localhost:8642/v1/toolsets \
 
 ## Long-term memory scoping (`X-Hermes-Session-Key`)
 
-Multi-user frontends like Open WebUI need a stable per-channel identifier for long-term memory (Honcho, etc.) that is **independent** of the transcript-scoped `X-Hermes-Session-Id` (which rotates on `/new`). Pass `X-Hermes-Session-Key` on `/v1/chat/completions`, `/v1/responses`, or `/v1/runs` and Hermes threads it through to `AIAgent(gateway_session_key=...)`, where the Honcho memory provider uses it to derive a stable scope.
+Multi-user frontends like Open WebUI need a stable per-channel identifier for long-term memory (Honcho, etc.) that is **independent** of the transcript-scoped `X-Hermes-Session-Id` (which rotates on `/new`). Pass `X-Hermes-Session-Key` on `/v1/chat/completions`, `/v1/responses`, or `/v1/runs` and Cybr Agent threads it through to `AIAgent(gateway_session_key=...)`, where the Honcho memory provider uses it to derive a stable scope.
 
 ```http
 POST /v1/chat/completions HTTP/1.1
@@ -658,7 +842,7 @@ X-Hermes-Session-Id: transcript-alpha
 X-Hermes-Session-Key: agent:main:webui:dm:user-42
 ```
 
-Rules: max 256 chars, control characters (`\r`, `\n`, `\x00`) are rejected, and the value is echoed back on responses (JSON + SSE). `/v1/capabilities` advertises support via `"session_key_header": "X-Hermes-Session-Key"`. Without the key, Honcho's `per-session` strategy produces a different scope per `session_id` — exactly the behavior Hermes had before.
+Rules: max 256 chars, control characters (`\r`, `\n`, `\x00`) are rejected, and the value is echoed back on responses (JSON + SSE). `/v1/capabilities` advertises support via `"session_key_header": "X-Hermes-Session-Key"`. Without the key, Honcho's `per-session` strategy produces a different scope per `session_id` — exactly the behavior Cybr Agent had before.
 
 Automatic recall follows the **transcript**: the memory provider is initialised once per session and kept across requests, so a continued session (`X-Hermes-Session-Id`, `previous_response_id`, or a declared `X-Hermes-Session-Key` conversation) receives the recall the provider prepared after the previous turn, exactly like a Telegram or Discord chat does. A request without any continuation starts a fresh session and, like the first turn of any new CLI session, has nothing queued yet. Idle sessions release their provider after the same idle TTL as the gateway agent cache (`agent.agent_cache.idle_ttl_secs`, default one hour).
 
@@ -678,7 +862,7 @@ Bearer token auth via the `Authorization` header:
 Authorization: Bearer ***
 ```
 
-Configure the key via `API_SERVER_KEY` env var. If you need a browser to call Hermes directly, also set `API_SERVER_CORS_ORIGINS` to an explicit allowlist.
+Configure the key via `API_SERVER_KEY` env var. If you need a browser to call Cybr Agent directly, also set `API_SERVER_CORS_ORIGINS` to an explicit allowlist.
 
 ### Multi-profile routing (`/p/<profile>/…`)
 
@@ -769,7 +953,7 @@ When CORS is enabled:
 - **Preflight responses** include `Access-Control-Max-Age: 600` (10 minute cache)
 - **SSE streaming responses** include CORS headers so browser EventSource clients work correctly
 - **`X-Hermes-Session-Id`** is an allowed request header, so browsers on an allowlisted origin can request session continuation.
-- **`Idempotency-Key`** is an allowed request header — clients can send it for deduplication (responses are cached by key for 5 minutes)
+- **`Idempotency-Key`** is an allowed request header — clients can send it for deduplication (see [Idempotency keys](#idempotency-keys) for what a key covers and how long it is kept)
 
 Most documented frontends such as Open WebUI connect server-to-server and do not need CORS at all.
 
@@ -793,12 +977,12 @@ Any frontend that supports the OpenAI API format works. Tested/documented integr
 
 ## Multi-User Setup with Profiles
 
-To give multiple users their own isolated Hermes instance (separate config, memory, skills), use [profiles](../profiles.md):
+To give multiple users their own isolated Cybr Agent instance (separate config, memory, skills), use [profiles](../profiles.md):
 
 ```bash
 # Create a profile per user
-hermes profile create alice
-hermes profile create bob
+cybr profile create alice
+cybr profile create bob
 
 # Configure each profile's API server on a different port. API_SERVER_* are env
 # vars (not config.yaml keys), so write them to each profile's .env:
@@ -815,8 +999,8 @@ API_SERVER_KEY=bob-secret
 EOF
 
 # Start each profile's gateway
-hermes -p alice gateway &
-hermes -p bob gateway &
+cybr -p alice gateway &
+cybr -p bob gateway &
 ```
 
 Each profile's API server automatically advertises the profile name as the model ID:
@@ -824,18 +1008,18 @@ Each profile's API server automatically advertises the profile name as the model
 - `http://localhost:8643/v1/models` → model `alice`
 - `http://localhost:8644/v1/models` → model `bob`
 
-In Open WebUI, add each as a separate connection. The model dropdown shows `alice` and `bob` as distinct models, each backed by a fully isolated Hermes instance. See the [Open WebUI guide](../messaging/open-webui.md#multi-user-setup-with-profiles) for details.
+In Open WebUI, add each as a separate connection. The model dropdown shows `alice` and `bob` as distinct models, each backed by a fully isolated Cybr Agent instance. See the [Open WebUI guide](../messaging/open-webui.md#multi-user-setup-with-profiles) for details.
 
 ## Limitations
 
 - **Response storage** — stored responses (for `previous_response_id`) are persisted in SQLite and survive gateway restarts. Max 100 stored responses (LRU eviction).
 - **No file upload** — inline images are supported on both `/v1/chat/completions` and `/v1/responses`, but uploaded files (`file`, `input_file`, `file_id`) and non-image document inputs are not supported through the API.
 - **Simple OpenAI clients still see an alias** — `/v1/models` advertises the
-  stable Hermes alias (`hermes-agent` or the active profile name). Richer
+  stable Cybr Agent alias (`hermes-agent` or the active profile name). Richer
   clients can send explicit `provider` / `model_options` overrides on requests.
 
 ## Proxy Mode
 
-The API server also serves as the backend for **gateway proxy mode**. When another Hermes gateway instance is configured with `GATEWAY_PROXY_URL` pointing at this API server, it forwards all messages here instead of running its own agent. This enables split deployments — for example, a Docker container handling Matrix E2EE that relays to a host-side agent.
+The API server also serves as the backend for **gateway proxy mode**. When another Cybr Agent gateway instance is configured with `GATEWAY_PROXY_URL` pointing at this API server, it forwards all messages here instead of running its own agent. This enables split deployments — for example, a Docker container handling Matrix E2EE that relays to a host-side agent.
 
 See [Matrix Proxy Mode](../messaging/matrix.md#proxy-mode-e2ee-on-macos) for the full setup guide.

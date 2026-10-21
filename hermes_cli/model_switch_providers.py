@@ -72,7 +72,7 @@ def _discovered_catalog_stale(entry: dict, model_ids: list[str]) -> bool:
     """Whether a live probe may overwrite ``entry["models"]``.
 
     A ``models`` mapping or list of dicts is user-curated per-model metadata — never replaced.
-    A mapping Hermes itself discovered (entry flag or legacy in-mapping sentinel) is ours to
+    A mapping Cybr Agent itself discovered (entry flag or legacy in-mapping sentinel) is ours to
     refresh, but only when stale; a legacy-shape entry is always rewritten so the save migrates
     it to the clean entry-level flag."""
     existing = entry.get("models")
@@ -219,9 +219,8 @@ def _prefetch_provider_models_parallel(provider_slugs: list[str]) -> None:
     fingerprint-mismatched, or hard-expired entries. TTL-expired non-empty rows are served
     inside the stale-serve window while revalidating off-thread, and an empty local-ollama
     catalog is authoritative inside its own short native TTL, so prefetching either trades a
-    non-blocking serial read for a parallel fetch the picker waits on. Each worker re-persists
-    through the thread-safe ``update_provider_cache_entry`` so concurrent writes cannot
-    clobber each other."""
+    non-blocking serial read for a parallel fetch the picker waits on. Persistence is
+    ``cached_provider_model_ids``'s own locked write; workers add none of their own."""
     from hermes_cli.models import (
         _credential_fingerprint, _disk_serve_tier, _load_provider_models_cache,
         _normalized_cache_slug, cached_provider_model_ids)
@@ -246,12 +245,7 @@ def _prefetch_provider_models_parallel(provider_slugs: list[str]) -> None:
     import concurrent.futures
     def _fetch_one(slug: str) -> None:
         try:
-            models = cached_provider_model_ids(slug, force_refresh=True)
-            # cached_provider_model_ids persists via a non-locked read-modify-write; re-persist
-            # through the locked path so no write is lost under concurrency.
-            if models:
-                from hermes_cli.models import update_provider_cache_entry
-                update_provider_cache_entry(slug, models)
+            cached_provider_model_ids(slug, force_refresh=True)
         except Exception:
             pass  # best-effort; picker falls back to curated list
 
@@ -498,8 +492,10 @@ def _free_tier_nous_row(row: dict) -> dict | None:
     from hermes_cli import anon_auth
     if not anon_auth.has_guest():
         return row
-    if not anon_auth.guest_enabled():
+    if not anon_auth.guest_allowed():
         return None
+    if not anon_auth.free_inference_active():
+        return row  # a guest without the welcome trial here: the row is whatever real Nous login exists
     out = dict(row)
     out["name"] = anon_auth.FREE_TIER_LABEL
     out["models"] = [anon_auth.GUEST_MODEL]
@@ -584,7 +580,7 @@ def _discover_flag(entry: dict):
 
 
 def _display_prefix(name: str) -> str:
-    """Text before the per-model separator Hermes's own writer uses ("—" / " - ")."""
+    """Text before the per-model separator Cybr Agent's own writer uses ("—" / " - ")."""
     return next((name.split(sep)[0].strip() for sep in ("—", " - ") if sep in name), name)
 
 
@@ -696,7 +692,7 @@ def _collect_authed_provider_slugs(
 @dataclass
 class _PickerBuild:
     """State threaded through the ``list_authenticated_providers`` sections: 1 built-ins mapped to
-    models.dev, 2 Hermes-only overlays, 2b canonical providers missed by 1/2, 3 ``providers:``
+    models.dev, 2 Cybr Agent-only overlays, 2b canonical providers missed by 1/2, 3 ``providers:``
     entries + 3b the bare active custom endpoint, 4 ``custom_providers:`` entries. Row-builder
     imports of ``hermes_cli.auth/models`` stay lazy so tests can patch those modules."""
     current_provider: str
@@ -903,13 +899,13 @@ def _overlay_has_creds(b: _PickerBuild, pid: str, hermes_slug: str, overlay) -> 
 
 
 def _lap_overlay_rows(b: _PickerBuild, data: dict, user_providers: dict) -> None:
-    """Section 2: Hermes-only providers (nous, openai-codex, copilot, opencode-go, ...)."""
+    """Section 2: Cybr Agent-only providers (nous, openai-codex, copilot, opencode-go, ...)."""
     from agent.models_dev import PROVIDER_TO_MODELS_DEV
     from hermes_cli.model_switch import _declared_model_ids
     from hermes_cli.providers import HERMES_OVERLAYS
 
     # HERMES_OVERLAYS keys may be models.dev IDs ("github-copilot") while config.yaml uses
-    # Hermes IDs ("copilot").
+    # Cybr Agent IDs ("copilot").
     mdev_to_hermes = {v: k for k, v in PROVIDER_TO_MODELS_DEV.items()}
     for pid, overlay in HERMES_OVERLAYS.items():
         hermes_slug = mdev_to_hermes.get(pid, pid)

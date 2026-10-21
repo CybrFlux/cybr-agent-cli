@@ -74,6 +74,17 @@ export class JsonRpcGatewayError extends Error {
   }
 }
 
+/** Refusals `session.steer` / `session.redirect` answer before the text reaches any agent
+ *  (gateway/session_busy_controls.py::correct): the turn the client believed busy is gone or cannot
+ *  take a correction, so the words are safe to admit as the next prompt — never retried as a control. */
+const UNDELIVERED_CORRECTION_REASONS = new Set(['execution_not_ready', 'stale_generation', 'unsupported_control'])
+
+export function isUndeliveredCorrectionRefusal(error: unknown): boolean {
+  const reason = error instanceof JsonRpcGatewayError ? (error.data as { reason?: unknown } | undefined)?.reason : null
+
+  return typeof reason === 'string' && UNDELIVERED_CORRECTION_REASONS.has(reason)
+}
+
 /** JSON-RPC "method not found" (tui_gateway/server.py::dispatch `_err(rid, -32601, …)`). */
 export const JSON_RPC_METHOD_NOT_FOUND = -32601
 
@@ -84,7 +95,7 @@ export const JSON_RPC_INTERNAL_ERROR = -32603
 export const JSON_RPC_SESSION_NOT_SHOWN = 4404
 
 /** Map a raw `error` member of a response frame to the typed error every surface inspects. */
-export function jsonRpcErrorFromFrame(raw: unknown, fallbackMessage = 'Hermes RPC failed'): JsonRpcGatewayError {
+export function jsonRpcErrorFromFrame(raw: unknown, fallbackMessage = 'Cybr Agent RPC failed'): JsonRpcGatewayError {
   const err = (raw && typeof raw === 'object' ? raw : {}) as JsonRpcErrorPayload
 
   return new JsonRpcGatewayError(typeof err.message === 'string' && err.message ? err.message : fallbackMessage, {

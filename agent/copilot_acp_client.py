@@ -1,4 +1,4 @@
-"""OpenAI-compatible shim that forwards Hermes requests to `copilot --acp`.
+"""OpenAI-compatible shim that forwards Cybr Agent requests to `copilot --acp`.
 
 Each request starts a short-lived ACP session, sends the formatted conversation
 as one prompt, collects text chunks, and returns the minimal OpenAI-client shape.
@@ -31,6 +31,7 @@ from agent.acp_openai_bridge import (
 from agent.file_safety import (
     get_nt_namespace_error, get_read_block_error, get_write_denied_error, is_write_approval_required)
 from agent.redact import redact_sensitive_text
+from agent.runtime_cwd import resolve_agent_cwd
 from tools.environments.local import hermes_subprocess_env
 
 ACP_MARKER_BASE_URL = "acp://copilot"
@@ -45,7 +46,7 @@ _ROLE_LABELS = {"system": "System", "user": "User", "assistant": "Assistant", "t
 # True/False is cached, so a CLI installed mid-session is picked up.
 _ACP_PROBE_CACHE: dict[str, bool] = {}
 _PROMPT_PREAMBLE = (
-    "You are being used as the active ACP agent backend for Hermes.",
+    "You are being used as the active ACP agent backend for Cybr Agent.",
     "Use ACP capabilities to complete tasks.",
     "IMPORTANT: If you take an action with a tool, you MUST output tool calls using <tool_call>{...}</tool_call> blocks with JSON exactly in OpenAI function-call shape.",
     "If no tool is needed, answer normally.",
@@ -53,13 +54,13 @@ _PROMPT_PREAMBLE = (
 _INITIALIZE_PARAMS = {
     "protocolVersion": 1,
     "clientCapabilities": {"fs": {"readTextFile": True, "writeTextFile": True}},
-    "clientInfo": {"name": "hermes-agent", "title": "Hermes Agent", "version": "0.0.0"},
+    "clientInfo": {"name": "hermes-agent", "title": "Cybr Agent", "version": "0.0.0"},
 }
 _DEPRECATED_CLI_ERROR = (
-    "Hermes ACP mode requires the NEW GitHub Copilot CLI (github.com/github/copilot-cli), but the binary it just "
+    "Cybr Agent ACP mode requires the NEW GitHub Copilot CLI (github.com/github/copilot-cli), but the binary it just "
     "spawned is the deprecated `gh copilot` extension.\n\n"
     "Install the new CLI:\n  npm install -g @github/copilot\n  # then verify with: copilot --help\n\n"
-    "If `copilot` already resolves to the new CLI but you still see this,\npoint Hermes at it explicitly:\n"
+    "If `copilot` already resolves to the new CLI but you still see this,\npoint Cybr Agent at it explicitly:\n"
     "  export HERMES_COPILOT_ACP_COMMAND=/path/to/new/copilot\n\n"
     "Alternative: use the `copilot` provider (no ACP, hits the Copilot API\ndirectly with a Copilot subscription "
     "token) via `hermes setup`.\n\nOriginal error:\n"
@@ -198,7 +199,7 @@ def _format_messages_as_prompt(
 ) -> str:
     # Deliberately no "requested model" line: the model is applied for real via ACP session/set_model;
     # a prompt-text mention makes a substituted backend model FALSELY self-identify as the requested
-    # one. Copilot has no tools of its own that collide with Hermes', so forward the whole toolset.
+    # one. Copilot has no tools of its own that collide with Cybr Agent', so forward the whole toolset.
     sections: list[str] = [*_PROMPT_PREAMBLE, *_render_tool_bridge_sections(tools, tool_choice)]
     transcript: list[str] = []
     for message in (m for m in messages if isinstance(m, dict)):
@@ -293,7 +294,9 @@ class CopilotACPClient:
         self._default_headers = dict(default_headers or {})
         self._acp_command = acp_command or command or _resolve_command()
         self._acp_args = list(acp_args or args or _resolve_args())
-        self._acp_cwd = str(Path(acp_cwd or os.getcwd()).resolve())
+        # The session's workspace, not the process cwd: under the gateway every turn runs in
+        # the daemon (or a managed worker) whose own cwd is unrelated to the client's.
+        self._acp_cwd = str(Path(acp_cwd or resolve_agent_cwd()).resolve())
         self.chat = SimpleNamespace(completions=SimpleNamespace(create=self._create_chat_completion))
         self.is_closed = False
         # Clients are cached and shared across concurrent callers (auxiliary tasks, async
@@ -501,7 +504,7 @@ class CopilotACPClient:
                 except Exception as exc:
                     response = _jsonrpc_error(message_id, -32602, str(exc))
         else:
-            response = _jsonrpc_error(message_id, -32601, f"ACP client method '{method}' is not supported by Hermes yet.")
+            response = _jsonrpc_error(message_id, -32601, f"ACP client method '{method}' is not supported by Cybr Agent yet.")
         process.stdin.write(json.dumps(response) + "\n")
         process.stdin.flush()
         return True

@@ -12,7 +12,7 @@ function toolId(payload: GatewayEventPayload | undefined): string {
   return payload?.tool_id || payload?.tool_call_id || payload?.id || ''
 }
 
-export const QUESTION_CARD_TOOLS = new Set(['clarify', 'setup_choose'])
+export const QUESTION_CARD_TOOLS = new Set(['clarify'])
 
 const REQUEST_BACKED_TOOLS = new Set([...QUESTION_CARD_TOOLS, 'setup_mcp'])
 
@@ -412,6 +412,10 @@ export interface SettledClarifyProjection {
   streamId: string | null
 }
 
+/** A tool call that neither returned nor was sealed: it is still running. */
+export const hasUnresolvedToolCall = (message: ChatMessage) =>
+  message.parts.some(part => part.type === 'tool-call' && part.result === undefined && part.completedAt === undefined)
+
 /**
  * Find the message that owns a tool call, by its stable call id, anywhere in
  * the transcript — not just in the currently-streaming bubble.
@@ -424,7 +428,7 @@ export interface SettledClarifyProjection {
  *
  * Only an UNRESOLVED part (never completed: no `result` key, sealed or not)
  * can own an event. Tool call ids are not unique across turns — llama.cpp
- * emits one constant id for every call and Hermes' own deterministic ids
+ * emits one constant id for every call and Cybr Agent' own deterministic ids
  * repeat — so a part that already carries its completion is a finished call
  * from an earlier turn, not the owner of the new one. Routing to it would
  * draw the new call over the old row and leave the live turn empty.
@@ -825,16 +829,8 @@ export function toolPartFromStoredCall(
 function storedToolResultMetadata(toolMessage: SessionMessage): ToolResultMetadata | undefined {
   const display = parseMaybeJsonObject(toolMessage.display_metadata)
   const metadata = parseMaybeJsonObject(display.tool_result_metadata)
-  const retried = parseMaybeJsonObject(display.retried).result
 
-  if (typeof metadata.inline_diff !== 'string' && retried === undefined) {
-    return undefined
-  }
-
-  return {
-    ...(typeof metadata.inline_diff === 'string' ? { inline_diff: metadata.inline_diff } : {}),
-    ...(retried === undefined ? {} : { retried })
-  }
+  return typeof metadata.inline_diff === 'string' ? { inline_diff: metadata.inline_diff } : undefined
 }
 
 export function applyStoredToolResult(messages: ChatMessage[], toolMessage: SessionMessage): boolean {
@@ -871,7 +867,7 @@ export function applyStoredToolResultToParts(
       ? toolMessage.content
       : (toolMessage.text ?? toolMessage.context ?? toolMessage.name)
 
-  // Tool-call ids are not unique across turns (llama.cpp/Hermes reuse them),
+  // Tool-call ids are not unique across turns (llama.cpp/Cybr Agent reuse them),
   // so only an unresolved part may own a stored result. Property presence,
   // not truthiness: `false`/`null`/`''`/`0` are completed results too.
   const partIndex = parts.findIndex(

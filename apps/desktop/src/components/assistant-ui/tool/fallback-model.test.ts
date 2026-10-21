@@ -107,6 +107,14 @@ describe('buildToolView error confidence', () => {
       [{ result: { meta: { error: 'a previous attempt' }, data: { count: 1 } } }, 'success'],
       [{ toolName: 'read_file', result: { error: 'Permission denied reading /repo/private.ts' } }, 'error'],
       [{ toolName: 'patch', result: { error: 'File not found: /repo/session-view.ts' } }, 'error'],
+      [
+        {
+          toolName: 'skill_manage',
+          result: { success: false, error: 'SKILL.md content is over the limit', file_preview: 'ROLLBACK FAILED notes' }
+        },
+        'notice'
+      ],
+      [{ toolName: 'skill_manage', result: { success: false, error: "batch aborted, ROLLBACK FAILED for 'demo'" } }, 'error'],
       [{ result: { success: false, result: { output: { error: { message: 'Connection refused' } } } } }, 'error']
     ]
 
@@ -211,16 +219,16 @@ describe('buildToolView web-search query', () => {
   it('keeps the query separate from structured search results', () => {
     const view = buildToolView(
       part({
-        args: { query: 'Hermes Agent Desktop tool calls' },
-        result: { web: [{ snippet: 'Desktop docs', title: 'Hermes docs', url: 'https://example.com/docs' }] },
+        args: { query: 'Cybr Agent Desktop tool calls' },
+        result: { web: [{ snippet: 'Desktop docs', title: 'Cybr Agent docs', url: 'https://example.com/docs' }] },
         toolName: 'web_search'
       }),
       ''
     )
 
-    expect(view.searchQuery).toBe('Hermes Agent Desktop tool calls')
+    expect(view.searchQuery).toBe('Cybr Agent Desktop tool calls')
     expect(view.searchHits).toEqual([
-      { snippet: 'Desktop docs', title: 'Hermes docs', url: 'https://example.com/docs' }
+      { snippet: 'Desktop docs', title: 'Cybr Agent docs', url: 'https://example.com/docs' }
     ])
   })
 })

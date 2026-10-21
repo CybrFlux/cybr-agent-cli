@@ -1,6 +1,6 @@
 """Process identity: spawn tags, the machine-wide spawn ledger, and the Windows job-object self-attach.
 
-Three layers make every long-lived Hermes process positively identifiable, so reapers (``hermes
+Three layers make every long-lived Cybr Agent process positively identifiable, so reapers (``hermes
 update``, Desktop startup sweeps) never guess lineage from PPID archaeology or cmdline matching:
 1. spawn tags (``HERMES_SPAWN`` env stamped by the spawner); 2. a ``(pid, create_time)`` ledger;
 3. Windows job-object self-attach with ``KILL_ON_JOB_CLOSE`` so the whole child tree dies with the
@@ -61,12 +61,35 @@ def install_id(project_root: Optional[Path] = None) -> str:
     return hashlib.sha256(canonical.encode("utf-8", "replace")).hexdigest()[:12]
 
 
+def process_birth(proc) -> float:
+    """A managed worker's identity birth for the ``psutil.Process`` *proc*, the same in every process.
+
+    On macOS psutil shifts ``create_time()`` by ``abs(INIT_BOOT_TIME - boot_time())``
+    (``psutil._psosx.adjust_proc_create_time``), with a boot-time reference frozen when psutil
+    was imported in the CALLING process. After a clock step (NTP, sleep/wake) a long-lived
+    gateway owner and a freshly spawned worker read different births for the same process, and
+    the exact identity match refused every managed worker (#140580). The kernel's own start
+    (``monotonic=True``: the unadjusted ``kinfo_proc`` epoch start) is what every process sees.
+    Other platforms keep ``create_time()``: Linux and Windows apply no per-process reference.
+    Raises ``psutil.Error`` like ``create_time()``.
+    """
+    import psutil
+    if getattr(psutil, "MACOS", False):
+        platform_proc = getattr(proc, "_proc", None)
+        if platform_proc is not None:
+            try:
+                return float(platform_proc.create_time(monotonic=True))
+            except TypeError:  # a psutil without the monotonic read: fall back to the adjusted one
+                pass
+    return float(proc.create_time())
+
+
 def _process_create_time(pid: Optional[int] = None) -> Optional[float]:
-    """``psutil`` create time for ``pid`` (default: this process); ``None`` when psutil can't say."""
+    """:func:`process_birth` of ``pid`` (default: this process); ``None`` when psutil can't say."""
     try:
         import psutil
 
-        return float(psutil.Process(os.getpid() if pid is None else pid).create_time())
+        return process_birth(psutil.Process(os.getpid() if pid is None else pid))
     except Exception:
         return None
 
@@ -182,7 +205,7 @@ def _read_ledger_or_quarantine(path: Path) -> Optional[list[dict]]:
 
 def _same_incarnation(proc, create_time: Optional[float]) -> bool:
     """Does the live ``proc`` match a recorded ``create_time`` (2 s tolerance; ``None`` matches)?"""
-    return create_time is None or abs(float(proc.create_time()) - float(create_time)) < 2.0
+    return create_time is None or abs(process_birth(proc) - float(create_time)) < 2.0
 
 
 def _pid_alive_matches(pid: int, create_time: Optional[float], *, strict: bool = False) -> Optional[bool]:
@@ -194,7 +217,7 @@ def _pid_alive_matches(pid: int, create_time: Optional[float], *, strict: bool =
     try:
         proc = psutil.Process(int(pid))
         if strict:
-            return (create_time is not None and proc.create_time() == create_time
+            return (create_time is not None and process_birth(proc) == create_time
                     and proc.is_running() and proc.status() != psutil.STATUS_ZOMBIE)
         # A zombie keeps its create_time until its parent reaps it, but it is already dead: the
         # dashboard stop check (``gateway.status._pid_exists``) books it stopped, so the ledger must
@@ -257,6 +280,12 @@ def is_desktop_owned_backend(argv: Optional[Sequence[str]] = None) -> bool:
     from hermes_cli._startup_fast import is_desktop_ssh_backend_argv
 
     return is_desktop_ssh_backend_argv(list(sys.argv[1:] if argv is None else argv))
+
+
+def is_local_desktop_backend() -> bool:
+    """The backend Desktop spawned on this machine: the local pool spawn's credential, never the
+    SSH spawn (its token arrives as a file on argv, and that host is another computer)."""
+    return os.environ.get("HERMES_DESKTOP") == "1" and os.environ.get("HERMES_DASHBOARD_SESSION_TOKEN", "") != ""
 
 
 def _desktop_spawner_identity() -> tuple[Optional[int], Optional[float]]:
@@ -322,7 +351,7 @@ def register_child(pid: int, purpose: str, *, project_root: Optional[Path] = Non
     """Record a CHILD process this process just spawned. Best-effort.
 
     Mirror of :func:`register_self` for children that cannot register themselves (stdio MCP
-    helpers: arbitrary ``npx``/binary servers never import Hermes code). Records the child's
+    helpers: arbitrary ``npx``/binary servers never import Cybr Agent code). Records the child's
     ``(pid, create_time)`` with THIS process as spawner, so a helper whose spawner is provably gone
     is a reapable orphan and one whose spawner is alive is never reaped.
     """

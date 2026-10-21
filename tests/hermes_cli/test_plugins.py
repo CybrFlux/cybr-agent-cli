@@ -1,4 +1,4 @@
-"""Tests for the Hermes plugin system (hermes_cli.plugins)."""
+"""Tests for the Cybr Agent plugin system (hermes_cli.plugins)."""
 
 import logging
 import json
@@ -60,7 +60,7 @@ def _make_plugin_dir(base: Path, name: str, *, register_body: str = "pass",
     ``<hermes_home>`` from it by walking one level up unless *home* is
     given explicitly.
 
-    Pass *home* explicitly whenever the target Hermes home for this
+    Pass *home* explicitly whenever the target Cybr Agent home for this
     plugin isn't necessarily the current ``HERMES_HOME`` env var — e.g.
     when writing fixtures for two profiles up front and only switching
     ``HERMES_HOME``/``set_hermes_home_override()`` per-profile afterwards
@@ -2572,7 +2572,7 @@ class TestPluginCommandResultResolution:
         async def _handler():
             return "threaded-ok"
 
-        monkeypatch.setattr("hermes_cli.plugins.asyncio.get_running_loop", lambda: _Loop())
+        monkeypatch.setattr("hermes_cli.plugins_dispatch.asyncio.get_running_loop", lambda: _Loop())
         assert resolve_plugin_command_result(_handler()) == "threaded-ok"
 
     def test_running_loop_timeout_does_not_hang_forever(self, monkeypatch):
@@ -2586,8 +2586,8 @@ class TestPluginCommandResultResolution:
             await _asyncio.sleep(10)
             return "should-not-reach"
 
-        monkeypatch.setattr("hermes_cli.plugins.asyncio.get_running_loop", lambda: _Loop())
-        monkeypatch.setattr("hermes_cli.plugins._PLUGIN_COMMAND_AWAIT_TIMEOUT_SECS", 0.1)
+        monkeypatch.setattr("hermes_cli.plugins_dispatch.asyncio.get_running_loop", lambda: _Loop())
+        monkeypatch.setattr("hermes_cli.plugins_dispatch._PLUGIN_COMMAND_AWAIT_TIMEOUT_SECS", 0.1)
 
         with pytest.raises(TimeoutError):
             resolve_plugin_command_result(_slow_handler())

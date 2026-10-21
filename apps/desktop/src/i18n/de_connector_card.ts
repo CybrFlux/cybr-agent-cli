@@ -24,13 +24,22 @@ export const deConnectorCard: TranslationOverrides['connectors'] = {
   ownerMissing: 'Öffnen Sie diese Konversation erneut, um ihre Verbindungen zu verwalten.',
   search: 'App finden',
   empty: 'Keine passende App',
-  disclaimer: 'Das Verbinden ist freiwillig. Geben Sie nur den Apps Zugriff, die Hermes verwenden soll.',
+  disclaimer: 'Das Verbinden ist freiwillig. Geben Sie nur den Apps Zugriff, die Cybr Agent verwenden soll.',
   execution: 'Verbindungs-Tools',
   setup: server => `${server} einrichten`,
   openInBrowser: 'Im Browser öffnen',
   setupCancel: 'Abbrechen',
   authorizedToolsUnavailable: 'Autorisiert. Tools nicht verfügbar.',
   required: 'Erforderlich',
-  namedAccount: (app: string, alias: string) => `Hermes hat dieses ${app}-Konto ${alias} genannt.`,
-  renameAccount: 'Umbenennen'
+  namedAccount: (app: string, alias: string) => `Cybr Agent hat dieses ${app}-Konto ${alias} genannt.`,
+  renameAccount: 'Umbenennen',
+  directory: {
+    suggested: 'Vorgeschlagen',
+    allApps: 'Alle Apps',
+    receiptConnected: apps => `Verbunden: ${apps}`,
+    receiptNone: 'Keine neuen Apps verbunden',
+    receiptTimedOut: 'Nach 5 Minuten geschlossen',
+    finishInBrowser: 'Im Browser abschließen',
+    signInFailed: 'Verbindung fehlgeschlagen. Zum Wiederholen klicken'
+  }
 }

@@ -203,7 +203,7 @@ def ensure_google_chat_deps() -> bool:
         return True
     from pm import InstallError, ensure_import
     # Request BOTH extras before surfacing a failure: a successful install raises
-    # InstallError("restart Hermes to activate…") for the first extra, and aborting
+    # InstallError("restart Cybr Agent to activate…") for the first extra, and aborting
     # there would leave the second uninstalled — the restart would land back here.
     failures: list[InstallError] = []
     for extra in ("google", "google-chat"):
@@ -328,6 +328,13 @@ class _ThreadCountStore:
         chat_counts[thread_name] = prev + 1
         self._save()
         return prev
+
+    def decr(self, chat_id: str, thread_name: str) -> None:
+        """Undo one :meth:`incr` for an inbound that was not admitted; never below zero."""
+        chat_counts = self._counts.get(chat_id, {})
+        if chat_counts.get(thread_name, 0) > 0:
+            chat_counts[thread_name] -= 1
+            self._save()
 
     def _save(self) -> None:
         """Atomic write; failure is non-fatal (in-memory counts stay consistent)."""
@@ -858,10 +865,27 @@ class GoogleChatAdapter(BasePlatformAdapter):
                 message.ack()
 
     async def dispatch_http_event(self, envelope: dict[str, Any]) -> dict[str, Any]:
+        from gateway.parked_route_refusal import ParkedRouteRefused, retryable_ingress
         prepared = self._prepare_inbound(envelope)
-        if prepared is not None:
+        if prepared is None:
+            return {}
+        # The callback answers after this dispatch, so the delivery is not acknowledged yet: a route
+        # to a parked profile is answered retryably (Google redelivers a non-2xx), not refused in chat.
+        with retryable_ingress() as scope:
             await self._dispatch_message(*prepared)
+        if scope.refused:
+            self._release_unadmitted(*prepared)
+            raise ParkedRouteRefused()
         return {}
+
+    def _release_unadmitted(self, msg: dict[str, Any], envelope: dict[str, Any]) -> None:
+        """Undo what ingress recorded for a delivery that was not admitted (its dedup claim and DM
+        thread count), so the platform's redelivery is admitted and read as the first delivery."""
+        self._dedup.discard(msg.get("name") or "")
+        space_name = (envelope.get("space") or msg.get("space") or {}).get("name") or ""
+        thread_name = (msg.get("thread") or {}).get("name") or ""
+        if space_name and thread_name:
+            self._thread_count_store.decr(space_name, thread_name)
 
     def verify_http_event_request(self, auth_header: str) -> tuple[bool, str]:
         if not self._http_events_audience or not self._http_events_service_account_email:
@@ -1268,7 +1292,7 @@ class GoogleChatAdapter(BasePlatformAdapter):
         return SendResult(success=True, message_id=resp.get("name"))
 
     async def send_typing(self, chat_id: str, metadata: Any = None) -> None:
-        """Post a visible 'Hermes is thinking…' marker (Chat has no typing API); ``send()``
+        """Post a visible 'Cybr Agent is thinking…' marker (Chat has no typing API); ``send()``
         PATCHes it with the reply, ``on_processing_complete`` reaps it otherwise. Created in
         the user's thread (patch cannot move it). ``_keep_typing`` wraps this in
         ``wait_for(timeout=1.5)``: a cancelled create would still land an unrecorded card and
@@ -1751,6 +1775,8 @@ def register(ctx) -> None:
     """Plugin entry point: registers the ``google_chat`` adapter with the platform registry."""
     ctx.register_platform(
         name="google_chat",
+        dashboard_description="Connect Cybr Agent to Google Chat via Cloud Pub/Sub.",
+        docs_url="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/google_chat",
         label="Google Chat",
         adapter_factory=lambda cfg: GoogleChatAdapter(cfg),
         check_fn=_check_for_registry,
@@ -1777,7 +1803,7 @@ def register(ctx) -> None:
             "in your response. Native file attachments require the user to run /setup-files once in their own DM — "
             "until they do, file requests fall back to a text notice with the host path. Do NOT generate interactive "
             "Card v2 buttons — Google Chat interactivity is not yet supported by this gateway; ask for typed "
-            "confirmations instead. While you are generating a response, a 'Hermes is thinking…' marker message "
+            "confirmations instead. While you are generating a response, a 'Cybr Agent is thinking…' marker message "
             "appears in the space and is deleted once your response is ready. You do NOT have access to Google "
             "Chat-specific APIs — you cannot search space history, list space members, or manage spaces. Do not "
             "promise to perform these actions; explain that you can only read messages sent directly to you and "

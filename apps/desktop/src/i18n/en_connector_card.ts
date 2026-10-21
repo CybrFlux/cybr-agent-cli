@@ -24,13 +24,22 @@ export const enConnectorCard: Translations['connectors'] = {
   ownerMissing: 'Reopen this conversation to manage its connections.',
   search: 'Find an app',
   empty: 'No matching apps',
-  disclaimer: 'Connecting is optional. Only authorize the apps you want Hermes to use.',
+  disclaimer: 'Connecting is optional. Only authorize the apps you want Cybr Agent to use.',
   execution: 'Connector tools',
   setup: server => `Set up ${server}`,
   openInBrowser: 'Open in browser',
   setupCancel: 'Cancel',
   authorizedToolsUnavailable: 'Authorized. Tools unavailable.',
   required: 'Required',
-  namedAccount: (app: string, alias: string) => `Hermes named this ${app} account ${alias}.`,
-  renameAccount: 'Rename'
+  namedAccount: (app: string, alias: string) => `Cybr Agent named this ${app} account ${alias}.`,
+  renameAccount: 'Rename',
+  directory: {
+    suggested: 'Suggested',
+    allApps: 'All apps',
+    receiptConnected: apps => `Connected: ${apps}`,
+    receiptNone: 'No new apps connected',
+    receiptTimedOut: 'Closed after 5 minutes',
+    finishInBrowser: 'Finish in your browser',
+    signInFailed: "Couldn't connect. Click to retry"
+  }
 }

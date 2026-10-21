@@ -649,6 +649,32 @@ test('pathForRegistryBackendRequest uses the resolved registry backend scope', (
   )
 })
 
+test('a /api/profiles/<name>/… path already names its profile: no ambient scope is appended (#140791)', () => {
+  for (const backend of [{ mode: 'local' }, { sharedPrimary: true }, { sharedRemote: true }]) {
+    for (const ambient of ['default', '__all__', 'beta']) {
+      for (const path of ['/api/profiles/p2/soul', '/api/profiles/p2', '/api/profiles/p2/model',
+        '/api/profiles/projects/soul', '/api/profiles/sessions/soul']) {
+        assert.equal(pathForRegistryBackendRequest(path, ambient, backend), path)
+      }
+
+      // Collection routes under /api/profiles/ carry no name in the path: they still get the scope.
+      for (const path of ['/api/profiles/sessions', '/api/profiles/projects/tree', '/api/profiles']) {
+        assert.equal(pathForRegistryBackendRequest(path, ambient, backend), `${path}?profile=${ambient}`)
+      }
+    }
+  }
+
+  assert.equal(pathWithProfileScope('/api/profiles/p2/soul', 'default'), '/api/profiles/p2/soul')
+  // Method-aware: PATCH/DELETE of a profile NAMED active/import/sessions names that profile.
+  for (const [path, method] of [['/api/profiles/active', 'PATCH'], ['/api/profiles/import', 'DELETE'],
+    ['/api/profiles/sessions', 'DELETE']]) {
+    assert.equal(pathForRegistryBackendRequest(path, 'beta', { mode: 'local' }, method), path)
+  }
+
+  assert.equal(pathForRegistryBackendRequest('/api/profiles/active', 'beta', { mode: 'local' }, 'GET'),
+    '/api/profiles/active?profile=beta')
+})
+
 test('registry model reads and writes retain each profile on a shared local backend', () => {
   for (const backend of [{ mode: 'local' }, { sharedPrimary: true }]) {
     for (const profile of ['research', 'default', 'research']) {
@@ -1495,7 +1521,7 @@ test('gateway WS URL IPC result serializes success and the auth-vs-transport mat
 
   for (const error of [
     Object.assign(new Error('500: unavailable'), { statusCode: 500 }),
-    new Error('Timed out connecting to Hermes backend after 8000ms'),
+    new Error('Timed out connecting to Cybr Agent backend after 8000ms'),
     Object.assign(new Error('socket reset'), { code: 'ECONNRESET' })
   ]) {
     assert.deepEqual(await gatewayWsUrlIpcResult(async () => Promise.reject(error)), {
@@ -1597,7 +1623,7 @@ test('FIX #95701: a confirmed 401/403 ticket rejection is tagged isReauthRequire
 test('FIX #95701: transport and server failures at the ticket mint stay retryable — never reauth', () => {
   for (const source of [
     Object.assign(new Error('503: unavailable'), { statusCode: 503 }),
-    new Error('Timed out connecting to Hermes backend after 8000ms'),
+    new Error('Timed out connecting to Cybr Agent backend after 8000ms'),
     Object.assign(new Error('read ECONNRESET'), { code: 'ECONNRESET' })
   ]) {
     const wrapped = gatewayTicketFailure(source, 'auth copy', 'transport copy') as any

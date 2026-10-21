@@ -3,7 +3,7 @@
 Reasoning models (Nemotron 3 Ultra, OpenAI o1/o3, Anthropic Opus 4.x
 thinking, DeepSeek R1, Qwen QwQ, xAI Grok reasoning) routinely exceed
 the 180s / 90s chat-model stale-timeout defaults during their
-thinking phase.  Hermes's default cloud-stream stale detector
+thinking phase.  Cybr Agent's default cloud-stream stale detector
 (``HERMES_STREAM_STALE_TIMEOUT`` = 180s) and non-stream detector
 (``HERMES_API_CALL_STALE_TIMEOUT`` = 90s) both fire before the
 upstream proxy's idle timeout on a healthy reasoning stream.  Result:
@@ -45,6 +45,12 @@ from pathlib import Path
 
 
 
+
+
+def test_nemotron_super_reasoning_floor_matches_existing_super_family():
+    from agent.reasoning_timeouts import get_reasoning_stale_timeout_floor as floor
+
+    assert floor("nvidia/nemotron-3.5-super-vl-120b-a12b") == floor("nvidia/nemotron-3-super-120b-a12b") is not None
 
 
 def test_floor_matching_is_vendor_prefix_and_variant_suffix_transparent():

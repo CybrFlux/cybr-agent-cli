@@ -1,7 +1,7 @@
 ---
 sidebar_position: 9
 title: "Optional Skills Catalog"
-description: "Official optional skills shipped with hermes-agent — install via hermes skills install official/<category>/<skill>"
+description: "Official optional skills shipped with hermes-agent — install via cybr skills install official/<category>/<skill>"
 ---
 
 # Optional Skills Catalog
@@ -9,14 +9,14 @@ description: "Official optional skills shipped with hermes-agent — install via
 Optional skills ship with hermes-agent under `optional-skills/` but are **not active by default**. Install them explicitly:
 
 ```bash
-hermes skills install official/<category>/<skill>
+cybr skills install official/<category>/<skill>
 ```
 
 For example:
 
 ```bash
-hermes skills install official/blockchain/solana
-hermes skills install official/mlops/flash-attention
+cybr skills install official/blockchain/solana
+cybr skills install official/mlops/flash-attention
 ```
 
 Each skill below links to a dedicated page with its full definition, setup, and usage.
@@ -24,7 +24,7 @@ Each skill below links to a dedicated page with its full definition, setup, and 
 To uninstall:
 
 ```bash
-hermes skills uninstall <skill-name>
+cybr skills uninstall <skill-name>
 ```
 
 ## autonomous-ai-agents
@@ -36,7 +36,7 @@ hermes skills uninstall <skill-name>
 | [**blackbox**](../user-guide/skills/optional/autonomous-ai-agents/autonomous-ai-agents-blackbox.md) | Delegate coding tasks to the Blackbox AI multi-model CLI. |
 | [**dynamic-workflow**](../user-guide/skills/optional/autonomous-ai-agents/autonomous-ai-agents-dynamic-workflow.md) | Plan-in-code fan-outs, adversarial verification, waves. |
 | [**grok**](../user-guide/skills/optional/autonomous-ai-agents/autonomous-ai-agents-grok.md) | Delegate coding to xAI Grok Build CLI (features, PRs). |
-| [**honcho**](../user-guide/skills/optional/autonomous-ai-agents/autonomous-ai-agents-honcho.md) | Configure and troubleshoot Honcho memory for Hermes. |
+| [**honcho**](../user-guide/skills/optional/autonomous-ai-agents/autonomous-ai-agents-honcho.md) | Configure and troubleshoot Honcho memory for Cybr Agent. |
 | [**openhands**](../user-guide/skills/optional/autonomous-ai-agents/autonomous-ai-agents-openhands.md) | Delegate coding to OpenHands CLI (model-agnostic, LiteLLM). |
 
 ## blockchain
@@ -99,9 +99,9 @@ hermes skills uninstall <skill-name>
 
 | Skill | Description |
 |-------|-------------|
-| [**actual-setup**](../user-guide/skills/optional/devops/devops-actual-setup.md) | Set up Actual Computer (actual.inc) inference in Hermes. |
+| [**actual-setup**](../user-guide/skills/optional/devops/devops-actual-setup.md) | Set up Actual Computer (actual.inc) inference in Cybr Agent. |
 | [**docker-management**](../user-guide/skills/optional/devops/devops-docker-management.md) | Manage Docker containers, images, volumes, and Compose. |
-| [**hermes-s6-container-supervision**](../user-guide/skills/optional/devops/devops-hermes-s6-container-supervision.md) | Modify or debug s6 services in the Hermes Docker image. |
+| [**hermes-s6-container-supervision**](../user-guide/skills/optional/devops/devops-hermes-s6-container-supervision.md) | Modify or debug s6 services in the Cybr Agent Docker image. |
 | [**inference-sh-cli**](../user-guide/skills/optional/devops/devops-inference-sh-cli.md) | Run 150+ AI apps (image, video, LLM) via inference.sh CLI. |
 | [**pinggy-tunnel**](../user-guide/skills/optional/devops/devops-pinggy-tunnel.md) | Zero-install localhost tunnels over SSH via Pinggy. |
 | [**setup-wizard-generator**](../user-guide/skills/optional/devops/devops-setup-wizard-generator.md) | Generate a bash wizard guiding a human through manual setup. |
@@ -159,7 +159,7 @@ hermes skills uninstall <skill-name>
 
 | Skill | Description |
 |-------|-------------|
-| [**openclaw-migration**](../user-guide/skills/optional/migration/migration-openclaw-migration.md) | Import an OpenClaw setup (memories, skills) into Hermes. |
+| [**openclaw-migration**](../user-guide/skills/optional/migration/migration-openclaw-migration.md) | Import an OpenClaw setup (memories, skills) into Cybr Agent. |
 
 ## mlops
 
@@ -216,9 +216,7 @@ hermes skills uninstall <skill-name>
 |-------|-------------|
 | [**canvas**](../user-guide/skills/optional/productivity/productivity-canvas.md) | Fetch Canvas LMS courses and assignments via API token. |
 | [**decision-questionnaire**](../user-guide/skills/optional/productivity/productivity-decision-questionnaire.md) | Turn an unanswerable decision into a questionnaire doc. |
-| [**first-task**](../user-guide/skills/optional/productivity/productivity-first-task.md) | Run the first task chat that setup hands off. |
 | [**here-now**](../user-guide/skills/optional/productivity/productivity-here-now.md) | Publish sites to &#123;slug&#125;.here.now and store files in Drives. |
-| [**initiate-setup**](../user-guide/skills/optional/productivity/productivity-initiate-setup.md) | Run the first-run setup chat in the Hermes desktop app. |
 | [**live-dashboard**](../user-guide/skills/optional/productivity/productivity-live-dashboard.md) | Build self-updating dashboards from live sources. |
 | [**memento-flashcards**](../user-guide/skills/optional/productivity/productivity-memento-flashcards.md) | Spaced-repetition flashcards: create, review, quiz, export. |
 | [**property-listings**](../user-guide/skills/optional/productivity/productivity-property-listings.md) | Present property and rental listings as desktop cards. |

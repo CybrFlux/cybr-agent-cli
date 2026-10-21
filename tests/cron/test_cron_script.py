@@ -167,7 +167,7 @@ class TestRunJobScript:
 
 
     def test_script_subprocess_env_sanitized(self, cron_env, monkeypatch):
-        """Cron scripts must not inherit Hermes provider env (SECURITY.md §2.3)."""
+        """Cron scripts must not inherit Cybr Agent provider env (SECURITY.md §2.3)."""
         from tools.environments.local_env_policy import _HERMES_PROVIDER_ENV_BLOCKLIST
         from cron.scheduler_script import _run_job_script
 
@@ -338,7 +338,7 @@ class TestRunJobScript:
         self, cron_env, tmp_path, monkeypatch
     ):
         """#123044/#123440: on a POSIX managed-store install a cron ``.py`` script imports the
-        selected venv's packages, resolves Hermes from the LIVE checkout ahead of the venv's
+        selected venv's packages, resolves Cybr Agent from the LIVE checkout ahead of the venv's
         workspace snapshot, keeps ``python script.py`` path and ``__main__`` semantics, and
         leaves no ``PYTHONPATH`` for its own children to inherit."""
         from cron import scheduler_script
@@ -778,7 +778,9 @@ class TestScriptTimeoutTreeKill:
         def is_live(pid):
             try:
                 process = psutil.Process(pid)
-                return process.is_running() and process.status() != psutil.STATUS_ZOMBIE
+                # 'dead' = mid-reap (exited); see test_script_termination_reaps_descendants.
+                return process.is_running() and process.status() not in (
+                    psutil.STATUS_ZOMBIE, psutil.STATUS_DEAD)
             except (psutil.NoSuchProcess, psutil.ZombieProcess):
                 return False
 

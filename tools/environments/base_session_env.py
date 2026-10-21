@@ -23,7 +23,7 @@ from typing import Iterable
 # makes every LATER session ``source`` that stale value and see a FOREIGN session's identity — overriding
 # the correct per-command Popen env (issue: cross-session HERMES_SESSION_ID leak via the shared snapshot).
 # Stripping them from the snapshot is safe because they are re-injected on every command; a snapshot should
-# only carry the user's own shell state (PATH, functions, exports they set), not Hermes' per-turn session
+# only carry the user's own shell state (PATH, functions, exports they set), not Cybr Agent' per-turn session
 # identity. Used by unit tests as the Python-side contract for the exclusion set; the dump path unsets by
 # name/prefix instead of grepping declare lines (see below / issue #71296).
 _SNAPSHOT_EXCLUDED_ENV_REGEX = (
@@ -131,8 +131,11 @@ def _passthrough_save_restore(names: Iterable[str]) -> tuple[list[str], list[str
 
 def _wrap_command_script(
     command: str, *, quoted_cwd: str, quoted_snap: str, snap_tmp_template: str,
-    passthrough_names: Iterable[str], snapshot_ready: bool, cwd_marker: str) -> str:
+    passthrough_names: Iterable[str], snapshot_ready: bool, cwd_marker: str,
+    persist_env: bool = True) -> str:
     """Per-command bash script: source snapshot, cd, run, re-dump env, emit CWD marker.
+    ``persist_env=False`` skips the re-dump, so every command starts from the login-time
+    snapshot and exports from one command never reach the next (the CWD marker still runs).
     ``source`` stdout goes to /dev/null because macOS bash 3.2 / some Homebrew builds echo
     ``declare -x`` lines when sourcing. AI_AGENT/HERMES_AGENT advertise the harness to remote
     backends (whose env is not inherited); ``${VAR:-default}`` never clobbers an outer harness.
@@ -156,7 +159,7 @@ def _wrap_command_script(
         f"eval '{escaped}'",
         "__hermes_ec=$?",
         "umask 077"]
-    if snapshot_ready:
+    if snapshot_ready and persist_env:
         parts.append(
             f"__hermes_snap_tmp=$(mktemp {snap_tmp_template}) && "
             f"{{ {_export_dump_excluding_session_vars(_SNAP_TMP, passthrough_names)} "

@@ -541,6 +541,7 @@ def _apply_capabilities(rows: list[dict], *, metadata_config: dict | None = None
     silent (the dial is a no-op on models that ignore it; hiding it from a capable model is worse). A
     serving aggregator's detail overrides models.dev (adds ``can_disable_reasoning``). ``supported_efforts``
     is deliberately NOT forwarded — it under-reports levels that work."""
+    from agent.codex_service_tiers import ultrafast_offered
     from hermes_cli.models import model_supports_ultrafast, resolve_fast_mode_overrides
 
     try:
@@ -565,7 +566,8 @@ def _apply_capabilities(rows: list[dict], *, metadata_config: dict | None = None
             fast = resolve_fast_mode_overrides(
                 model, provider=slug, base_url=row.get("api_url")) is not None
             entry: dict[str, Any] = {"fast": fast, "reasoning": reasoning}
-            if fast and model_supports_ultrafast(model):
+            if fast and model_supports_ultrafast(model) and ultrafast_offered(
+                    model, provider=slug, base_url=row.get("api_url")):
                 entry["ultrafast"] = True
 
             if reasoning and read_reasoning_catalog is not None:
@@ -739,7 +741,7 @@ def _append_unconfigured_rows(
 
 
 def _anthropic_oauth_credentials_present() -> bool:
-    """True when the user explicitly authenticated Anthropic via OAuth (Hermes device flow or Claude Code
+    """True when the user explicitly authenticated Anthropic via OAuth (Cybr Agent device flow or Claude Code
     login) — those leave no trace in active_provider / model.provider / API-key env vars."""
     try:
         from agent.anthropic_credentials import read_claude_code_credentials, read_hermes_oauth_credentials

@@ -159,7 +159,7 @@ def _minimax_poll_token(
 
 
 def _minimax_save_auth_state(auth_state: dict[str, Any], *, set_active: bool = True) -> None:
-    """Persist MiniMax OAuth state to Hermes auth store (~/.hermes/auth.json).
+    """Persist MiniMax OAuth state to Cybr Agent auth store (~/.hermes/auth.json).
 
     ``set_active=False`` rewrites credentials without making minimax-oauth the
     active provider (``_save_provider_state_to_source``'s rule: a token refresh
@@ -189,7 +189,7 @@ def _minimax_oauth_login(*, region: str = "global", open_browser: bool = True, t
     if _is_remote_session():
         open_browser = False
 
-    print(f"Starting Hermes login via MiniMax ({region}) OAuth...")
+    print(f"Starting Cybr Agent login via MiniMax ({region}) OAuth...")
     print(f"Portal: {portal_base_url}")
 
     with httpx.Client(timeout=httpx.Timeout(timeout_seconds), headers={"Accept": "application/json"},
@@ -331,7 +331,8 @@ def build_minimax_oauth_token_provider() -> Callable[[], str]:
             raise _minimax_err("MiniMax OAuth state has no access_token after refresh.", "no_access_token", relogin=True)
         return token
 
-    return _provide
+    from agent.credential_source import MINIMAX_OAUTH, tag_credential_source
+    return tag_credential_source(_provide, MINIMAX_OAUTH)
 
 
 def resolve_minimax_oauth_runtime_credentials(

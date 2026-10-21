@@ -24,13 +24,22 @@ export const esConnectorCard: TranslationOverrides['connectors'] = {
   ownerMissing: 'Vuelve a abrir esta conversación para gestionar sus conexiones.',
   search: 'Buscar una app',
   empty: 'No hay apps que coincidan',
-  disclaimer: 'Conectar es opcional. Autoriza solo las apps que quieras que use Hermes.',
+  disclaimer: 'Conectar es opcional. Autoriza solo las apps que quieras que use Cybr Agent.',
   execution: 'Herramientas de conectores',
   setup: server => `Configurar ${server}`,
   openInBrowser: 'Abrir en el navegador',
   setupCancel: 'Cancelar',
   authorizedToolsUnavailable: 'Autorizado. Herramientas no disponibles.',
   required: 'Obligatorio',
-  namedAccount: (app: string, alias: string) => `Hermes llamó ${alias} a esta cuenta de ${app}.`,
-  renameAccount: 'Cambiar nombre'
+  namedAccount: (app: string, alias: string) => `Cybr Agent llamó ${alias} a esta cuenta de ${app}.`,
+  renameAccount: 'Cambiar nombre',
+  directory: {
+    suggested: 'Sugeridas',
+    allApps: 'Todas las apps',
+    receiptConnected: apps => `Conectadas: ${apps}`,
+    receiptNone: 'Ninguna app nueva conectada',
+    receiptTimedOut: 'Cerrado tras 5 minutos',
+    finishInBrowser: 'Termina en tu navegador',
+    signInFailed: 'No se pudo conectar. Haz clic para reintentar'
+  }
 }

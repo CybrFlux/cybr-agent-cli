@@ -212,7 +212,13 @@ def _launchd_unsupported_marker_exists() -> bool:
 
 def _gateway_run_command() -> list[str]:
     from hermes_cli._launchers import runtime_command
-    return runtime_command(_gw().PROJECT_ROOT, [*shlex.split(_gw()._profile_arg()), "gateway", "run", "--replace"],
+    from hermes_constants import get_default_hermes_root
+    # Every caller spawns an UNSUPERVISED child, which follows the sticky active_profile unless a
+    # selector pins it (main._apply_profile_override): the root's replacement booted that profile.
+    selector = shlex.split(_gw()._profile_arg())
+    if not selector and _gw().get_hermes_home().resolve() == get_default_hermes_root().resolve():
+        selector = ["--profile", "default"]
+    return runtime_command(_gw().PROJECT_ROOT, [*selector, "gateway", "run", "--replace"],
                            python=_gw().get_python_path())
 
 
@@ -602,7 +608,7 @@ def refresh_launchd_plist_if_needed() -> bool:
             target, int(_reload_budget), _launchd_reload_log_path(),
         )
         return False
-    print("↻ Updated gateway launchd service definition to match the current Hermes install")
+    print("↻ Updated gateway launchd service definition to match the current Cybr Agent install")
     return True
 
 
@@ -676,6 +682,7 @@ def launchd_install(force: bool = False, *, start_now: bool = True, force_unit_p
 
 
 def launchd_uninstall():
+    gateway_service_owner.refuse_foreign_launchd_plist("uninstall")
     plist_path = _gw().get_launchd_plist_path()
     # Captured: uninstalling an already-unloaded job is fine — don't print Boot-out failed: 3.
     subprocess.run(
@@ -688,6 +695,7 @@ def launchd_uninstall():
 
 
 def launchd_start():
+    gateway_service_owner.refuse_foreign_launchd_plist("start")
     plist_path = _gw().get_launchd_plist_path()
     label = _gw().get_launchd_label()
 
@@ -739,6 +747,7 @@ def _launchd_ok(message: str) -> None:
 
 
 def launchd_stop():
+    gateway_service_owner.refuse_foreign_launchd_plist("stop")
     target = f"{_launchd_domain()}/{get_launchd_label()}"
     _gw()._mark_planned_stop()
     # bootout unloads the definition so KeepAlive doesn't respawn; `hermes gateway start` re-bootstraps.
@@ -777,6 +786,7 @@ def _wait_for_launchd_service_pid(
 
 
 def launchd_restart():
+    gateway_service_owner.refuse_foreign_launchd_plist("restart")
     label = _gw().get_launchd_label()
     domain = _gw()._launchd_domain()
     target = f"{domain}/{label}"
@@ -912,7 +922,7 @@ def launchd_status(deep: bool = False):
     # `launchctl list` exits 0 for any registered definition (even `state = not running`); only a PID proves a process.
     launchd_pid = _gw()._parse_launchd_pid_from_list_output(list_output) if service_listed else None
 
-    # Hermes PID may be a detached fallback process; when launchd IS supervising both PIDs match — don't double-count.
+    # Cybr Agent PID may be a detached fallback process; when launchd IS supervising both PIDs match — don't double-count.
     from gateway.status import get_running_pid
     fallback_pid = get_running_pid(cleanup_stale=False)
     if launchd_pid is not None and fallback_pid == launchd_pid:
@@ -923,9 +933,9 @@ def launchd_status(deep: bool = False):
 
     print(f"Launchd plist: {plist_path}")
     if _gw().launchd_plist_is_current():
-        print("✓ Service definition matches the current Hermes install")
+        print("✓ Service definition matches the current Cybr Agent install")
     else:
-        print("⚠ Service definition is stale relative to the current Hermes install")
+        print("⚠ Service definition is stale relative to the current Cybr Agent install")
         print("  Run: hermes gateway start")
 
     if not service_listed:

@@ -24,13 +24,22 @@ export const frConnectorCard: TranslationOverrides['connectors'] = {
   ownerMissing: 'Rouvrez cette conversation pour gérer ses connexions.',
   search: 'Rechercher une application',
   empty: 'Aucune application correspondante',
-  disclaimer: "La connexion est facultative. N'autorisez que les applications que vous voulez confier à Hermes.",
+  disclaimer: "La connexion est facultative. N'autorisez que les applications que vous voulez confier à Cybr Agent.",
   execution: 'Outils des connecteurs',
   setup: server => `Configurer ${server}`,
   openInBrowser: 'Ouvrir dans le navigateur',
   setupCancel: 'Annuler',
   authorizedToolsUnavailable: 'Autorisé. Outils indisponibles.',
   required: 'Obligatoire',
-  namedAccount: (app: string, alias: string) => `Hermes a nommé ce compte ${app} ${alias}.`,
-  renameAccount: 'Renommer'
+  namedAccount: (app: string, alias: string) => `Cybr Agent a nommé ce compte ${app} ${alias}.`,
+  renameAccount: 'Renommer',
+  directory: {
+    suggested: 'Suggérées',
+    allApps: 'Toutes les apps',
+    receiptConnected: apps => `Connectées : ${apps}`,
+    receiptNone: 'Aucune nouvelle app connectée',
+    receiptTimedOut: 'Fermé après 5 minutes',
+    finishInBrowser: 'Terminez dans votre navigateur',
+    signInFailed: 'Échec de la connexion. Cliquez pour réessayer'
+  }
 }

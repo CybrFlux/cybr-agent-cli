@@ -28,7 +28,7 @@ def _reset_multiplex_flag():
 
 
 def _two_homes(tmp_path: Path) -> tuple[Path, Path]:
-    """Default root plus ``profiles/worker``, each a real Hermes home."""
+    """Default root plus ``profiles/worker``, each a real Cybr Agent home."""
     default_home = tmp_path / "default"
     worker_home = default_home / "profiles" / "worker"
     worker_home.mkdir(parents=True)
@@ -162,6 +162,10 @@ class TestSettledHostRecordDecidesRestart:
         lock_dir = tmp_path / "locks"
         lock_dir.mkdir(parents=True, exist_ok=True)
         monkeypatch.setenv("HERMES_GATEWAY_LOCK_DIR", str(lock_dir))
+        # A live owner holds the host lock for its lifetime (run.py claims before it publishes).
+        # The handle lives in a per-test copy of the registry (and a per-test lock dir), so undo drops it.
+        monkeypatch.setattr(hr, "_lock_handles", dict(hr._lock_handles))
+        assert hr.claim_host_lock(hr.ROLE_GATEWAY)[0] is hr.HostLockOutcome.ACQUIRED
         record = hr.publish_record(
             hr.ROLE_GATEWAY, profiles=tuple(profiles), home=str(home),
         )

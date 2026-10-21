@@ -30,7 +30,7 @@ import {
   retainBotScreen,
   viewerHash
 } from './screen-connection'
-import { ScreenInstallCard } from './screen-install'
+import { ScreenNotInstalled } from './screen-install'
 import {
   $screenState,
   beginScreenStatusRequest,
@@ -413,7 +413,7 @@ export function BotScreenPane({ bot }: { bot: RosterRow }) {
   )
 
   if (state?.unavailable) {
-    // A managed (Hermes Cloud) backend cannot be self-updated: its release is the platform's
+    // A managed (Cybr Agent Cloud) backend cannot be self-updated: its release is the platform's
     // choice, so say Screen has not reached it yet instead of an update instruction (#120852).
     const description = isManagedBackend(bot) ? t.screen.portalUnavailableManaged : t.screen.portalUnavailable
 
@@ -425,7 +425,7 @@ export function BotScreenPane({ bot }: { bot: RosterRow }) {
   }
 
   if (status && !status.installed) {
-    return <ScreenInstallCard bot={bot} onInstalled={next => setScreenStatus(bot, next)} status={status} />
+    return <ScreenNotInstalled bot={bot} onInstalled={next => setScreenStatus(bot, next)} status={status} />
   }
 
   if (status && !status.running && status.image_switch) {

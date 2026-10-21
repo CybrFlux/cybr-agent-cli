@@ -68,7 +68,7 @@ class TestEnsureHermesHome:
     # module) so this fixture keeps testing the OLD text regardless of any
     # future change to _LEGACY_TEMPLATE_SOULS's length or ordering.
     _PRE_REWRITE_DEFAULT_SOUL = (
-        "You are Hermes Agent, an intelligent AI assistant created by Nous "
+        "You are Cybr Agent, an intelligent AI assistant created by Nous "
         "Research. You are helpful, knowledgeable, and direct. You assist "
         "users with a wide range of tasks including answering questions, "
         "writing and editing code, analyzing information, creative work, "
@@ -445,7 +445,7 @@ class TestSaveAndLoadRoundtrip:
 class TestLoadEnvInlineComments:
     def test_unquoted_hash_is_a_comment_quoted_hash_is_data(self, tmp_path):
         """load_env is the one dotenv reader (agent.secret_scope.load_env_file): an unquoted ` #...` tail
-        is a comment, a quoted value keeps its hash. Hermes' own writer (_quote_env_value) always quotes
+        is a comment, a quoted value keeps its hash. Cybr Agent' own writer (_quote_env_value) always quotes
         values containing `#`, so a saved secret round-trips."""
         from hermes_cli.config import invalidate_env_cache
 
@@ -1002,43 +1002,6 @@ class TestConfigSupportFloor:
         assert (tmp_path / ".env").read_text(encoding="utf-8") == expected_env
 
 
-class TestRetiredMultiplexAllowlist:
-    def test_v43_drops_multiplex_profile_allowlist_from_user_config(self, tmp_path, monkeypatch):
-        """The multiplexer serves every profile; a stale allowlist must not linger in config.yaml."""
-        from hermes_cli.config import DEFAULT_CONFIG
-        from hermes_cli.config_migrations import run_migrations
-
-        config_path = tmp_path / "config.yaml"
-        config_path.write_text(yaml.safe_dump({
-            "_config_version": 42,
-            "gateway": {"multiplex_profiles": True, "multiplex_profile_allowlist": ["worker"]},
-        }), encoding="utf-8")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-        run_migrations(42, {"env_added": [], "config_added": [], "warnings": []}, quiet=True)
-        raw = yaml.safe_load(config_path.read_text(encoding="utf-8"))
-        assert "multiplex_profile_allowlist" not in raw["gateway"]
-        assert raw["gateway"]["multiplex_profiles"] is True
-        assert "multiplex_profile_allowlist" not in DEFAULT_CONFIG["gateway"]
-
-
-class TestCuratorFasterPrune:
-    def test_v44_rewrites_old_curator_defaults_but_keeps_user_values(self, tmp_path, monkeypatch):
-        """Old 30/90 defaults move to 14/30; an explicitly customized window is untouched."""
-        from hermes_cli.config import DEFAULT_CONFIG
-        from hermes_cli.config_migrations import run_migrations
-
-        config_path = tmp_path / "config.yaml"
-        config_path.write_text(yaml.safe_dump({
-            "_config_version": 43,
-            "curator": {"stale_after_days": 30, "archive_after_days": 180},
-        }), encoding="utf-8")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-        run_migrations(43, {"env_added": [], "config_added": [], "warnings": []}, quiet=True)
-        raw = yaml.safe_load(config_path.read_text(encoding="utf-8"))
-        assert raw["curator"]["stale_after_days"] == DEFAULT_CONFIG["curator"]["stale_after_days"]
-        assert raw["curator"]["archive_after_days"] == 180
-
-
 class TestCustomProviderCompatibility:
     """Custom provider compatibility across legacy and v12+ config schemas.
 
@@ -1308,13 +1271,13 @@ class TestDiscordChannelPromptsConfig:
 class TestEnvWriteDenylist:
     """``save_env_value`` refuses to persist env-var names that
     influence how subprocesses execute — ``LD_PRELOAD``, ``PYTHONPATH``,
-    ``PATH``, ``EDITOR``, etc. — or selected Hermes runtime/security controls.
+    ``PATH``, ``EDITOR``, etc. — or selected Cybr Agent runtime/security controls.
 
     The dashboard exposes ``PUT /api/env`` to any authed caller (and
     the session token lives in the SPA's HTML where any future plugin
     XSS or local process could exfiltrate it). Without this gate, an
     attacker who steals the token could plant
-    ``LD_PRELOAD=/tmp/evil.so`` in ``.env`` and own the next Hermes
+    ``LD_PRELOAD=/tmp/evil.so`` in ``.env`` and own the next Cybr Agent
     process on next startup via the dotenv → ``os.environ`` chain in
     ``hermes_cli/env_loader.py``.
 

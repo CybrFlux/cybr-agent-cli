@@ -1,12 +1,12 @@
 """Where third-party Python plugin code is allowed to run (``plugins.isolation``).
 
-``in_process`` (default) imports every plugin into the Hermes process, as always. ``host`` keeps
+``in_process`` (default) imports every plugin into the Cybr Agent process, as always. ``host`` keeps
 third-party plugin code OUT of it: general plugins load in one plugin-host process per profile
-(:mod:`hermes_cli.plugin_host`) and talk to Hermes only through ``ctx``; every other path that would
+(:mod:`hermes_cli.plugin_host`) and talk to Cybr Agent only through ``ctx``; every other path that would
 import a user-supplied module in-process (category providers, model-provider profiles, dashboard
-plugin APIs) refuses with a stated reason. Bundled plugins ship with Hermes and stay in-process.
+plugin APIs) refuses with a stated reason. Bundled plugins ship with Cybr Agent and stay in-process.
 
-That second half is the property a pooled deployment needs: one Hermes process serving many
+That second half is the property a pooled deployment needs: one Cybr Agent process serving many
 profiles must never share an interpreter with a profile's plugin code. The same boundary gives a
 single-user install crash isolation (a plugin that segfaults or hangs takes down its host, not the
 gateway), which is why it is a plain config value and not a cloud-only switch.
@@ -39,6 +39,8 @@ HOST_UNSUPPORTED_CTX_METHODS: dict[str, str] = {
     "register_slack_action_handler": "the callback receives native slack_bolt ack/body objects",
     "register_dashboard_auth_provider": "dashboard auth is owned by the launch process, not a profile",
     "register_approval_transport": "approval transports hold the live approval request/response channel",
+    "post_message": "the returned handle is bound to the gateway's event loop and live adapter",
+    "apost_message": "the returned handle is bound to the gateway's event loop and live adapter",
 }
 
 # Registered in-process only; skipped (with a warning, the plugin still loads) inside the host
@@ -81,7 +83,7 @@ def _plugins_config(config: Optional[Mapping[str, Any]] = None) -> Mapping[str, 
     return section if isinstance(section, Mapping) else {}
 
 
-# Set in the plugin host's environment: inside the host, plugin code is already out of Hermes, so
+# Set in the plugin host's environment: inside the host, plugin code is already out of Cybr Agent, so
 # every loader there imports directly (a host must never spawn a host of its own).
 HOST_PROCESS_ENV = "HERMES_PLUGIN_HOST_PROCESS"
 
@@ -115,13 +117,13 @@ def in_process_import_refusal(what: str, *, source: str = "user",
                               config: Optional[Mapping[str, Any]] = None) -> Optional[str]:
     """Reason an in-process import of third-party code must not happen, or ``None`` when allowed.
 
-    Every loader that imports a user-supplied module into the Hermes process asks this first;
+    Every loader that imports a user-supplied module into the Cybr Agent process asks this first;
     bundled code always passes.
     """
     if source == "bundled" or isolation_mode(config) != ISOLATION_HOST:
         return None
     return (f"{what} runs only in-process, and plugins.isolation is 'host' (third-party plugin code "
-            f"never runs inside the Hermes process); set plugins.isolation: in_process to load it")
+            f"never runs inside the Cybr Agent process); set plugins.isolation: in_process to load it")
 
 
 def user_plugin_host() -> Any:

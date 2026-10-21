@@ -19,7 +19,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from agent.delegation_context import owned_kanban_task
 from agent.prompt_builder import (
-    ASYNC_HANDOFF_GUIDANCE, DEFAULT_AGENT_IDENTITY, EXECUTION_GUIDANCE_MODELS, GOOGLE_MODEL_OPERATIONAL_GUIDANCE,
+    DEFAULT_AGENT_IDENTITY, EXECUTION_GUIDANCE_MODELS, GOOGLE_MODEL_OPERATIONAL_GUIDANCE,
     HERMES_AGENT_HELP_GUIDANCE, HERMES_AGENT_HELP_GUIDANCE_NO_SKILLS, KANBAN_GUIDANCE,
     PARALLEL_TOOL_CALL_GUIDANCE, PLATFORM_HINTS, SESSION_SEARCH_GUIDANCE,
     SKILLS_GUIDANCE, STEER_CHANNEL_NOTE, TASK_COMPLETION_GUIDANCE, TELEGRAM_RICH_MESSAGES_HINT,
@@ -383,7 +383,7 @@ def _active_profile_line(agent: Any) -> str:
         # Without one, keep the ambient (patchable) resolution byte-identical.
         _root_str = str(get_default_hermes_root() if _agent_home_path is not None else get_hermes_home())
         return (
-            "Active Hermes profile: default. Other profiles (if any) live "
+            "Active Cybr Agent profile: default. Other profiles (if any) live "
             "under " + _root_str + "/profiles/<name>/. Each profile has its own "
             "skills/, plugins/, cron/, and memories/ that affect a different "
             "session than this one. Do not modify another profile's "
@@ -400,7 +400,7 @@ def _active_profile_line(agent: Any) -> str:
     # NOT get_hermes_home().
     default_root = get_default_hermes_root()
     return (
-        f"Active Hermes profile: {active_profile}. This session reads "
+        f"Active Cybr Agent profile: {active_profile}. This session reads "
         f"and writes {profile_home}/. The default "
         f"profile's data lives at {default_root}/skills/, {default_root}/plugins/, "
         f"{default_root}/cron/, {default_root}/memories/ — those belong to a "
@@ -417,6 +417,12 @@ def _default_platform_hint(platform_key: str) -> str:
         try:
             from gateway.platform_registry import platform_registry
             _entry = platform_registry.get(platform_key)
+            if _entry is None:
+                # A prompt can be built before anything ran plugin discovery (direct builders,
+                # one-shot callers); the hint lives on the plugin's entry, so discover (idempotent).
+                from hermes_cli.plugins import discover_plugins
+                discover_plugins()
+                _entry = platform_registry.get(platform_key)
             hint = (_entry and _entry.platform_hint) or ""
         except Exception:
             pass
@@ -528,7 +534,7 @@ def _memory_parts(agent: Any) -> list[str]:
     # configuration has already gated off (#81014).
     if agent._memory_manager:
         try:
-            from agent.memory_manager import memory_provider_tools_exposed as _mem_exposed
+            from agent.memory_manager_tools import memory_provider_tools_exposed as _mem_exposed
         except Exception:
             _mem_exposed = None
         if _mem_exposed is None or _mem_exposed(agent):
@@ -576,10 +582,6 @@ def _guidance_parts(agent: Any) -> list[str]:
     if _model_gate(getattr(agent, "_execution_guidance", "auto"), agent.model, EXECUTION_GUIDANCE_MODELS):
         from agent.prompt_builder import execution_guidance_text
         parts.append(execution_guidance_text(agent.valid_tool_names))
-    # delegate_task background delivery is intentionally between turns. Put this after the generic persistence
-    # blocks so their "keep working" rule cannot turn the required yield into no-op/polling activity.
-    if "delegate_task" in agent.valid_tool_names:
-        parts.append(ASYNC_HANDOFF_GUIDANCE)
     return parts
 
 
@@ -716,7 +718,7 @@ def _context_files_part(agent: Any, ctx_len: Optional[int], soul_loaded: bool) -
     install-tree fallback is only legitimate for cli/tui where the launch dir
     IS the user's shell cwd. Desktop launch artifacts skip the session cwd but
     still honor the profile-scoped TERMINAL_CWD; without one, the fallback guard
-    can reject Hermes's bundled AGENTS.md."""
+    can reject Cybr Agent's bundled AGENTS.md."""
     if agent.skip_context_files:
         return []
     launch_artifact = getattr(agent, "_context_cwd_is_launch_artifact", False)

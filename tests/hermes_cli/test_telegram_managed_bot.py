@@ -29,7 +29,7 @@ class TestQRCode:
 
     def test_print_qr_code_tip_targets_active_interpreter(self, capsys):
         # Regression for #111695: a bare `pip install` targets the wrong
-        # environment when Hermes runs in an isolated venv (which has no pip
+        # environment when Cybr Agent runs in an isolated venv (which has no pip
         # module at all). The fallback tip must route through PM instead.
         from pm import install_hint
 
@@ -56,7 +56,7 @@ class TestCreatePairing:
         with patch(
             "hermes_cli.telegram_managed_bot.httpx.post", return_value=mock_resp
         ) as post:
-            pairing = create_pairing("https://api.example.com", bot_name="Hermes Agent")
+            pairing = create_pairing("https://api.example.com", bot_name="Cybr Agent")
 
         assert pairing == TelegramPairing(
             pairing_id="abcdefghijklmnop",
@@ -68,7 +68,7 @@ class TestCreatePairing:
         )
         post.assert_called_once_with(
             "https://api.example.com/v1/telegram/pairings",
-            json={"bot_name": "Hermes Agent"},
+            json={"bot_name": "Cybr Agent"},
             timeout=10.0,
         )
 

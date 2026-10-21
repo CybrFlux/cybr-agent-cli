@@ -4,7 +4,7 @@
 ``happy_eyeballs_delay`` defaults to ``None`` (serial walk over getaddrinfo results). On a
 network with an advertised-but-blackholed IPv6 route every AAAA record burns the full
 connect timeout before IPv4 answers — the same stall class the bootstrap racer closes for
-sync connects. Each Hermes ``websockets.connect`` call site must pass the RFC 8305 delay.
+sync connects. Each Cybr Agent ``websockets.connect`` call site must pass the RFC 8305 delay.
 """
 
 from __future__ import annotations
@@ -42,7 +42,7 @@ async def test_relay_ws_transport_dial_races_ipv6_ipv4(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_yuanbao_dial_races_ipv6_ipv4():
-    from gateway.platforms.yuanbao import ConnectionManager, YuanbaoAdapter
+    from plugins.platforms.yuanbao.adapter import ConnectionManager, YuanbaoAdapter
 
     adapter = MagicMock(spec=YuanbaoAdapter)
     adapter.name = "yuanbao"
@@ -50,7 +50,7 @@ async def test_yuanbao_dial_races_ipv6_ipv4():
     adapter._ws_url = "wss://test.example.com/ws"
     cm = ConnectionManager(adapter)
     rec = _Recorder()
-    with patch("gateway.platforms.yuanbao.websockets.connect", rec), pytest.raises(ConnectionRefusedError):
+    with patch("plugins.platforms.yuanbao.adapter.websockets.connect", rec), pytest.raises(ConnectionRefusedError):
         await cm._dial({"bot_id": "b", "token": "t"})
     assert rec.kwargs["happy_eyeballs_delay"] == EXPECTED_DELAY
 

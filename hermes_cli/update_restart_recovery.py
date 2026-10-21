@@ -137,7 +137,10 @@ def _run_profile_restart(profile: str, *, run: Callable[..., Any]) -> bool:
         kwargs["creationflags"] = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) | getattr(subprocess, "DETACHED_PROCESS", 0)
     else:
         kwargs["start_new_session"] = True
-    argv = [sys.executable, "-m", "hermes_cli.main", "-p", profile, "gateway", "restart"]
+    # `--interrupt`: the update owns this restart (drain-first, 31637312899); a live session must not
+    # strand the profile on pre-update code the way a refusal would. `--detach`: this bounded call
+    # must not itself become a service-less profile's gateway (killed at the timeout below).
+    argv = [sys.executable, "-m", "hermes_cli.main", "-p", profile, "gateway", "restart", "--interrupt", "--detach"]
     return _succeeded(_run_quiet(run, argv, timeout=_PROFILE_RESTART_TIMEOUT, **kwargs))
 
 
@@ -162,7 +165,7 @@ def _systemd_verified_active(profile: str, *, run: Callable[..., Any]) -> bool:
 def _host_state_dir() -> str:
     """The path ``gateway.host_rendezvous.host_state_dir()`` resolves, computed locally.
 
-    This module imports no Hermes code at runtime — importing the freshly pulled tree is exactly
+    This module imports no Cybr Agent code at runtime — importing the freshly pulled tree is exactly
     what aborted the phase that calls us — so the rule is duplicated here rather than shared.
     """
     override = os.environ.get("HERMES_GATEWAY_LOCK_DIR")
@@ -260,7 +263,7 @@ def restart_profiles(
 def _systemctl_scopes() -> list[tuple[str, list[str]]]:
     """``(label, systemctl argv)`` for the user and system scopes (the pair the in-process phase walks), or nothing.
 
-    ``systemctl`` comes from ``shutil.which`` so this module never imports a Hermes platform helper —
+    ``systemctl`` comes from ``shutil.which`` so this module never imports a Cybr Agent platform helper —
     importing the freshly pulled tree is exactly what aborted the phase that called us. Scopes carry
     their label because the same unit name in both managers is two different processes.
     """

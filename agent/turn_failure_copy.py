@@ -18,7 +18,7 @@ from hermes_constants import display_hermes_home
 # Failure codes minted by loop sites that are not provider verdicts (see module docstring).
 SITE_FAILURE_CODES = frozenset({
     "context_overflow", "truncated", "invalid_response", "empty_response", "loop_error",
-    "interpreter_shutdown", "session_busy",
+    "interpreter_shutdown", "session_busy", "gateway_connection", "host_error",
 })
 
 
@@ -30,7 +30,7 @@ def stamp_failure(result: dict[str, Any], reason: str, retryable: bool) -> dict[
 
 
 # ---- failed-turn transcript boundary ----------------------------------------------------------
-# The Hermes-authored assistant row that closes a durable turn which ended without one. A
+# The Cybr Agent-authored assistant row that closes a durable turn which ended without one. A
 # transcript boundary, NOT the model's answer: no provider/model error or refusal detail is
 # ever interpolated (that rides ``final_response``). Owned here so the core closer
 # (``agent/conversation_loop.py::run_conversation``) and the gateway's own writer
@@ -43,8 +43,15 @@ PARTIAL_FAILED_TURN_NOTICE = (
     "This turn did not complete. Some actions may already have run; verify their effects "
     "before resending."
 )
+# A turn no person sent (a cron run, a process completion, a webhook delivery) lost across a gateway
+# restart, or fenced inside the running owner (a lost managed worker): it settles interrupted and is
+# never re-run, so nobody is asked to resend it (#134889 GW-10). Neutral: not every path restarted.
+AUTOMATION_INTERRUPTED_NOTICE = (
+    "An automated delivery was interrupted and was not run again. Some "
+    "actions may already have run; verify their effects."
+)
 # ``messages.display_kind`` of that row: display-only (stripped before every provider request),
-# so renderers show a Hermes notice and room pollers never read it as the model's reply.
+# so renderers show a Cybr Agent notice and room pollers never read it as the model's reply.
 FAILED_TURN_DISPLAY_KIND = "failed_turn"
 
 
@@ -52,7 +59,7 @@ def untyped_failed_turn_display_kind(role: Any, content: Any) -> Optional[str]:
     """``FAILED_TURN_DISPLAY_KIND`` for a boundary row persisted before the closers typed it
     (exact notice text, so a real reply quoting it stays a reply); read-side only."""
     if role == "assistant" and isinstance(content, str) and content.strip() in (
-        FAILED_TURN_NOTICE, PARTIAL_FAILED_TURN_NOTICE,
+        FAILED_TURN_NOTICE, PARTIAL_FAILED_TURN_NOTICE, AUTOMATION_INTERRUPTED_NOTICE,
     ):
         return FAILED_TURN_DISPLAY_KIND
     return None
@@ -198,7 +205,7 @@ _NONRETRYABLE_COPY: dict[str, str] = {
         "conversation's shape. Start a clean session with /new or switch models with /model."
     ),
     FailoverReason.ssl_cert_verification.value: (
-        "Hermes couldn't verify {label}'s security certificate, so the connection was refused. "
+        "Cybr Agent couldn't verify {label}'s security certificate, so the connection was refused. "
         "This is usually a corporate proxy or an outdated certificate store on this computer — "
         "see the terminal or `{home}/logs/agent.log` for the exact fix, or try another provider "
         "with /model."
@@ -208,6 +215,12 @@ _NONRETRYABLE_COPY: dict[str, str] = {
         "settings, or a block the model's upstream provider placed on the account), so the model "
         "didn't answer and retrying won't help. Check the account with the provider, or switch "
         "models with /model."
+    ),
+    FailoverReason.data_policy_denied.value: (
+        "This conversation holds a result from a connected app that may only go to a model that "
+        "does not train on your data, and '{model}' on {label} can't promise that. Switch models "
+        "with /model, run /compress to summarize the result away, or start fresh with /new. If you "
+        "are on the free tier, no free model can take this content: upgrade, or use /compress or /new."
     ),
     FailoverReason.upstream_blocked.value: (
         "A firewall/CDN in front of {label} blocked the request before it reached the model, so "
@@ -254,6 +267,9 @@ FAILURE_CAUSE_GLOSS: dict[str, str] = {
     FailoverReason.provider_policy_blocked.value: (
         "the AI model service refused the request because of a policy on the account"
     ),
+    FailoverReason.data_policy_denied.value: (
+        "{possessive} context holds a connected-app result that needs a model that does not train on data"
+    ),
     "context_overflow": "{possessive} request grew too large for the model",
     "payload_too_large": "{possessive} request grew too large for the model",
 }
@@ -271,13 +287,13 @@ def failure_cause_gloss(reason: Any, *, subject: str = "it", possessive: str = "
 # (``empty_response`` is worded by agent/turn_explainers.py, ``session_busy`` by the lease).
 _FAILURE_CODE_COPY: dict[str, str] = {
     "context_overflow": (
-        "This conversation has grown too long for {model} to read, and Hermes couldn't shrink "
+        "This conversation has grown too long for {model} to read, and Cybr Agent couldn't shrink "
         "it enough automatically. Start a new session with /new (your history is kept), or try "
         "/compress once more. Switching to a model with a bigger context window also works."
     ),
     "truncated": (
         "The model's reply was cut off before it finished (it hit its output length limit), so "
-        "Hermes didn't run the incomplete action. Nothing was changed. Send `continue`, ask for "
+        "Cybr Agent didn't run the incomplete action. Nothing was changed. Send `continue`, ask for "
         "the work in smaller steps, or raise max_tokens for this model."
     ),
     "invalid_response": (
@@ -285,11 +301,11 @@ _FAILURE_CODE_COPY: dict[str, str] = {
         "or rate-limiting you. " + _NEXT_STEPS_RETRY + "\n\nDetails: {detail}"
     ),
     "loop_error": (
-        "Hermes hit repeated errors and stopped this turn so it wouldn't keep retrying. "
+        "Cybr Agent hit repeated errors and stopped this turn so it wouldn't keep retrying. "
         + _NEXT_STEPS_LOOP + "\n\nDetails: {detail}"
     ),
     "interpreter_shutdown": (
-        "Hermes was shutting down and stopped this turn. Your conversation is saved — reopen "
+        "Cybr Agent was shutting down and stopped this turn. Your conversation is saved — reopen "
         "it{resume} and send your message again."
     ),
 }
@@ -299,7 +315,7 @@ _FAILURE_CODE_COPY: dict[str, str] = {
 _ONE_OFF_COPY: dict[str, str] = {
     "payload_too_large": (
         "This conversation (including attachments) has grown too large to send to {model}, and "
-        "Hermes couldn't shrink it enough automatically. Start a new session with /new (your "
+        "Cybr Agent couldn't shrink it enough automatically. Start a new session with /new (your "
         "history is kept), or try /compress once more."
     ),
     "compression_disabled": (
@@ -312,16 +328,16 @@ _ONE_OFF_COPY: dict[str, str] = {
     # message must stay in the transcript and the session must not be auto-reset.
     "server_context_rejection": (
         "The model server rejected this request as too large, but this conversation is only "
-        "about {tokens:,} tokens — well under the {window:,}-token window Hermes knows for "
+        "about {tokens:,} tokens — well under the {window:,}-token window Cybr Agent knows for "
         "{model} — so shrinking it would not help. Another request on the same server (for "
         "example a background memory review from an earlier session) was probably holding its "
-        "capacity, or the server runs {model} with a smaller window than Hermes assumes. Wait a "
+        "capacity, or the server runs {model} with a smaller window than Cybr Agent assumes. Wait a "
         "moment and send /retry; if it keeps happening, check the server's context setting."
     ),
     # Rides failure_reason="truncated": args were cut mid-JSON but the model never reported
     # an output-length stop, so don't claim it hit one (#91717).
     "truncated_unreported": (
-        "The model's action arrived cut off partway through, so Hermes didn't run it. Nothing was changed. The model didn't report hitting its output "
+        "The model's action arrived cut off partway through, so Cybr Agent didn't run it. Nothing was changed. The model didn't report hitting its output "
         "limit, so this was most likely a dropped connection or a provider/router cutting the "
         "reply short. Send /retry; if it keeps happening, ask for the work in smaller steps."
     ),
@@ -339,7 +355,7 @@ _ONE_OFF_COPY: dict[str, str] = {
     ),
     # Rides failure_reason="loop_error" (advisory; the turn is incomplete, not failed).
     "local_processing_error": (
-        "Hermes hit an internal error while handling the model's reply and stopped this turn. "
+        "Cybr Agent hit an internal error while handling the model's reply and stopped this turn. "
         + _NEXT_STEPS_LOOP + "\n\nDetails: {detail}"
     ),
     "max_iterations_no_summary": (

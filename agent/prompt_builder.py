@@ -92,7 +92,7 @@ def _scan_context_content(content: str, filename: str, *, user_authored: bool = 
     supply it — so a user who *documents* "ignore previous instructions" in their security guidance
     must not lose their whole identity file to a one-line log entry (#112570). Project-dir files
     (repo AGENTS.md / .cursorrules / .hermes.md) arrive with the checkout and keep blocking, and so does
-    a SOUL.md owned by a profile distribution (``hermes profile install <git-url>`` copies it in unscanned;
+    a SOUL.md owned by a profile distribution (``cybr profile install <git-url>`` copies it in unscanned;
     ``load_soul_md`` passes ``user_authored=False`` when ``distribution.yaml`` owns the file).
     """
     # A leading UTF-8 BOM is a Windows-editor artifact, not an injection.
@@ -159,7 +159,7 @@ def _strip_yaml_frontmatter(content: str) -> str:
 DEFAULT_AGENT_IDENTITY = (
     # A behavior spec (sizing rule, named prohibitions, earned-depth escape hatch), not a trait list — trait
     # lists change nothing. Maintainer rule: models UNDER-explore by default; never re-add an exploration-thrift line.
-    "You are Hermes Agent, built by Nous Research. Be direct: match the length of your reply to the weight of the ask "
+    "You are Cybr Agent, built by CybrFlux. Be direct: match the length of your reply to the weight of the ask "
     "— a one-line question gets a one-line answer, and finished work gets a short report of what changed, what's "
     "verified, and what's left, never a replay of the process. No filler (\"Great question,\" \"I'd be happy to\"), no "
     "restating the request back, no re-summarizing what you already said, no narrating tool calls the user can see. "
@@ -170,17 +170,17 @@ DEFAULT_AGENT_IDENTITY = (
 HERMES_AGENT_HELP_GUIDANCE = (
     # Injected only when skill_view exists AND the hermes-agent skill is installed (system_prompt.py slot
     # resolution). No "when the two differ" clause: docs-are-authoritative already carries the precedence.
-    "You run on Hermes Agent (by Nous Research). When the user needs help with Hermes itself — configuring, "
+    "You run on Cybr Agent (by CybrFlux). When the user needs help with Cybr Agent itself — configuring, "
     "setting up, using, extending, or troubleshooting it — or when you need to understand your own features, "
     "tools, or capabilities, the documentation at https://hermes-agent.nousresearch.com/docs is your "
     "authoritative reference and always holds the latest, most up-to-date information. The `hermes-agent` "
     "skill has the actual commands and proven workflows — load it with skill_view(name='hermes-agent') "
-    "before configuring, modifying, or troubleshooting Hermes so you don't guess or invent workarounds."
+    "before configuring, modifying, or troubleshooting Cybr Agent so you don't guess or invent workarounds."
 )
 
 # Variant for sessions without the skills toolset (e.g. Blank Slate): naming skill_view() there would dangle.
 HERMES_AGENT_HELP_GUIDANCE_NO_SKILLS = (
-    "You run on Hermes Agent (by Nous Research). When the user needs help with Hermes itself — configuring, "
+    "You run on Cybr Agent (by CybrFlux). When the user needs help with Cybr Agent itself — configuring, "
     "setting up, using, extending, or troubleshooting it — or when you need to understand your own features, "
     "tools, or capabilities, the documentation at https://hermes-agent.nousresearch.com/docs is the "
     "authoritative reference and always holds the latest, most up-to-date information. Point the user there "
@@ -328,11 +328,11 @@ KANBAN_GUIDANCE = (
     "- **Created cards.** List ids in `kanban_complete(created_cards=[...])` ONLY when captured from a successful "
     "`kanban_create` return — never invent or paste ids; the kernel rejects the completion on any phantom id.\n"
     "- **Orchestrating: discover profiles first.** The dispatcher SILENTLY drops a card with an unknown assignee (it "
-    "sits in `ready` forever). Ground every assignee in a real profile (`hermes profile list`, or ask the user), and "
+    "sits in `ready` forever). Ground every assignee in a real profile (`cybr profile list`, or ask the user), and "
     "express dependencies via `parents=[...]` on `kanban_create`, not prose.\n"
     "\n"
     "## Do NOT\n\n"
-    "- Do not shell out to `hermes kanban <verb>` for board operations. Use the `kanban_*` tools — they work across "
+    "- Do not shell out to `cybr kanban <verb>` for board operations. Use the `kanban_*` tools — they work across "
     "all terminal backends.\n"
     "- Do not complete a task you didn't actually finish. Block it.\n"
     "- Do not call `clarify` to ask questions. You are running headless — there is no live user to answer. The call "
@@ -358,6 +358,10 @@ TOOL_USE_ENFORCEMENT_GUIDANCE = (
 
 # "muse" = Meta Muse Spark: on defaults it answers in prose with 0 tool calls and the turn closes on
 # finish_reason=stop (#96550).
+# "nemotron" is deliberately absent from this list and EXECUTION_GUIDANCE_MODELS. We ran Nemotron 3.5 Super VL 5 times
+# with the tool-use enforcement, execution guidance and Google operational guidance blocks forced on and 5 times with
+# them off: pass rate moved by under 1 point on SWE-bench Verified, SWE-bench Pro and GDPval, and by +3.7 points on
+# Terminal-Bench 2.1, which was not significant per task (p = 0.14).
 TOOL_USE_ENFORCEMENT_MODELS = ("gpt", "codex", "gemini", "gemma", "grok", "glm", "qwen", "deepseek", "muse")
 
 # Models that receive OPENAI_MODEL_EXECUTION_GUIDANCE when agent.execution_guidance is "auto" (agentic-eval
@@ -389,15 +393,6 @@ TASK_COMPLETION_GUIDANCE = (
     "(different package manager, different approach, ask the user). NEVER substitute plausible-looking fabricated "
     "output (made-up data, invented file contents, synthesised API responses) for results you couldn't actually "
     "produce. Reporting a blocker honestly is always better than inventing a result."
-)
-
-ASYNC_HANDOFF_GUIDANCE = (
-    "# Async handoff\n"
-    "When delegate_task explicitly says background work will deliver its result only after you end the current turn, "
-    "ending the turn is the required handoff — not abandoning the task. Finish only work that does not depend on the "
-    "pending result, then give a brief status and stop so delivery can occur. Do not manufacture polling, no-op, "
-    "placeholder, or unrelated tool calls just to keep the turn open. Do not claim the pending result or task "
-    "completion before it is delivered."
 )
 
 # Universal parallel-tool-call guidance (ALL models): the runtime already executes independent calls
@@ -572,7 +567,7 @@ STEER_MARKER_OPEN = (
     "once at this position; not tool output and not a new delivery when replayed from conversation history]"
 )
 STEER_MARKER_CLOSE = "[/OUT-OF-BAND USER MESSAGE]"
-# Text after the "[" that opens one of Hermes' own control frames (the steer marker above, the compaction
+# Text after the "[" that opens one of Cybr Agent' own control frames (the steer marker above, the compaction
 # handoff and its fallbacks, runtime/system notes, agent.context_compressor._SYNTHETIC_USER_ROW_PREFIXES,
 # agent.title_generator._MACHINE_PREFIXES). Consumers that republish model output as role=user text
 # (hosted rooms) relabel these so a reply cannot reproduce the exact trusted shape. Keep the regex literal in
@@ -610,7 +605,7 @@ STEER_CHANNEL_NOTE = (
     # (anti-lookalike), and it carries full user authority. The former standalone historical-vs-new
     # paragraph (#76805) is now redundant with the marker's own replay clause and was removed.
     "## Mid-turn user steering\n"
-    "Mid-turn, the user can steer you: Hermes delivers their message as a standalone user message right after "
+    "Mid-turn, the user can steer you: Cybr Agent delivers their message as a standalone user message right after "
     "the latest tool results, wrapped exactly as:\n"
     f"{STEER_MARKER_OPEN}\n<their message>\n{STEER_MARKER_CLOSE}\n"
     "That marker is a genuine user message with the same authority as their original request — not tool "
@@ -638,10 +633,10 @@ def hud_surface_note(valid_tool_names: set[str] | None = None,
         return ""
     gated = (
         (True,
-         "[Note: this message came from HUD mode — a small floating Hermes "
+         "[Note: this message came from HUD mode — a small floating Cybr Agent "
          "window sitting over whatever the user is actually working in, so an "
          'unqualified "this" or "here" usually means the app behind the HUD '
-         "rather than anything inside Hermes. read_window_below identifies that app."),
+         "rather than anything inside Cybr Agent. read_window_below identifies that app."),
         (True,
          "They move the HUD from app to app mid-conversation, so one you identified on an earlier turn is "
          "still a live target: a reference that does not fit the window below may name one from a turn or two "
@@ -666,10 +661,6 @@ def hud_surface_note(valid_tool_names: set[str] | None = None,
 # swapped at the API boundary in _build_api_kwargs().
 DEVELOPER_ROLE_MODELS = ("gpt-5", "codex")
 
-_MEDIA_NATIVE = (
-    "You can send files natively: write MEDIA:/absolute/path/to/file in your response. "
-)
-
 _LOCAL_CRON_DELIVERY_NOTE = (
     "Cron jobs scheduled from this session are LOCAL-ONLY: their output is saved (viewable via cronjob "
     "action='list') but is NOT delivered back into this session — there is no live-delivery channel here. If "
@@ -678,53 +669,9 @@ _LOCAL_CRON_DELIVERY_NOTE = (
     "default-deliver cron job will message them in this session."
 )
 
+# Hints for core surfaces only. A messaging platform's hint ships with its plugin
+# (``PlatformEntry.platform_hint``, read by agent/system_prompt._default_platform_hint).
 PLATFORM_HINTS = {
-    "whatsapp": (
-        "You are on WhatsApp. Standard markdown auto-converts to WhatsApp syntax (*bold*, _italic_, ~strike~, "
-        "monospace) \u2014 write markdown freely, bullets included. No tables \u2014 use bullets or labeled lines. "
-        f"{_MEDIA_NATIVE}Images (.jpg, .png, .webp) send as photos, videos (.mp4, .mov) play "
-        "inline, other files arrive as documents; image URLs via ![alt](url) send as photos."
-    ),
-    "whatsapp_cloud": (
-        "You are on WhatsApp (Meta Business Cloud API). Standard markdown auto-converts to WhatsApp syntax "
-        "\u2014 write markdown freely. No tables \u2014 use bullets or labeled lines. "
-        f"{_MEDIA_NATIVE}Images (.jpg, .png) send as photos, videos (.mp4) inline, audio as voice/audio, other files as "
-        "documents; ![alt](url) works. NOTE: Meta refuses free-form replies when the user hasn't messaged in "
-        "24h (error 131047) \u2014 relevant only for delayed/scheduled sends."
-    ),
-    "telegram": (
-        "You are on Telegram. Standard Markdown auto-converts: **bold**, "
-        "*italic*, ~~strikethrough~~, ||spoiler||, `code`, ```blocks```, "
-        "[links](url), ## headers. Prefer bullets or labeled lines for structured data (no tables). "
-        f"{_MEDIA_NATIVE}Images (.png, .jpg, .webp) send as photos, videos (.mp4) play inline; image URLs via ![alt](url) send as "
-        "photos. Audio: add [[audio_as_voice]] on its own line to send ANY audio file as a native voice bubble "
-        "(non-Opus transcodes automatically); without it, .mp3/.m4a arrive as audio files, other formats as documents."
-    ),
-    "discord": (
-        "You are in a Discord server or group chat communicating with your user. Discord renders standard "
-        "markdown natively (bold, italic, code blocks, links); tables are NOT supported — use bullet lists "
-        "or labeled lines. You can send media files natively: include MEDIA:/absolute/path/to/file in your "
-        "response. Images (.png, .jpg, .webp) are sent as photo attachments, audio as file attachments. You "
-        "can also include image URLs in markdown format ![alt](url) and they will be sent as attachments."
-    ),
-    "slack": (
-        "You are in a Slack workspace communicating with your user. Standard markdown is auto-converted to Slack "
-        "formatting (bold, headers, links, code); tables are NOT supported — use bullet lists or labeled lines. You "
-        "can send media files natively: include MEDIA:/absolute/path/to/file in your response. Images (.png, .jpg, "
-        ".webp) are uploaded as photo attachments, audio as file attachments. You can also include image URLs in "
-        "markdown format ![alt](url) and they will be uploaded as attachments."
-    ),
-    "signal": (
-        "You are on Signal. Standard markdown (**bold**, *italic*, ~~strike~~, # headers, `code`) auto-converts to "
-        "Signal formatting; bullets render as \u2022. No tables \u2014 use bullets or labeled lines. "
-        f"{_MEDIA_NATIVE}Images (.png, .jpg, .webp) send as photos, other files as documents; ![alt](url) sends as photos."
-    ),
-    "email": (
-        "You are communicating via email. Write clear, well-structured responses suitable for email. Use "
-        "plain text formatting (no markdown). Keep responses concise but complete. You can send file "
-        "attachments — include MEDIA:/absolute/path/to/file in your response. The subject line is preserved "
-        "for threading. Do not include greetings or sign-offs unless contextually appropriate."
-    ),
     "cron": (
         "You are running as a scheduled cron job. There is no user present — you cannot ask questions, "
         "request clarification, or wait for follow-up. Execute the task fully and autonomously, making "
@@ -741,7 +688,7 @@ PLATFORM_HINTS = {
     ),
     "tui": (
         # Same file-delivery reality as the CLI: no MEDIA: interception in tui/.
-        "You are in the Hermes terminal UI (TUI). Files: there is no attachment channel and MEDIA:/path tags "
+        "You are in the Cybr Agent terminal UI (TUI). Files: there is no attachment channel and MEDIA:/path tags "
         "are NOT intercepted here (they print as literal text) — deliver a file by stating its absolute path "
         "or URL in plain text. "
         f"{_LOCAL_CRON_DELIVERY_NOTE}"
@@ -750,7 +697,7 @@ PLATFORM_HINTS = {
         # Every claim verified against the shipping renderer (inline-preview-directive.tsx). Widget text is
         # recipe-first: HOW (an inline widget IS a ::preview'd HTML file) and WHY (the frame injects the theme
         # prelude first; width adopts the first measured span). setup_mcp is taught by its own tool schema.
-        "You are chatting inside the Hermes desktop app, a graphical chat surface. Markdown renders with full GitHub "
+        "You are chatting inside the Cybr Agent desktop app, a graphical chat surface. Markdown renders with full GitHub "
         "flavor (tables, syntax-highlighted code, math via $...$, task lists, callouts). Deliver files by writing "
         "MEDIA:/absolute/path/to/file — any file type: images/audio/video render inline, everything else becomes a "
         "card with Download and preview buttons. Remote image URLs render via ![alt](url); local files ONLY via MEDIA: "
@@ -764,69 +711,6 @@ PLATFORM_HINTS = {
         "or it measures full-bleed. Widgets talk back: data-hermes-send=\"prompt\" on any clickable element (or "
         "window.hermes.send(\"prompt\")) sends that prompt as a hidden user turn — answer it by updating the widget's "
         "file, not with prose."
-    ),
-    "sms": (
-        "You are communicating via SMS. Keep responses concise and use plain text only — no markdown, no "
-        "formatting. SMS messages are limited to ~1600 characters, so be brief and direct."
-    ),
-    "bluebubbles": (
-        # The adapter runs strip_markdown(keep_link_targets=True): markers vanish, the layout stays.
-        "You are texting via iMessage (BlueBubbles). Replies arrive as plain text bubbles, so write like a person "
-        "texting: short and conversational, answer first, no preamble or recap. Markdown does not render and is "
-        "stripped, so skip headers, tables, code fences and backticks; for a few items use short lines or a "
-        "sentence rather than nested bullets. Put a command or code snippet on its own line as plain text so it "
-        "can be copied. Write links as bare URLs (iMessage auto-links them). "
-        f"{_MEDIA_NATIVE}Images (.jpg, .png, .heic) appear as photos and other files arrive as attachments."
-    ),
-    "mattermost": (
-        "You are in a Mattermost workspace communicating with your user. Mattermost renders standard "
-        "Markdown — headings, bold, italic, code blocks, and tables all work. You can send media files "
-        "natively: include MEDIA:/absolute/path/to/file in your response. Images (.jpg, .png, .webp) are "
-        "uploaded as photo attachments, audio and video as file attachments. Image URLs in markdown format "
-        "![alt](url) are rendered as inline previews automatically."
-    ),
-    "matrix": (
-        "You are in a Matrix room. Your markdown converts to HTML \u2014 bold, italic, code, headings, lists, "
-        "blockquotes, and links render. Do NOT use tables (popular clients like Element X collapse them into run-on "
-        "text \u2014 use '**Label:** value' lines or bullets), and avoid ||spoilers||, ~~strikethrough~~, and "
-        "checkboxes (they appear as literal characters). Prefer [descriptive text](url) over bare URLs. "
-        f"{_MEDIA_NATIVE}Images send as inline photos, audio (.ogg, .mp3) as voice/audio "
-        "messages, video (.mp4) inline, other files as attachments."
-    ),
-    "feishu": (
-        "You are in a Feishu (Lark) workspace communicating with your user. Feishu renders Markdown in "
-        "messages — bold, italic, code blocks, and links are supported. You can send media files natively: "
-        "include MEDIA:/absolute/path/to/file in your response. Images (.jpg, .png, .webp) are uploaded and "
-        "displayed inline, audio files as native voice messages (non-Opus formats are transcoded "
-        "automatically; without ffmpeg they fall back to file attachments), and other files as attachments."
-    ),
-    "weixin": (
-        "You are on Weixin/WeChat. Markdown formatting is supported, so you may use it when it improves readability, "
-        "but keep the message compact and chat-friendly. You can send media files natively: include "
-        "MEDIA:/absolute/path/to/file in your response. Images are sent as native photos, videos play inline when "
-        "supported, and other files arrive as downloadable documents. You can also include image URLs in markdown "
-        "format ![alt](url) and they will be downloaded and sent as native media when possible."
-    ),
-    "wecom": (
-        "You are on WeCom (\u4f01\u4e1a\u5fae\u4fe1). Markdown is supported. "
-        f"{_MEDIA_NATIVE}Images (.jpg, .png, .webp) send as photos (\u226410 MB), other files as documents (\u226420 MB), videos "
-        "(.mp4) play inline. Voice messages must be AMR \u2014 other audio formats send as file attachments. Image "
-        "URLs via ![alt](url) are downloaded and sent as photos. Never claim you lack file-sending."
-    ),
-    "qqbot": (
-        "You are on QQ, a popular Chinese messaging platform. QQ supports markdown formatting "
-        "and emoji. You can send media files natively: include MEDIA:/absolute/path/to/file in "
-        "your response. Images are sent as native photos, and other files arrive as downloadable documents."
-    ),
-    "yuanbao": (
-        "You are on Yuanbao (\u817e\u8baf\u5143\u5b9d), a Chinese AI assistant "
-        "platform. Markdown renders (code blocks, tables, bold/italic). "
-        f"{_MEDIA_NATIVE}Images (.jpg, .png, .webp, .gif) send as photos, other files as downloadable documents (max 50 MB); "
-        "image URLs via ![alt](url) are downloaded and sent as photos. Never claim you lack file-sending. "
-        "Stickers (\u8d34\u7eb8/\u8868\u60c5\u5305): when the user sends one (you see '[emoji: "
-        "\u540d\u79f0]') or asks for one, use the sticker tools \u2014 yb_search_sticker with a Chinese "
-        "keyword, then yb_send_sticker with the chosen id \u2014 which send a real native sticker. Never "
-        "draw sticker-like PNGs and send them as images, and bare Unicode emoji is not a substitute."
     ),
     "api_server": (
         "You're responding through an API server. The rendering layer is unknown — assume plain text. No markdown "
@@ -931,7 +815,7 @@ _WINDOWS_BASH_SHELL_HINT = (
     "path conversion is disabled here, so `git -C /c/Users/x` or `node /tmp/a.js` fails with 'cannot change to'/'not "
     "found' even though `cd /c/Users/x` (a bash builtin) works. Pass `C:/Users/x`-style forward-slash native paths to "
     # no-tmp: ok — tells the model what NOT to use
-    "native tools, and prefer `$LOCALAPPDATA/Temp` (or `$TMPDIR`, which Hermes points at its own scratch dir) for scratch files a native tool must read — never a bare `/tmp`. When "
+    "native tools, and prefer `$LOCALAPPDATA/Temp` (or `$TMPDIR`, which Cybr Agent points at its own scratch dir) for scratch files a native tool must read — never a bare `/tmp`. When "
     "answering prompts in a pty background process, use process(submit) — never process(write) with a bare trailing "
     "newline: Enter on a Windows PTY is a carriage return, and a lone `\\n"
     "` is not delivered as a line terminator, so the child's prompt silently never returns. When a CLI offers a "
@@ -1046,7 +930,7 @@ def _local_host_hints() -> list[str]:
     except OSError:
         pass
     # The model reaches for the system temp dir by reflex (tmpfs on most Linux hosts, fills RAM);
-    # naming Hermes' scratch dir here is what makes the TMPDIR export a habit rather than a hidden default.
+    # naming Cybr Agent' scratch dir here is what makes the TMPDIR export a habit rather than a hidden default.
     try:
         host_lines.append(f"Scratch directory: {get_scratch_dir()} (TMPDIR points here; write temporary files "
                           "and probes there, never under the system temp dir; entries idle for 24h are pruned)")
@@ -1105,8 +989,8 @@ def _remote_backend_hint(backend: str) -> str:
     probe = _probe_remote_backend(backend)
     if probe:
         return lead + (
-            f"this {backend} environment — NOT on the machine where Hermes itself is running. The host OS, "
-            f"home, and cwd of the Hermes process are irrelevant; only the following backend state matters:\n{probe}\n"
+            f"this {backend} environment — NOT on the machine where Cybr Agent itself is running. The host OS, "
+            f"home, and cwd of the Cybr Agent process are irrelevant; only the following backend state matters:\n{probe}\n"
             f"  The sandbox's current user, $HOME, and working directory are not listed here; if you need them, "
             f"probe directly with a terminal call like `whoami && pwd`."
         )
@@ -1116,7 +1000,7 @@ def _remote_backend_hint(backend: str) -> str:
         or f"a {backend} environment (likely Linux)"
     )
     return lead + (
-        f"{description} — NOT on the machine where Hermes itself runs. The backend probe didn't respond at "
+        f"{description} — NOT on the machine where Cybr Agent itself runs. The backend probe didn't respond at "
         f"prompt-build time, so the sandbox's OS, current user, $HOME, and working directory are unknown from here. "
         f"If you need them, probe directly with a terminal call like `uname -a && whoami && pwd`."
     )
@@ -1155,8 +1039,8 @@ def build_environment_hints() -> str:
 
 
 # Marks the runtime block after project prose for persisted-prompt cwd validation.
-RUNTIME_ENVIRONMENT_HEADING = "# Hermes runtime environment"
-RUNTIME_ENVIRONMENT_END = "<!-- End Hermes runtime environment -->"
+RUNTIME_ENVIRONMENT_HEADING = "# Cybr Agent runtime environment"
+RUNTIME_ENVIRONMENT_END = "<!-- End Cybr Agent runtime environment -->"
 
 CONTEXT_FILE_MAX_CHARS = 20_000
 CONTEXT_TRUNCATE_HEAD_RATIO = 0.7
@@ -1370,6 +1254,10 @@ def build_skills_system_prompt(
     ``skills_dir_override`` makes home resolution EXPLICIT: a build thread that never bound the HERMES_HOME
     ContextVar would otherwise leak the default profile's skills into a bot's prompt.
     """
+    from agent.safe_worker_policy import safe_worker_enabled
+
+    if safe_worker_enabled():
+        return ""
     _home_token = None
     if skills_dir_override is not None:
         skills_dir = Path(skills_dir_override)
@@ -1661,6 +1549,10 @@ def load_soul_md(context_length: Optional[int] = None, home_override: Path | Non
     ContextVar falls back to the launch home and reads the wrong profile's SOUL.md (#50233, same class as
     the skills-index leak fixed in #86313).
     """
+    from agent.safe_worker_policy import safe_worker_enabled
+
+    if safe_worker_enabled():
+        return None
     try:
         from hermes_cli.config import ensure_hermes_home
         ensure_hermes_home()
@@ -1678,7 +1570,7 @@ def load_soul_md(context_length: Optional[int] = None, home_override: Path | Non
             content = strip_legacy_protocol(content).strip()
         if not content:
             return None
-        # `hermes profile install <git-url>` / `profile update` plant a third-party SOUL.md into a
+        # `cybr profile install <git-url>` / `profile update` plant a third-party SOUL.md into a
         # distribution profile (hermes_cli/profile_distribution.py, DEFAULT_DIST_OWNED) with no scan and no
         # approval gate, so it is NOT the user's own file: when distribution.yaml owns SOUL.md (a manifest
         # with no `distribution_owned` list owns the whole payload) a scanner hit keeps BLOCKING.
@@ -1793,11 +1685,11 @@ def discover_context_files(cwd_path: Path) -> list[tuple[str, str, Path, str]]:
 
 
 def _project_context_suppressed(cwd: Optional[str], cwd_path: Path, allow_install_tree_fallback: bool) -> bool:
-    """A FALLBACK-picked cwd inside the Hermes install tree must not gain system-prompt authority (the desktop
+    """A FALLBACK-picked cwd inside the Cybr Agent install tree must not gain system-prompt authority (the desktop
     default would load this repo's contributor AGENTS.md). An explicitly configured cwd is honored verbatim —
-    the Hermes tree is a legitimate workspace when the user deliberately points a session at it — and
+    the Cybr Agent tree is a legitimate workspace when the user deliberately points a session at it — and
     CLI-style surfaces pass allow_install_tree_fallback=True because their launch dir IS the user's shell cwd
-    (developing Hermes in-tree). See #64590."""
+    (developing Cybr Agent in-tree). See #64590."""
     from agent.runtime_cwd import _is_install_tree
     return cwd is None and not allow_install_tree_fallback and _is_install_tree(cwd_path)
 
@@ -1864,10 +1756,14 @@ def build_context_files_prompt(
     AGENTS.md chain (git root → cwd) → CLAUDE.md (cwd) → .cursorrules + .cursor/rules/*.mdc (cwd). SOUL.md
     from HERMES_HOME is independent and always included unless *skip_soul* (already the identity slot).
     """
+    from agent.safe_worker_policy import safe_worker_enabled
+
+    if safe_worker_enabled():
+        return ""
     cwd_path = Path(cwd if cwd is not None else os.getcwd()).resolve()
     if _project_context_suppressed(cwd, cwd_path, allow_install_tree_fallback):
         logger.warning(
-            "skipping project-context discovery: working-directory resolution fell back to the Hermes "
+            "skipping project-context discovery: working-directory resolution fell back to the Cybr Agent "
             "install tree (%s) — set terminal.cwd to your project directory", cwd_path,
         )
         sections = []

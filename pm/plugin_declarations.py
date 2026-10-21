@@ -58,6 +58,9 @@ class PythonDeclaration:
     requirements: tuple[str, ...]
     manifest: dict
     requires_python: str | None = None
+    # The pyproject itself installs something: the plugin as a package, or extras/dependency groups
+    # (``uv sync --all-packages`` installs a member's default groups as well as its dependencies).
+    pyproject_installs: bool = False
 
     @property
     def external(self) -> bool:
@@ -66,6 +69,12 @@ class PythonDeclaration:
     @property
     def install_requirements(self) -> tuple[str, ...]:
         return () if self.external else applicable_requirements(self.requirements)
+
+    @property
+    def installs_packages(self) -> bool:
+        """Admission would put packages into the shared environment, the thing dependency consent
+        is about. ``dependencies = []`` installs nothing, so it asks no more than no pyproject does."""
+        return not self.external and (bool(self.install_requirements) or self.pyproject_installs)
 
     @property
     def is_member(self) -> bool:
@@ -80,7 +89,7 @@ class PythonDeclaration:
             return None
         if SpecifierSet(self.requires_python).contains(version, prereleases=True):
             return None
-        return f"requires Python {self.requires_python}, but Hermes runs on Python {version}"
+        return f"requires Python {self.requires_python}, but Cybr Agent runs on Python {version}"
 
     def __post_init__(self) -> None:
         if not self.external:
@@ -90,7 +99,7 @@ class PythonDeclaration:
 def applicable_requirements(specs: tuple[str, ...] | list[str]) -> tuple[str, ...]:
     """Index requirements only; let uv evaluate markers for the target interpreter.
 
-    The application checkout supplies Hermes itself. Installing it from an index
+    The application checkout supplies Cybr Agent itself. Installing it from an index
     would replace that checkout; direct URLs bypass the reviewed package source.
     Markers must survive snapshots built for a different Python or platform.
     """
@@ -144,7 +153,12 @@ def read_python_declaration(plugin_dir: Path) -> PythonDeclaration:
             requires_python = document.get("project", {}).get("requires-python")
             if requires_python is not None and not isinstance(requires_python, str):
                 raise ValueError(f"invalid project.requires-python: {project}")
-            return PythonDeclaration(tuple(files), project, tuple(specs), manifest, requires_python)
+            uv = document.get("tool", {}).get("uv", {})
+            installs = ("build-system" in document or uv.get("package") is True
+                        or any(document.get("project", {}).get("optional-dependencies", {}).values())
+                        or any(document.get("dependency-groups", {}).values())
+                        or bool(uv.get("dev-dependencies")))
+            return PythonDeclaration(tuple(files), project, tuple(specs), manifest, requires_python, installs)
     specs = []
     for key in ("pip_dependencies", "python_dependencies"):
         values = manifest.get(key, [])

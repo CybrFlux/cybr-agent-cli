@@ -1,4 +1,4 @@
-"""Offline, non-destructive recovery for a damaged Hermes session database.
+"""Offline, non-destructive recovery for a damaged Cybr Agent session database.
 
 The source is never opened by SQLite: it and its WAL/SHM/journal sidecars are copied to a disposable
 work dir first. Canonical rows are copied into a fresh current-schema database; derived FTS tables and
@@ -43,7 +43,14 @@ _AUXILIARY_TABLE_SCHEMAS: dict[str, Callable[[sqlite3.Connection], None]] = {
     "delivery_obligations": _init_delivery_ledger_schema,
 }
 _AUXILIARY_TABLES = tuple(_AUXILIARY_TABLE_SCHEMAS)
-_INVENTORY_TABLES = (*_CANONICAL_TABLES, "state_meta", *_TOPIC_TABLES, *_AUXILIARY_TABLES)
+# Salvage is a transcript output, not a runnable clone of accepted work. Copying
+# only part of this ledger could replay already-started effects or adopt workers
+# from another owner. Inventory and report the exclusions rather than losing them
+# silently. Activation under exclusive ownership creates a fresh runtime epoch;
+# ordinary full backup/restore instead preserves the complete ledger for startup
+# reconciliation (started -> unknown; never blindly replay started work).
+_RUNTIME_TABLES = ("runtime_epoch", "session_admissions", "worker_executions", "worker_receipts")
+_INVENTORY_TABLES = (*_CANONICAL_TABLES, "state_meta", *_TOPIC_TABLES, *_AUXILIARY_TABLES, *_RUNTIME_TABLES)
 
 # Derived-index / optional-schema markers: a fresh destination regenerates these, never copies them.
 _GENERATED_META_KEYS = frozenset({
@@ -328,10 +335,10 @@ def _snapshot_and_inspect(
         snapshot_source, copied = _copy_source_bundle(source, Path(temp_dir.name))
         if _source_fingerprint(source) != before:
             raise SessionRecoverySafetyError(
-                "The source database bundle changed while it was being copied. Stop every Hermes process using this "
+                "The source database bundle changed while it was being copied. Stop every Cybr Agent process using this "
                 "profile and retry. This includes the interactive `hermes` CLI session this command may have been "
                 "launched from: a running parent CLI writes session bookkeeping (compression ticks, context "
-                "tracking) to state.db in the background and counts as a Hermes process even after the gateway is "
+                "tracking) to state.db in the background and counts as a Cybr Agent process even after the gateway is "
                 "stopped. Run the recovery from a fresh shell with no `hermes` session open, or point --source at an "
                 "immutable snapshot copy of the database."
             )
@@ -417,7 +424,7 @@ def _salvage_rowid_bounds(source: sqlite3.Connection, table: str) -> dict[str, A
         return result
 
     # An ordered LIMIT 1 walks the table b-tree and dies on a damaged edge leaf, while the
-    # aggregate lets the planner answer from any covering index (every Hermes table has at
+    # aggregate lets the planner answer from any covering index (every Cybr Agent table has at
     # least a PRIMARY KEY autoindex). Ask it before falling back to the synthetic domain:
     # bisecting from INT64_MIN burned the whole query budget on a 4-row table (#98050).
     missing = [edge for edge in ("low", "high") if rows[edge] is None]
@@ -1182,10 +1189,38 @@ def _recovery_report(
         "partial": bool(verification.get("loss_detected")),
         "verified": bool(verification.get("healthy") and source_unchanged),
         "installed": False,
+        "runtime_state": {
+            "policy": "transcript-only; runtime ledger excluded; fresh epoch on activation",
+            "excluded_tables": {table: inspection["tables"].get(table, {}) for table in _RUNTIME_TABLES},
+        },
     }
 
 
 def recover_session_database(
+    source_path: Path, output_path: Path, *, work_dir: Optional[Path] = None, chunk_size: int = 1_000,
+    progress_cb: Optional[ProgressCallback] = None, allow_partial: bool = False,
+) -> dict[str, Any]:
+    """Separate-output salvage is allowed; a canonical output requires offline ownership."""
+    from gateway.runtime_ownership import OwnershipConflict, exclusive_maintenance
+    from contextlib import nullcontext
+    # Validate before creating any lock or output. Reserve only a canonical
+    # destination, not the live source or an unrelated requested output file.
+    _, output, _ = _validate_paths(source_path, output_path=output_path, work_dir=work_dir)
+    assert output is not None
+    guard = exclusive_maintenance([output.parent]) if output.name == 'state.db' else nullcontext()
+    try:
+        with guard:
+            # Repeat the no-overwrite validation under the reservation: startup
+            # may have created state.db between the first check and lock claim.
+            return _recover_session_database_output(
+                source_path, output_path, work_dir=work_dir, chunk_size=chunk_size,
+                progress_cb=progress_cb, allow_partial=allow_partial,
+            )
+    except OwnershipConflict as exc:
+        raise SessionRecoverySafetyError(str(exc)) from exc
+
+
+def _recover_session_database_output(
     source_path: Path, output_path: Path, *, work_dir: Optional[Path] = None, chunk_size: int = 1_000,
     progress_cb: Optional[ProgressCallback] = None, allow_partial: bool = False,
 ) -> dict[str, Any]:

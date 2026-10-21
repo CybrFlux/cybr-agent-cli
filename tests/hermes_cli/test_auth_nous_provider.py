@@ -83,6 +83,39 @@ class TestResolveVerifyFallback:
         result = _resolve_verify(auth_state={"tls": {"insecure": "true"}})
         assert result is False
 
+
+class TestDefaultVerifyAfterAnInstallRotation:
+    """The Nous credential exchange can be the first TLS client a long-lived gateway builds
+    after the package manager replaced the environment certifi was imported from (#137255).
+
+    It must never hand httpx a bundle path that no longer exists.
+    """
+
+    @pytest.mark.platforms("macos")
+    def test_credential_verify_re_derives_the_rotated_bundle(self, tmp_path, monkeypatch):
+        import ssl
+
+        from hermes_cli.auth import _resolve_verify
+
+        for var in ("HERMES_CA_BUNDLE", "SSL_CERT_FILE", "REQUESTS_CA_BUNDLE"):
+            monkeypatch.delenv(var, raising=False)
+        from tests.agent.test_ssl_verify import _rotated_certifi
+
+        _rotated_certifi(tmp_path, monkeypatch, replacement=True)
+
+        verify = _resolve_verify(auth_state={"tls": {"insecure": False}})
+
+        # Nothing in the process points at the deleted environment, and httpx builds a client.
+        import certifi
+
+        assert Path(certifi.where()).is_file()
+        with httpx.Client(verify=verify) as client:
+            from typing import Any, cast
+
+            transport = cast(Any, client._transport)
+            assert transport._pool._ssl_context.verify_mode == ssl.CERT_REQUIRED
+
+
 def _setup_nous_auth(
     hermes_home: Path,
     *,
@@ -638,10 +671,10 @@ def test_refresh_token_reuse_detection_surfaces_actionable_message():
     """Regression for #15099.
 
     When the Nous Portal server returns ``invalid_grant`` with
-    ``error_description`` containing "reuse detected", Hermes must surface an
+    ``error_description`` containing "reuse detected", Cybr Agent must surface an
     actionable message explaining that an external process consumed the
     refresh token.  The default opaque "Refresh token reuse detected; please
-    re-authenticate" string led users to report this as a Hermes persistence
+    re-authenticate" string led users to report this as a Cybr Agent persistence
     bug when the true cause is external RT consumption (monitoring scripts,
     custom self-heal hooks).
     """

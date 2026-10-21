@@ -3,6 +3,7 @@ import { ExternalLink, RefreshCw, Trash2, Eye, EyeOff } from "lucide-react";
 import type { Translations } from "@/i18n/types";
 import { Link } from "react-router";
 import { api } from "@/lib/api";
+import { runDashboardPluginUpdate } from "@/lib/plugin-update";
 import { setupHasDetails, setupHasInstallableSteps } from "@/lib/memory-provider-setup";
 import type {
   CatalogEntry,
@@ -164,7 +165,7 @@ function MemoryProviderSetupHint({
   if (!hasDetails || !setup) {
     return (
       <p className="border border-destructive/50 px-3 py-2 text-xs text-destructive">
-        This provider is installed but unavailable. It may need local dependencies or a manual setup step before Hermes can activate it.
+        This provider is installed but unavailable. It may need local dependencies or a manual setup step before Cybr Agent can activate it.
       </p>
     );
   }
@@ -178,7 +179,7 @@ function MemoryProviderSetupHint({
     >
       <p className={isBlocked ? "text-destructive" : "text-muted-foreground"}>
         {needsDependencySetup
-          ? "Finish these setup steps before Hermes can activate this provider."
+          ? "Finish these setup steps before Cybr Agent can activate this provider."
           : "Provider dependency setup completed."}
       </p>
 
@@ -247,7 +248,7 @@ function MemoryProviderSetupHint({
       {setup.required_env.length && needsDependencySetup ? (
         <div className="grid gap-2">
           <p className="text-muted-foreground">
-            Required environment values. Fill the matching fields below, or set them in the Hermes environment.
+            Required environment values. Fill the matching fields below, or set them in the Cybr Agent environment.
           </p>
           <div className="flex flex-wrap gap-2">
             {setup.required_env.map((envKey) => (
@@ -612,7 +613,7 @@ export default function PluginsPage() {
 
                   {!selectedMemoryName && (
                     <p className="text-xs text-muted-foreground">
-                      Hermes will use the built-in MEMORY.md and USER.md files.
+                      Cybr Agent will use the built-in MEMORY.md and USER.md files.
                     </p>
                   )}
 
@@ -908,7 +909,7 @@ export default function PluginsPage() {
                 target="_blank"
                 rel="noreferrer"
               >
-                {t.pluginsPage.catalogEmptyDocsLink ?? "Learn about Hermes plugins"}
+                {t.pluginsPage.catalogEmptyDocsLink ?? "Learn about Cybr Agent plugins"}
               </a>
             </p>
           ) : (
@@ -1162,20 +1163,13 @@ function PluginRowCard(props: PluginRowCardProps) {
                 size="sm"
                 onClick={() => {
                   void setRuntimeLoading(row.name, async () => {
-                    const res = await api.updateAgentPlugin(row.name);
-                    if (res.consent_required) {
-                      // The new pin widens the plugin; the backend changed nothing until confirmed.
-                      const body = [
-                        (t.pluginsPage.updateConsentBody ?? en.pluginsPage.updateConsentBody!)(
-                          row.name,
-                          (res.sha ?? "").slice(0, 8),
-                        ),
-                        ...(res.delta_lines ?? []),
-                      ].join("\n");
-                      if (!window.confirm(body)) return;
-                      await api.updateAgentPlugin(row.name, true);
-                    }
-                    showToast(t.pluginsPage.updateGit, "success");
+                    const pp = t.pluginsPage;
+                    const applied = await runDashboardPluginUpdate(row.name, {
+                      consentBody: pp.updateConsentBody ?? en.pluginsPage.updateConsentBody!,
+                      scanBody: pp.updateScanBody ?? en.pluginsPage.updateScanBody!,
+                      scanBlocked: pp.updateScanBlocked ?? en.pluginsPage.updateScanBlocked!,
+                    });
+                    if (applied) showToast(pp.updateGit, "success");
                   });
                 }}
               >
@@ -1304,7 +1298,7 @@ function CatalogEntryCard(props: CatalogEntryCardProps) {
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
             <span className="truncate font-semibold">{entry.name}</span>
 
-            <Badge tone={entry.tier === "official" ? "success" : "secondary"}>
+            <Badge tone={entry.tier === "community" ? "secondary" : "success"}>
               {entry.tier}
             </Badge>
 

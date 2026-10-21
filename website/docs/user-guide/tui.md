@@ -1,35 +1,35 @@
 ---
 sidebar_position: 2
 title: "TUI"
-description: "Launch the modern terminal UI for Hermes — mouse-friendly, rich overlays, and non-blocking input."
+description: "Launch the modern terminal UI for Cybr Agent — mouse-friendly, rich overlays, and non-blocking input."
 ---
 
 # TUI
 
-The TUI is the modern front-end for Hermes — a terminal UI backed by the same Python runtime as the [Classic CLI](cli.md). Same agent, same sessions, same slash commands; a cleaner, more responsive surface for interacting with them.
+The TUI is the modern front-end for Cybr Agent — a terminal UI backed by the same Python runtime as the [Classic CLI](cli.md). Same agent, same sessions, same slash commands; a cleaner, more responsive surface for interacting with them.
 
-It's the recommended way to run Hermes interactively.
+It's the recommended way to run Cybr Agent interactively.
 
 ## Launch
 
 ```bash
 # Launch the TUI
-hermes --tui
+cybr --tui
 
 # Resume the latest TUI session (falls back to the latest classic session)
-hermes --tui -c
-hermes --tui --continue
-hermes --tui --resume latest
+cybr --tui -c
+cybr --tui --continue
+cybr --tui --resume latest
 
 # Resume a specific session by ID or title
-hermes --tui -r 20260409_000000_aa11bb
-hermes --tui --resume "my t0p session"
+cybr --tui -r 20260409_000000_aa11bb
+cybr --tui --resume "my t0p session"
 
 # Resume the latest session for a specific project directory
-hermes --tui --resume latest --in ./my-project
+cybr --tui --resume latest --in ./my-project
 
 # Run source directly — skips the prebuild step (for TUI contributors)
-hermes --tui --dev
+cybr --tui --dev
 ```
 
 You can also enable it via env var:
@@ -37,7 +37,7 @@ You can also enable it via env var:
 ```bash
 export HERMES_TUI=1
 hermes          # now uses the TUI
-hermes chat     # same
+cybr chat     # same
 ```
 
 Or make it the persistent default in `~/.hermes/config.yaml`:
@@ -47,13 +47,13 @@ display:
   interface: tui   # "cli" (default) or "tui"
 ```
 
-With `display.interface: tui`, a bare `hermes` (and `hermes chat`) launches the TUI. Explicit flags always win — run `hermes --cli` to drop back to the classic REPL for a single invocation, or `hermes --tui` / `HERMES_TUI=1` to force the TUI when the config default is `cli`.
+With `display.interface: tui`, a bare `cybr` (and `cybr chat`) launches the TUI. Explicit flags always win — run `cybr --cli` to drop back to the classic REPL for a single invocation, or `cybr --tui` / `HERMES_TUI=1` to force the TUI when the config default is `cli`.
 
 The classic CLI remains the shipped default. Anything documented in [CLI Interface](cli.md) — slash commands, quick commands, skill preloading, personalities, multi-line input, interrupts — works in the TUI identically.
 
 ## Why the TUI
 
-- **Instant first frame** — the banner paints before the app finishes loading, so the terminal never feels frozen while Hermes is starting.
+- **Instant first frame** — the banner paints before the app finishes loading, so the terminal never feels frozen while Cybr Agent is starting.
 - **Non-blocking input** — type and queue messages before the session is ready. Your first prompt sends the moment the agent comes online.
 - **Rich overlays** — model picker, session picker, approval and clarification prompts all render as modal panels rather than inline flows.
 - **Live session panel** — tools and skills fill in progressively as they initialize.
@@ -81,19 +81,19 @@ Click anywhere on a section header (or its chevron) to toggle it. The Tools list
 - **Node.js** ≥ 20 — the TUI runs as a subprocess launched from the Python CLI. `hermes doctor` verifies this.
 - **TTY** — like the classic CLI, piping stdin or running in non-interactive environments falls back to single-query mode.
 
-On first launch Hermes installs the TUI's Node dependencies into `ui-tui/node_modules` (one-time, a few seconds). Subsequent launches are fast. If you pull a new Hermes version, the TUI bundle is rebuilt automatically when sources are newer than the dist.
+On first launch Cybr Agent installs the TUI's Node dependencies into `ui-tui/node_modules` (one-time, a few seconds). Subsequent launches are fast. If you pull a new Cybr Agent version, the TUI bundle is rebuilt automatically when sources are newer than the dist.
 
 :::tip Working across git worktrees?
-Contributors who run `hermes --tui --dev` from many worktrees can share one `node_modules` instead of installing per checkout — see [TUI & Desktop from Worktrees](../developer-guide/worktree-ui-dev.md).
+Contributors who run `cybr --tui --dev` from many worktrees can share one `node_modules` instead of installing per checkout — see [TUI & Desktop from Worktrees](../developer-guide/worktree-ui-dev.md).
 :::
 
 ### External prebuild
 
-Distributions that ship a prebuilt bundle (Nix, system packages) can point Hermes at it:
+Distributions that ship a prebuilt bundle (Nix, system packages) can point Cybr Agent at it:
 
 ```bash
 export HERMES_TUI_DIR=/path/to/prebuilt/ui-tui
-hermes --tui
+cybr --tui
 ```
 
 The directory must contain `dist/entry.js`.
@@ -105,13 +105,14 @@ Keybindings match the [Classic CLI](cli.md#keybindings) exactly. The only behavi
 On macOS, `F7` means the physical F7 function key. MacBook keyboards may use that row for system controls instead; hold **Fn** (the **globe** key on newer keyboards) while pressing **F7**, or enable **Use F1, F2, etc. keys as standard function keys** in **System Settings → Keyboard → Keyboard Shortcuts → Function Keys**. If the terminal still does not forward it, use the equivalent **Ctrl+R** binding below.
 
 - **`Ctrl+T`** expands the automatic live-work dock (subagents, plus a **Processes** block for `terminal(background=true)` spawns) into the full-height `/agents` roster. Select a worker and press **Enter** (or **`t`**) for its live transcript, **`d`** for rich details, **`e`** to steer, or **`x`** to stop it. The dock fits its row count to terminal height and preserves your composer draft. See [Monitoring subagents](./features/delegation.md#monitoring-running-subagents-agents).
-- A standing **`/goal`** gets its own row above the live dock (`⊙ goal · 3/20 turns · …`, or `⏳ goal parked` / `⏸ goal paused` with the reason); it leaves once the goal is done or cleared. Queued follow-ups are listed above it.
+- A standing **`/goal`** gets its own row above the live dock (`⊙ goal · 3/20 turns · 2 subgoals · …`, or `⏳ goal parked` / `⏸ goal paused` with the reason); it repaints as soon as anything changes the goal, a tool mid-turn included, and leaves once the goal is done or cleared. Queued follow-ups are listed above it.
 - **`Ctrl+R`** toggles the live dock between its default preview and one summary line. **`F7`** remains an optional alias where the terminal sends function keys through. This does not open the monitor or move composer focus; the choice lasts for this TUI process without changing config.
 - **Mouse drag** highlights text with a uniform selection background.
 - **`Cmd+V` / `Ctrl+V`** first tries normal text paste, then falls back to OSC52/native clipboard reads, and finally image attach when the clipboard or pasted payload resolves to an image.
 - **`/terminal-setup`** installs local VS Code / Cursor / Windsurf terminal bindings for better `Cmd+Enter` and undo/redo parity on macOS.
 - **Slash autocompletion** opens as a floating panel with descriptions, not an inline dropdown.
-- **`Ctrl+X`** opens the live session switcher. When a queued message is highlighted (sent while the agent was still running), it still deletes that queued message instead. **`Esc`** cancels editing and unhighlights without deleting.
+- **Typing while the agent is busy** (`display.busy_input_mode: queue`, the TUI default) submits the message to the gateway immediately. The gateway's durable session queue orders it behind the running turn, so it survives a gateway crash or restart and shows up as `[queued] …` in the `queued (N)` panel of every client attached to the session — the Desktop app sees the same list. Your message's transcript bubble appears when its turn actually starts. `steer` and `interrupt` still act on the live turn as before.
+- **`Ctrl+X`** opens the live session switcher. When a queued message is highlighted (sent while the agent was still running), it still deletes that queued message instead — for a gateway-queued row this cancels it on the gateway (`prompt.cancel`), so it disappears for every viewer; picking and re-sending an edited row cancels the original and submits the edit as a new input. **`Esc`** cancels editing and unhighlights without deleting.
 - **`Ctrl+G` / `Ctrl+X Ctrl+E`** — open the current input buffer in `$EDITOR` for multi-line / long-prompt composition; save-and-exit sends the contents back as the prompt.
 
 ## Slash commands
@@ -135,7 +136,7 @@ Every other slash command (including installed skills, quick commands, and perso
 
 ## Live session switcher
 
-Use the live session switcher when you want one terminal to act as a dispatcher for several TUI sessions. It lists only sessions that are currently live in this TUI process; closed sessions remain saved transcripts and can still be reopened with `/resume` or `hermes --tui --resume <id-or-title>`.
+Use the live session switcher when you want one terminal to act as a dispatcher for several TUI sessions. It lists only sessions that are currently live in this TUI process; closed sessions remain saved transcripts and can still be reopened with `/resume` or `cybr --tui --resume <id-or-title>`.
 
 Open it with any of these:
 
@@ -144,9 +145,9 @@ Open it with any of these:
 - `/sessions new` to create a fresh live session immediately.
 - Click the `N live sessions` count in the status line.
 
-<img alt="Hermes TUI Session Orchestrator with one live session and a +new row" src="/docs/img/docs/tui-session-orchestrator/session-orchestrator.png" />
+<img alt="Cybr Agent TUI Session Orchestrator with one live session and a +new row" src="/docs/img/docs/tui-session-orchestrator/session-orchestrator.png" />
 
-<video controls muted loop playsInline src="/docs/img/docs/tui-session-orchestrator/session-orchestrator-demo.mp4" title="Hermes TUI Session Orchestrator demo" style={{maxWidth: '100%'}}></video>
+<video controls muted loop playsInline src="/docs/img/docs/tui-session-orchestrator/session-orchestrator-demo.mp4" title="Cybr Agent TUI Session Orchestrator demo" style={{maxWidth: '100%'}}></video>
 
 Inside the switcher:
 
@@ -180,7 +181,7 @@ export HERMES_TUI_THEME=light
 
 ## Busy indicator styles
 
-The status-bar busy indicator is pluggable — the default rotates Hermes' kawaii face palette every 2.5 seconds during agent work. Pick a different style via config or the `/indicator` slash command:
+The status-bar busy indicator is pluggable — the default rotates Cybr Agent' kawaii face palette every 2.5 seconds during agent work. Pick a different style via config or the `/indicator` slash command:
 
 ```yaml
 display:
@@ -191,7 +192,7 @@ Or in-session: `/indicator emoji` (etc.). Styles ship with matched glyph widths 
 
 ## Auto-resume
 
-By default, `hermes --tui` starts a fresh session each launch. To re-attach to the most recent TUI session automatically (useful when your terminal or SSH connection drops unexpectedly), opt in:
+By default, `cybr --tui` starts a fresh session each launch. To re-attach to the most recent TUI session automatically (useful when your terminal or SSH connection drops unexpectedly), opt in:
 
 ```bash
 export HERMES_TUI_RESUME=1          # most-recent TUI session
@@ -223,11 +224,11 @@ The status line also shows:
 - **Per-prompt elapsed time** — `⏱ 12s/3m 45s` while the turn is running (live), frozen to `⏲ 32s / 3m 45s` after the turn completes. First number is time since last user message; second is total session duration. Resets on every new prompt.
 - **`🗜️ N`** — number of times the running session has been auto-compressed. Appears once the first compression fires.
 - **`▶ N`** — number of `/bg` tasks currently running in this session. Appears whenever at least one task is in flight.
-- **`⚠ YOLO`** — visible warning whenever YOLO mode is on (`hermes --yolo`, `/yolo`, or `HERMES_YOLO_MODE=1`). The same badge also appears in the startup banner so you cannot launch an auto-approving session without noticing.
+- **`⚠ YOLO`** — visible warning whenever YOLO mode is on (`cybr --yolo`, `/yolo`, or `HERMES_YOLO_MODE=1`). The same badge also appears in the startup banner so you cannot launch an auto-approving session without noticing.
 
 ## Configuration
 
-The TUI respects all standard Hermes config: `~/.hermes/config.yaml`, profiles, personalities, skins, quick commands, credential pools, memory providers, tool/skill enablement. No TUI-specific config file exists.
+The TUI respects all standard Cybr Agent config: `~/.hermes/config.yaml`, profiles, personalities, skins, quick commands, credential pools, memory providers, tool/skill enablement. No TUI-specific config file exists.
 
 A handful of keys tune the TUI surface specifically:
 
@@ -291,22 +292,22 @@ See [Sessions](sessions.md) for lifecycle, search, compression, and export.
 
 By default the TUI spawns its own in-process gateway, so each TUI instance is self-contained — there's nothing to configure.
 
-You may see a `HERMES_TUI_GATEWAY_URL` env var referenced in the codebase or logs. This is an **internal wiring detail of the web dashboard**, not a user-facing remote-attach knob. When you open the dashboard's "Chat" tab (`hermes dashboard` → `/chat`), the dashboard's web server spawns an embedded TUI child process and injects `HERMES_TUI_GATEWAY_URL` so that child attaches to the dashboard's own in-process `tui_gateway` over a loopback WebSocket (`/api/ws`). The `/api/ws` endpoint exists only inside the dashboard server (`hermes_cli/web_server.py`) and is bound to that process's lifetime and auth.
+You may see a `HERMES_TUI_GATEWAY_URL` env var referenced in the codebase or logs. This is an **internal wiring detail of the web dashboard**, not a user-facing remote-attach knob. When you open the dashboard's "Chat" tab (`cybr dashboard` → `/chat`), the dashboard's web server spawns an embedded TUI child process and injects `HERMES_TUI_GATEWAY_URL` so that child attaches to the dashboard's own in-process `tui_gateway` over a loopback WebSocket (`/api/ws`). The `/api/ws` endpoint exists only inside the dashboard server (`hermes_cli/web_server.py`) and is bound to that process's lifetime and auth.
 
-There is no general "point any TUI at any standalone gateway port" mode. In particular, the OpenAI-compatible API server (`hermes gateway` / the `api_server` platform) does **not** serve `/api/ws` — it's the model-backend surface (`/v1/chat/completions`, `/v1/models`, …) and deliberately does not expose the TUI's JSON-RPC control channel. Setting `HERMES_TUI_GATEWAY_URL` to that port will 404.
+There is no general "point any TUI at any standalone gateway port" mode. In particular, the OpenAI-compatible API server (`cybr gateway` / the `api_server` platform) does **not** serve `/api/ws` — it's the model-backend surface (`/v1/chat/completions`, `/v1/models`, …) and deliberately does not expose the TUI's JSON-RPC control channel. Setting `HERMES_TUI_GATEWAY_URL` to that port will 404.
 
 ### If the connection drops
 
-- **Spawned gateway (default):** when the gateway process dies mid-session the TUI says *Hermes stopped unexpectedly — restarting and reopening your chat*, respawns it (bounded to a few attempts per minute) and reopens the same saved session. The reply that was in flight is lost with the process.
-- **Attached gateway (dashboard chat):** when only the WebSocket drops the TUI says *Connection to Hermes lost — reconnecting and reopening your chat…*, reconnects with growing backoff and reattaches to the same session — including a reply that is still streaming on the backend. Nothing is resubmitted.
+- **Spawned gateway (default):** when the gateway process dies mid-session the TUI says *Cybr Agent stopped unexpectedly — restarting and reopening your chat*, respawns it (bounded to a few attempts per minute) and reopens the same saved session. The reply that was in flight is lost with the process.
+- **Attached gateway (dashboard chat):** when only the WebSocket drops the TUI says *Connection to Cybr Agent lost — reconnecting and reopening your chat…*, reconnects with growing backoff and reattaches to the same session — including a reply that is still streaming on the backend. Nothing is resubmitted.
 
 If you want multiple surfaces to share one set of sessions, use the shared `~/.hermes/state.db` (see [Sessions](sessions.md)) or the web dashboard's embedded chat (see [Web Dashboard](features/web-dashboard.md#chat)) — not a hand-set gateway URL.
 
 ## Reverting to the classic CLI
 
-Launching `hermes` (without `--tui`) stays on the classic CLI by default. To make a machine prefer the TUI, set `display.interface: tui` in `~/.hermes/config.yaml` (persistent) or `HERMES_TUI=1` in your shell profile (per-shell). To go back, set `interface: cli` / unset the env var, or pass `hermes --cli` for a one-off.
+Launching `cybr` (without `--tui`) stays on the classic CLI by default. To make a machine prefer the TUI, set `display.interface: tui` in `~/.hermes/config.yaml` (persistent) or `HERMES_TUI=1` in your shell profile (per-shell). To go back, set `interface: cli` / unset the env var, or pass `cybr --cli` for a one-off.
 
-If the TUI fails to launch (no Node, missing bundle, TTY issue), Hermes prints a diagnostic and falls back — rather than leaving you stuck.
+If the TUI fails to launch (no Node, missing bundle, TTY issue), Cybr Agent prints a diagnostic and falls back — rather than leaving you stuck.
 
 ## See also
 

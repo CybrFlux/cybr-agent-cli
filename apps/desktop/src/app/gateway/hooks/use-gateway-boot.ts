@@ -9,6 +9,7 @@ import {
 } from '@hermes/shared'
 import { useEffect, useRef } from 'react'
 
+import { canonicalOwnerProfile } from '@/api/canonical-protocol'
 import { createGatewayEventDedupe } from '@/app/gateway/gateway-event-dedupe'
 import { reportStartupLatency } from '@/app/gateway/report-startup-latency'
 import { shouldApplyPostBootProgressError } from '@/components/boot-failure-reauth'
@@ -48,14 +49,12 @@ import {
   gatewayActivationEpoch,
   isActivePrimary,
   liveSecondaryConnectionIds,
-  parkSecondariesForRetiredBackend,
   pruneSecondaryGateways,
   reconnectSecondaryGateways,
   reportPrimaryGatewayState,
   type ScopedServerRequest,
   setPrimaryGateway,
-  setPrimaryGatewayConnection,
-  touchSecondaryGateways
+  setPrimaryGatewayConnection
 } from '@/store/gateway'
 import { type GatewayReconnectOptions, reconnectGateway, registerGatewayReconnect } from '@/store/gateway-reconnect'
 import {
@@ -67,12 +66,11 @@ import {
 } from '@/store/gateway-switch'
 import { watchLocalRuntimeJobs } from '@/store/local-runtime-jobs'
 import { notify, notifyError, RECOVERY_ACTIONS } from '@/store/notifications'
-import { loadPoolLimits } from '@/store/pool-limits'
 import {
   $activeGatewayProfile,
+  currentProfileSelectionRevision,
   normalizeProfileKey,
-  refreshActiveProfile,
-  touchActiveGatewayBackend
+  refreshActiveProfile
 } from '@/store/profile'
 import { requestBackendRestart } from '@/store/recovery-requests'
 import {
@@ -170,7 +168,7 @@ export function primaryRuntimeConnectionId(connection: Pick<HermesConnection, 'c
 // A freshly spawned backend can block its event loop for 15-30s while it
 // connects MCP servers and discovers plugins, so a single initial connect
 // attempt races backend cold-start and loses intermittently — the renderer
-// surfaced "Could not connect to Hermes gateway" even though the backend
+// surfaced "Could not connect to Cybr Agent gateway" even though the backend
 // became healthy moments later (#49645). Retry the initial dial, re-minting
 // the WS URL on every attempt (OAuth tickets are single-use), instead of
 // failing the whole boot on the first transport error. Reauth failures
@@ -311,7 +309,7 @@ export function useGatewayBoot({
     // --- Reconnect-after-sleep machinery -------------------------------------
     // macOS sleep silently drops the renderer's WebSocket. The backend Python
     // process keeps running, but nothing re-opened the socket on wake, so the
-    // composer stayed disabled forever on "Starting Hermes...". Once the
+    // composer stayed disabled forever on "Starting Cybr Agent...". Once the
     // initial boot succeeds we treat any non-open state as recoverable and
     // reconnect with backoff, and we nudge a reconnect on the OS/browser
     // signals that fire around wake (power resume, network online, the window
@@ -460,7 +458,7 @@ export function useGatewayBoot({
         // remote backend can become unreachable, but it has no child process
         // whose 'exit' would clear the main process's cached descriptor — without
         // this the renderer re-dials the same dead endpoint forever and stays on
-        // "Starting Hermes…". The probe is a no-op for a healthy or local backend.
+        // "Starting Cybr Agent…". The probe is a no-op for a healthy or local backend.
         // Bounded like the two awaits below: a wedged revalidation (#93454) is
         // the specific hang this loop must survive, not just a rejection.
         await withTimeout(
@@ -483,7 +481,7 @@ export function useGatewayBoot({
               }) ?? Promise.reject(new Error('Registry gateway connection is unavailable')))
             : desktop.getConnection(primaryConnection?.profile),
           RECONNECT_ATTEMPT_TIMEOUT_MS,
-          'Timed out reconnecting to Hermes backend'
+          'Timed out reconnecting to Cybr Agent backend'
         )
 
         // A boot/connection apply that recorded a newer primary route during
@@ -506,7 +504,7 @@ export function useGatewayBoot({
         // Re-mint the WS URL before reconnecting. OAuth tickets are single-use
         // with a short TTL, so the ticket baked into the cached conn.wsUrl is
         // dead on every reconnect after the initial boot — reusing it surfaces
-        // as an opaque "Could not connect to Hermes gateway". resolveGatewayWsUrl
+        // as an opaque "Could not connect to Cybr Agent gateway". resolveGatewayWsUrl
         // mints a fresh ticket rather than connecting with a stale one. An
         // explicit auth rejection asks for sign-in; transport failures stay in
         // this reconnect loop. For local/token gateways the URL carries a
@@ -742,6 +740,7 @@ export function useGatewayBoot({
 
     async function adoptPrimaryProfile(
       connection: HermesConnection,
+      selectionRevision: number,
       shouldPublish: () => boolean = () => true
     ): Promise<boolean> {
       // The resolved descriptor reflects the explicit startup default. The
@@ -756,15 +755,29 @@ export function useGatewayBoot({
         }
 
         const key = normalizeProfileKey(profileKey)
-        $activeGatewayProfile.set(key)
+        // A profile the user picked after this boot/apply started is newer
+        // intent than the primary adoption (T19, #134889): record the primary
+        // socket, but leave the active route and the profile atom — which
+        // scopes the session list refreshed next — on the user's pick.
+        const userPicked = currentProfileSelectionRevision() !== selectionRevision
+
+        if (!userPicked) {
+          $activeGatewayProfile.set(key)
+        }
+
         setPrimaryGateway(gateway, key)
-        void ensureGatewayForProfile(key)
+
+        if (!userPicked) {
+          void ensureGatewayForProfile(key)
+        }
       } catch {
         if (!shouldPublish()) {
           return false
         }
 
-        $activeGatewayProfile.set(normalizeProfileKey(override))
+        if (currentProfileSelectionRevision() === selectionRevision) {
+          $activeGatewayProfile.set(normalizeProfileKey(override))
+        }
       }
 
       return true
@@ -830,7 +843,7 @@ export function useGatewayBoot({
         const conn = await withTimeout(
           getWindowBackend(),
           BACKEND_BOOT_WAIT_TIMEOUT_MS,
-          'Timed out reconnecting to Hermes backend'
+          'Timed out reconnecting to Cybr Agent backend'
         )
 
         if (!ownsSwitch()) {
@@ -868,7 +881,16 @@ export function useGatewayBoot({
         // list rather than blanking the rail. NOT awaited: refreshProfiles
         // now carries a bounded retry chain (#70679), and switch completion
         // must not wait out backoff timers against an unhealthy backend.
-        if (!(await adoptPrimaryProfile(conn, ownsSwitch)) || !ownsSwitch()) {
+        if (
+          !(await adoptPrimaryProfile(
+            conn,
+            // A connection apply replaces the machine context wholesale, so it
+            // always adopts the new primary; only cold boot defers to a pick.
+            currentProfileSelectionRevision(),
+            ownsSwitch
+          )) ||
+          !ownsSwitch()
+        ) {
           return
         }
 
@@ -1021,7 +1043,7 @@ export function useGatewayBoot({
     configureGatewayRegistry({
       onServerRequest: request => {
         if (!callbacksRef.current.handleServerRequest(request)) {
-          request.fail(JSON_RPC_METHOD_NOT_FOUND, `Hermes Desktop cannot answer ${request.method}`)
+          request.fail(JSON_RPC_METHOD_NOT_FOUND, `Cybr Agent Desktop cannot answer ${request.method}`)
         }
       },
       // The primary socket has no secondary entry to carry registry identity.
@@ -1039,7 +1061,7 @@ export function useGatewayBoot({
       onActiveConnectionChanged: publish,
       // Keep $activeGatewayProfile in lockstep with the registry's OWN record
       // of which profile the active socket serves. The registry is the only
-      // party that sees eviction fallbacks (idle reap, connection removal,
+      // party that sees eviction fallbacks (connection removal,
       // profile delete → primary); before this mirror those fallbacks moved
       // the SOCKET back to the primary while the profile atom kept naming the
       // evicted bot. ensureGatewayProfile's "already active" fast path then
@@ -1058,7 +1080,7 @@ export function useGatewayBoot({
       onActiveConnectionInvalidated: (fallbackProfile, invalidationEpoch) => {
         $activeGatewayProfile.set(fallbackProfile)
         // Bounded like every other getConnection() call in this file (#93454):
-        // an eviction fallback (idle reap, connection removal, profile delete)
+        // an eviction fallback (connection removal, profile delete)
         // must not latch the profile atom to a connection that never resolves
         // if the main-process IPC round-trip wedges.
         void withTimeout(
@@ -1133,7 +1155,7 @@ export function useGatewayBoot({
 
     const offEvent = gateway.onEvent(event => {
       const connectionId = activeGatewayConnectionId()
-      const sourceProfile = sourceProfileNow()
+      const sourceProfile = canonicalOwnerProfile(event) ?? sourceProfileNow()
 
       const scopedEvent = {
         ...event,
@@ -1210,7 +1232,7 @@ export function useGatewayBoot({
         activeGateway()?.close()
 
         if (!(await ensureActiveGatewayOpen({ explicit: true }))) {
-          throw new Error('Hermes gateway is not connected')
+          throw new Error('Cybr Agent gateway is not connected')
         }
 
         return
@@ -1311,17 +1333,6 @@ export function useGatewayBoot({
       }
     })
 
-    // Cooperative pool retirement: main is stopping a pooled backend so a
-    // foreground open elsewhere gets its slot. Park the scopes riding it now,
-    // before the socket drops, so neither the 'closed' state nor the next
-    // focus/wake nudge redials into the slot it vacated. The tile keeps its
-    // card; the next click on it re-arms the scope.
-    const offPoolRetiring = desktop.onPoolBackendRetiring?.(payload => {
-      if (payload && typeof payload.poolKey === 'string') {
-        parkSecondariesForRetiredBackend(payload.poolKey)
-      }
-    })
-
     const onOnline = () => void forceReconnectNow()
 
     const onVisible = () => {
@@ -1339,26 +1350,11 @@ export function useGatewayBoot({
     // this a socket dropped during sleep sits closed until the user clicks.
     window.addEventListener('focus', onFocus)
 
-    // Pool limits are main-process state; mirror them once for the Settings
-    // rows and prewarmProfileBackend's saturation guard.
-    void loadPoolLimits()
-
-    // Keep live pool backends alive while this window is open (the main process
-    // can't observe the direct renderer↔backend WS). No-op for the primary.
-    const keepaliveTimer = setInterval(() => {
-      touchActiveGatewayBackend()
-      touchSecondaryGateways()
-      // The pruner is otherwise event-driven: a socket spared by the
-      // min-lifetime grace with no store change afterwards would hold its
-      // pool slot forever.
-      recomputeKeptGateways()
-    }, 60_000)
-
     // Bound concurrency cost to consumers: keep a background socket while its
     // profile has a running (working) or blocked (needs-input) session, OR an
     // open owner-routed tile (Bot chats stay on a secondary while chrome stays
     // on the launch profile). Once the last consumer leaves, the socket drops
-    // and its backend is free to idle-reap. The active profile is always spared.
+    // (the gateway behind it keeps running). The active profile is always spared.
     // Do not key this off `entry.retained` — that flag only skips dispose-after-
     // RPC; idle prune is what reclaims hover-warmed sockets after you leave.
     // Scopes with a running or needs-input session: registry-scoped
@@ -1394,6 +1390,12 @@ export function useGatewayBoot({
       // they change — see the tile / selected session / hold subscriptions.
       pruneSecondaryGateways(keep)
     }
+
+    // The pruner is otherwise event-driven: a socket spared by the
+    // min-lifetime grace with no store change afterwards would stay open
+    // forever. Pool keepalive touches are gone (the canonical gateway outlives
+    // its viewers); only this recompute tick remains.
+    const pruneTimer = setInterval(() => recomputeKeptGateways(), 60_000)
 
     const offWorking = $workingSessionIds.subscribe(() => recomputeKeptGateways())
     const offAttention = $attentionSessionIds.subscribe(() => recomputeKeptGateways())
@@ -1454,6 +1456,7 @@ export function useGatewayBoot({
     })
 
     async function boot() {
+      const selectionRevision = currentProfileSelectionRevision()
       // Where this boot attempt got to — a historical fact, not a late read of
       // gateway.connectionState. A socket can close after a successful dial;
       // later initialization errors must not be reclassified as boot dials.
@@ -1464,13 +1467,13 @@ export function useGatewayBoot({
         // backend directly — ensureBackend spawns/reuses it from the pool.
         // Full peers use the source/profile Electron pinned before loading.
         // Bounded like the reconnect path (#93454): a wedged main-process
-        // round-trip must not hang "Starting Hermes…" forever. Initial boot
+        // round-trip must not hang "Starting Cybr Agent…" forever. Initial boot
         // rides out a full backend cold spawn, so it gets the shared 45s
         // backend-boot budget, not the 20s reconnect budget.
         const conn = await withTimeout(
           getWindowBackend(true),
           BACKEND_BOOT_WAIT_TIMEOUT_MS,
-          'Timed out connecting to Hermes backend'
+          'Timed out connecting to Cybr Agent backend'
         )
 
         if (cancelled) {
@@ -1484,7 +1487,15 @@ export function useGatewayBoot({
           message: translateNow('boot.steps.connectingGateway'),
           progress: 95
         })
-        publish(conn)
+
+        // A profile picked while the primary lookup was in flight already
+        // published its own descriptor with its socket (T19, #134889). Record
+        // the primary, but keep $connection on the pick so socket, profile and
+        // connection agree.
+        if (currentProfileSelectionRevision() === selectionRevision) {
+          publish(conn)
+        }
+
         recordPrimaryConnection(conn)
 
         // Seed the workspace BEFORE the gateway opens: every session-restore
@@ -1505,7 +1516,7 @@ export function useGatewayBoot({
         // conn.wsUrl is stale; resolveGatewayWsUrl() re-mints it rather than
         // connecting with a dead ticket. Auth rejection asks for sign-in. This
         // await is bounded like the reconnect path (#93454) so a wedged mint
-        // reaches the recovery affordance instead of hanging "Starting Hermes…".
+        // reaches the recovery affordance instead of hanging "Starting Cybr Agent…".
         const wsUrl = await withTimeout(
           resolveDesktopGatewayWsUrl(desktop, conn),
           RECONNECT_ATTEMPT_TIMEOUT_MS,
@@ -1531,7 +1542,7 @@ export function useGatewayBoot({
           // still stall its event loop for seconds on the first WS handshake —
           // a local boot failure is latched non-retryable, so without this
           // retry the one lost race ended the boot in "Could not connect to
-          // Hermes gateway". The first attempt reuses the URL minted at the
+          // Cybr Agent gateway". The first attempt reuses the URL minted at the
           // boot boundary above — the mint count stays observable (#93454) —
           // while later attempts re-mint; local token URLs are long-lived, so
           // the re-mint is a cheap no-op.
@@ -1565,7 +1576,7 @@ export function useGatewayBoot({
         // (cwd seed, config, sessions) are independent REST calls — running
         // them serially added their sum to time-to-populated-sidebar when only
         // the max is needed.
-        await adoptPrimaryProfile(conn)
+        await adoptPrimaryProfile(conn, selectionRevision)
 
         setDesktopBootStep({
           phase: 'renderer.config',
@@ -1583,7 +1594,7 @@ export function useGatewayBoot({
           // already open by this point — a failed sidebar fetch (transient
           // blip, or an endpoint the fallback couldn't cover) must leave the
           // app usable with an empty sidebar (the reconnect/turn refreshes
-          // retry it), not brick boot behind the "Hermes couldn't start"
+          // retry it), not brick boot behind the "Cybr Agent couldn't start"
           // overlay. Matches the reconnect + softSwitch call sites.
           callbacksRef.current.refreshSessions().catch(() => {
             setSessionsLoading(false)
@@ -1687,7 +1698,7 @@ export function useGatewayBoot({
       clearReconnectTimer()
       clearBootRetryTimer()
       clearLivenessReprobeTimer()
-      clearInterval(keepaliveTimer)
+      clearInterval(pruneTimer)
       offWorking()
       offAttention()
       offActiveSession()
@@ -1702,7 +1713,6 @@ export function useGatewayBoot({
       offPowerResume?.()
       offConnectionApplied?.()
       offConnectionsChanged?.()
-      offPoolRetiring?.()
       offGatewayReconnect()
       offActiveGatewayReauth()
       offActiveStateReauth()

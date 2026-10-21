@@ -187,8 +187,8 @@ class TestServiceIdentityForForeignHome:
         home = tmp_path / "home"
         home.mkdir()
         monkeypatch.setattr(Path, "home", lambda: home)
-        # The user unit dir follows the ACCOUNT home (#98699), which is read from the environment.
-        monkeypatch.setenv("HOME", str(home))
+        monkeypatch.setattr(hermes_constants, "_account_home", lambda: home)  # names services
+        monkeypatch.setenv("HOME", str(home))  # the user unit dir follows it (#98699)
         monkeypatch.delenv("HERMES_REAL_HOME", raising=False)
         monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
         return home
@@ -1377,7 +1377,7 @@ class TestSystemUnitHermesHome:
     def test_no_pm_node_never_bakes_the_invokers_path_node(
         self, monkeypatch, tmp_path
     ):
-        """Hermes runs only its PM-managed Node: a PATH node is never written into a unit."""
+        """Cybr Agent runs only its PM-managed Node: a PATH node is never written into a unit."""
         (tmp_path / ".hermes" / "tools").mkdir(parents=True)
         monkeypatch.setattr(
             gateway_cli.shutil, "which", lambda name: "/opt/external-node/bin/node"
@@ -2093,7 +2093,7 @@ class TestLegacyHermesUnitDetection:
 
     # Minimal ExecStart that looks like our gateway
     _OUR_UNIT_TEXT = (
-        "[Unit]\nDescription=Hermes Gateway\n[Service]\n"
+        "[Unit]\nDescription=Cybr Agent Gateway\n[Service]\n"
         "ExecStart=/usr/bin/python -m hermes_cli.main gateway run --replace\n"
     )
 
@@ -2142,7 +2142,7 @@ class TestLegacyHermesUnitDetection:
         for i, execstart in enumerate(variants):
             # Test each variant fresh (every variant ships the same unit name)
             (user_dir / "hermes.service").write_text(
-                f"[Unit]\nDescription=Old Hermes\n[Service]\n{execstart}\n",
+                f"[Unit]\nDescription=Old Cybr Agent\n[Service]\n{execstart}\n",
                 encoding="utf-8",
             )
             results = gateway_cli._find_legacy_hermes_units()
@@ -2154,7 +2154,7 @@ class TestRemoveLegacyHermesUnits:
     """Tests for remove_legacy_hermes_units (the migration action)."""
 
     _OUR_UNIT_TEXT = (
-        "[Unit]\nDescription=Hermes Gateway\n[Service]\n"
+        "[Unit]\nDescription=Cybr Agent Gateway\n[Service]\n"
         "ExecStart=/usr/bin/python -m hermes_cli.main gateway run --replace\n"
     )
 

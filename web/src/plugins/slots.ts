@@ -21,7 +21,7 @@ import React, { Fragment, useEffect, useState } from "react";
  *  Shell-wide slots:
  *  - `backdrop`         — optional full-viewport background decoration;
  *                         mounted behind shell chrome at z-0
- *  - `header-left`      — injected before the Hermes brand in the top bar
+ *  - `header-left`      — injected before the Cybr Agent brand in the top bar
  *  - `header-right`     — injected before the theme/language switchers
  *  - `header-banner`    — injected below the top nav bar, full-width
  *  - `sidebar`          — the cockpit sidebar rail (only rendered when
@@ -161,6 +161,14 @@ export function unregisterPluginSlots(plugin: string): void {
     }
   }
   if (changed) _notifySlots();
+}
+
+/** Clear every slot registration (the selected profile changed). Listeners
+ *  hear of it on the next microtask, so this is safe during a render. */
+export function clearPluginSlots(): void {
+  if (_slotRegistry.size === 0) return;
+  _slotRegistry.clear();
+  queueMicrotask(_notifySlots);
 }
 
 interface PluginSlotProps {

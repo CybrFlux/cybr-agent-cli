@@ -24,6 +24,8 @@ export interface AgentNoticePayload {
   ttl_ms?: null | number
   key?: string
   id?: string
+  /** Full text behind a short `text` (the low-disk auto-prune question): the toast's expandable body. */
+  detail?: string
 }
 
 const LEVEL_TO_TOAST_KIND: Record<string, NotificationKind> = {
@@ -135,7 +137,8 @@ export function noticeToToast(payload: AgentNoticePayload | undefined): Notifica
     id: payload?.key || payload?.id,
     kind: LEVEL_TO_TOAST_KIND[payload?.level ?? 'info'] ?? 'info',
     message: primary,
-    meta
+    meta,
+    ...(payload?.detail?.trim() ? { detail: payload.detail.trim() } : {})
   }
 }
 
@@ -174,7 +177,7 @@ export function clearAgentNotice(key: string | undefined): void {
 }
 
 // Only these two credit notices are urgent enough to break through as a native
-// OS notification (when Hermes is backgrounded). The escalating usage line
+// OS notification (when Cybr Agent is backgrounded). The escalating usage line
 // (`credits.usage`) and the grant-spent notice stay in-app toasts only — they
 // aren't worth interrupting the user's OS for.
 const NATIVE_NOTICE_KEYS = new Set(['credits.depleted', 'credits.restored'])

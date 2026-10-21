@@ -84,7 +84,7 @@ def _assistant_copy_text(content: Any) -> str:
     return _strip_reasoning_tags(_assistant_content_as_text(content))
 
 
-_ACCENT_ANSI_DEFAULT = "\033[1;38;2;255;215;0m"  # #FFD700 bold fallback
+_ACCENT_ANSI_DEFAULT = "\033[1;38;2;255;215;0m"  # #A6F000 bold fallback
 
 
 _BOLD = "\033[1m"
@@ -266,12 +266,12 @@ def _detect_light_mode_uncached() -> bool:
 
 
 # Light-mode equivalents of skin colors unreadable on cream backgrounds. Only colors used
-# as STANDALONE foregrounds: ones paired with a dark bg (status bar text on #1a1a2e) would
+# as STANDALONE foregrounds: ones paired with a dark bg (status bar text on #0b0d08) would
 # become invisible the other direction, hence #C0C0C0/#888888/#555555/#8B8682 are skipped.
 _LIGHT_MODE_REMAP: dict[str, str] = {
-    "#FFF8DC": "#1A1A1A", "#FFD700": "#9A6B00", "#FFBF00": "#8A5A00", "#B8860B": "#5C4500",
-    "#DAA520": "#6B4F00", "#F1E6CF": "#1A1A1A", "#c9d1d9": "#24292F", "#EAF7FF": "#0F1B26",
-    "#F5F5F5": "#1A1A1A", "#FFF0D4": "#1A1A1A", "#CD7F32": "#8A4F1A", "#FFEFB5": "#3A2A00",
+    "#E9FFD0": "#1A1A1A", "#A6F000": "#9A6B00", "#8BD600": "#8A5A00", "#5E9B00": "#5C4500",
+    "#7DC000": "#6B4F00", "#F1E6CF": "#1A1A1A", "#c9d1d9": "#24292F", "#EAF7FF": "#0F1B26",
+    "#F5F5F5": "#1A1A1A", "#FFF0D4": "#1A1A1A", "#4F8F00": "#8A4F1A", "#FFEFB5": "#3A2A00",
 }
 
 
@@ -313,7 +313,7 @@ def _install_skin_light_mode_hook() -> None:
 class _SkinAwareAnsi:
     """Lazy ANSI escape resolved from the skin on first use; ``.reset()`` after a ``/skin`` switch."""
 
-    def __init__(self, skin_key: str, fallback_hex: str = "#FFD700", *, bold: bool = False):
+    def __init__(self, skin_key: str, fallback_hex: str = "#A6F000", *, bold: bool = False):
         self._skin_key = skin_key
         self._fallback_hex = fallback_hex
         self._bold = bold
@@ -343,7 +343,7 @@ class _SkinAwareAnsi:
         self._cached = None
 
 
-_ACCENT = _SkinAwareAnsi("response_border", "#FFD700", bold=True)
+_ACCENT = _SkinAwareAnsi("response_border", "#A6F000", bold=True)
 
 
 # dim+italic attributes (not a hex) so dim text inherits the terminal foreground in both modes.
@@ -368,9 +368,9 @@ def _accent_hex() -> str:
     """Return the active skin accent color for legacy CLI output lines."""
     try:
         from hermes_cli.skin_engine import get_active_skin
-        return get_active_skin().get_color("ui_accent", "#FFBF00")
+        return get_active_skin().get_color("ui_accent", "#8BD600")
     except Exception:
-        return "#FFBF00"
+        return "#8BD600"
 
 
 def _rich_text_from_ansi(text: str) -> _RichText:
@@ -912,14 +912,14 @@ def _build_compact_banner() -> str:
     def _color(key, default):
         return _skin.get_color(key, default) if _skin else default
 
-    border_color = _color("banner_border", "#FFD700")
-    title_color = _color("banner_title", "#FFBF00")
-    dim_color = _color("banner_dim", "#B8860B")
+    border_color = _color("banner_border", "#A6F000")
+    title_color = _color("banner_title", "#8BD600")
+    dim_color = _color("banner_dim", "#5E9B00")
 
     if (getattr(_skin, "name", "default") if _skin else "default") == "default":
-        tiny_line = "☤ NOUS HERMES"
+        tiny_line = "∿ NOUS CYBR"
     else:
-        tiny_line = _skin.get_branding("agent_name", "Hermes Agent") if _skin else "Hermes Agent"
+        tiny_line = _skin.get_branding("agent_name", "Cybr Agent") if _skin else "Cybr Agent"
     line1 = t("cli.render.banner_tagline", name=tiny_line)
 
     if os.environ.get("HERMES_FAST_STARTUP_BANNER") == "1":
@@ -932,7 +932,7 @@ def _build_compact_banner() -> str:
 
     w = min(shutil.get_terminal_size().columns - 2, 88)
     if w < 30:
-        return f"\n[{title_color}]{tiny_line}[/] [dim {dim_color}]- Nous Research[/]\n"
+        return f"\n[{title_color}]{tiny_line}[/] [dim {dim_color}]- CybrFlux[/]\n"
 
     inner = w - 2  # inside the box border
     bar = "═" * w
@@ -958,9 +958,11 @@ def _panel_box_width(title: str, content_lines: list[str], min_width: int = 46, 
 
 
 def _wrap_panel_text(text: str, width: int, subsequent_indent: str = "", *, keep_ws: bool = False) -> list[str]:
-    """Wrap panel text; ``keep_ws`` preserves whitespace (command/detail previews)."""
+    """Wrap panel text; ``keep_ws`` preserves whitespace (command/detail previews). Each source
+    line wraps on its own: a newline inside a row would break the panel's right border."""
     kw = dict(replace_whitespace=False, drop_whitespace=False) if keep_ws else dict(break_long_words=False, break_on_hyphens=False)
-    wrapped = textwrap.wrap(text, width=max(8, width), subsequent_indent=subsequent_indent, **kw)
+    wrapped = [row for part in (text.expandtabs(4).splitlines() if keep_ws else [text])
+               for row in (textwrap.wrap(part, width=max(8, width), subsequent_indent=subsequent_indent, **kw) or [""])]
     return wrapped or [""]
 
 

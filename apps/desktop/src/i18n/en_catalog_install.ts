@@ -13,7 +13,7 @@ export const enCatalogInstall: CatalogInstallTranslations = {
   hideNames: 'hide names',
   skill: name => `skill ${name}`,
   kind: { plugin: 'plugin', skill: 'skill' },
-  tier: { official: 'official', community: 'community' },
+  tier: { official: 'official', verified: 'verified', community: 'community' },
   targetProfile: profile => `Installs into your ${profile} profile`,
   sendFailed: 'Could not send your answer. Try again.',
   commitLabel: 'Commit',
@@ -21,7 +21,7 @@ export const enCatalogInstall: CatalogInstallTranslations = {
   securityHeading: 'Security',
   scan: { passed: 'Scan passed', warnings: 'Scan found warnings', failed: 'Scan failed' },
   requirementsLabel: 'Requires',
-  requiresHermes: range => `Hermes ${range}`,
+  requiresHermes: range => `Cybr Agent ${range}`,
   envVar: name => `${name} environment variable`,
   credentialsHeading: 'Credentials',
   phase: {

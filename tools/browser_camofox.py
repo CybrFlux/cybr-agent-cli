@@ -98,7 +98,8 @@ def is_camofox_mode() -> bool:
     written, a set ``CAMOFOX_URL`` still activates Camofox). A CDP override (``BROWSER_CDP_URL``
     env or ``browser.cdp_url``, same precedence as ``browser_tool_cdp._get_cdp_override()``) wins.
     """
-    if os.getenv("BROWSER_CDP_URL", "").strip() or _config_cdp_url():
+    from tools.browser_tool_cdp import env_cdp_url, live_cdp_override
+    if live_cdp_override() or env_cdp_url() or _config_cdp_url():
         return False
     try:
         from tools.tool_backend_helpers import read_selection
@@ -175,7 +176,7 @@ def _env_or_cfg(env_name: str, camofox_cfg: dict[str, Any], cfg_key: str, *, sec
 
 def _camofox_identity_override(task_id: Optional[str], camofox_cfg: dict[str, Any]) -> Optional[dict[str, str]]:
     """Externally configured identity (integrations owning the visible Camofox browser
-    share a user ID so Hermes uses the same profile), or None."""
+    share a user ID so Cybr Agent uses the same profile), or None."""
     user_id = _env_or_cfg("CAMOFOX_USER_ID", camofox_cfg, "user_id", secret=True)
     if not user_id:
         return None

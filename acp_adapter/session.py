@@ -1,4 +1,4 @@
-"""ACP session manager — maps ACP sessions to Hermes AIAgent instances.
+"""ACP session manager — maps ACP sessions to Cybr Agent AIAgent instances.
 
 Sessions are persisted to the shared SessionDB (``~/.hermes/state.db``) so they
 survive process restarts and appear in ``session_search``; ``load_session`` /
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 def _translate_acp_cwd(cwd: str) -> str:
     """Translate Windows ACP cwd values (``E:\\Projects``, ``\\\\wsl.localhost\\``) to POSIX form
-    when Hermes runs in WSL so agents, tools, and persisted sessions agree; no-op elsewhere."""
+    when Cybr Agent runs in WSL so agents, tools, and persisted sessions agree; no-op elsewhere."""
     return translate_cwd_for_wsl_backend(str(cwd))
 
 
@@ -130,7 +130,7 @@ def _first_user_preview(history: list[dict[str, Any]], default: str) -> str:
 
 @dataclass
 class SessionState:
-    """Tracks per-session state for an ACP-managed Hermes agent."""
+    """Tracks per-session state for an ACP-managed Cybr Agent."""
 
     session_id: str
     agent: Any  # AIAgent instance
@@ -154,7 +154,7 @@ class SessionState:
 
 
 class SessionManager:
-    """Thread-safe manager for ACP sessions backed by Hermes AIAgent instances.
+    """Thread-safe manager for ACP sessions backed by Cybr Agent AIAgent instances.
 
     Sessions are held in-memory for fast access **and** persisted to the shared
     SessionDB so they survive restarts and are searchable via ``session_search``."""
@@ -210,13 +210,7 @@ class SessionManager:
     def list_sessions(self, cwd: str | None = None) -> list[dict[str, Any]]:
         """Return lightweight info dicts for all sessions (memory + database)."""
         normalized_cwd = _normalize_cwd_for_compare(cwd) if cwd else None
-        db = self._get_db()
-        persisted_rows: dict[str, dict[str, Any]] = {}
-        try:
-            for row in (db.list_sessions_rich(source="acp", limit=1000) if db is not None else ()):
-                persisted_rows[str(row["id"])] = dict(row)
-        except Exception:
-            logger.debug("Failed to load ACP sessions from DB", exc_info=True)
+        persisted_rows = self._catalog_rows()
 
         def _matches(session_cwd: str) -> bool:
             return not normalized_cwd or _normalize_cwd_for_compare(session_cwd) == normalized_cwd
@@ -248,6 +242,13 @@ class SessionManager:
 
         results.sort(key=lambda item: _updated_at_sort_key(item.get("updated_at")), reverse=True)
         return results
+
+    def _catalog_rows(self) -> dict[str, dict[str, Any]]:
+        from acp_adapter.catalog import read_catalog_rows
+        from pathlib import Path
+
+        path = Path(self._db_instance.db_path) if self._db_instance is not None else get_hermes_home() / "state.db"
+        return read_catalog_rows(path)
 
     def update_cwd(self, session_id: str, cwd: str) -> Optional[SessionState]:
         """Update the working directory for a session and its tool overrides."""

@@ -274,7 +274,29 @@ def apply_wal_with_fallback(conn: sqlite3.Connection, *, db_label: str = "state.
     still documents the WAL-reset bug as real through 3.51.2 with serious consequences. Until a fixed
     runtime is delivered, keep new databases out of WAL.
     """
-    configured = resolve_journal_mode()
+    config_module = sys.modules.get("hermes_cli.config")
+    if getattr(getattr(config_module, "__spec__", None), "_initializing", False):
+        config_module = None
+    config_lock = getattr(config_module, "_CONFIG_LOCK", None)
+    acquired = config_lock is not None and config_lock.acquire(blocking=False)
+    try:
+        if config_lock is not None and not acquired:
+            # A config writer cannot hold up work on an initialized database.
+            # Preserve its observed mode; defer configuration-driven transitions.
+            current_mode = _on_disk_journal_mode(conn)
+            if current_mode == "wal":
+                if is_sqlite_wal_reset_vulnerable():
+                    return _apply_delete_for_wal_reset_bug(conn, db_label=db_label)
+                _apply_wal_companions(conn)
+                return "wal"
+            if current_mode == "delete" and not require_wal and _database_has_content(conn):
+                if is_sqlite_wal_reset_vulnerable():
+                    _log_wal_reset_bug_once(db_label, kept_wal=False)
+                return "delete"
+        configured = resolve_journal_mode()
+    finally:
+        if acquired:
+            config_lock.release()
 
     # Vulnerable SQLite: never enable WAL on non-WAL files (configured mode resolved first so an explicit DELETE
     # request is still verified).
@@ -473,10 +495,10 @@ def _wal_reset_repair_hint() -> str:
         method = detect_install_method(get_project_root())
         cmd = recommended_update_command_for_method(method)
         if method in {"git", "unknown"}:
-            return f"Hermes-managed installs can repair the embedded runtime with `{cmd}`"
+            return f"Cybr Agent-managed installs can repair the embedded runtime with `{cmd}`"
         return f"update the container image with `{cmd}`" if method == "docker" else cmd  # else nix/nixos
     except Exception:
-        return "install a Python build bundled with SQLite 3.51.3+ (or backports 3.50.7 / 3.44.6) and restart Hermes"
+        return "install a Python build bundled with SQLite 3.51.3+ (or backports 3.50.7 / 3.44.6) and restart Cybr Agent"
 
 
 # Once-per-(process, db_label) log table. Levels are deliberate: falling back to DELETE and an ignored
@@ -519,7 +541,7 @@ _ONCE_LOGS = {
     "delete_overridden": (_delete_overridden_warned_lock, "_delete_overridden_warned_paths", logging.ERROR,
         # Never-live-downgrade keeps WAL; without this the operator never learns their delete had no effect.
         "%s: database.journal_mode=delete is configured but the on-disk database is already WAL; keeping WAL (a live "
-        "downgrade under open connections can corrupt the DB). To apply journal_mode=DELETE, stop every Hermes "
+        "downgrade under open connections can corrupt the DB). To apply journal_mode=DELETE, stop every Cybr Agent "
         "process using this database and run `hermes sessions set-journal-mode delete` (add `--db PATH` for a "
         "store other than state.db). This message fires once per process per database."),
     "wal_probe_unknown": (_wal_probe_unknown_lock, "_wal_probe_unknown_paths", logging.WARNING,
@@ -540,8 +562,8 @@ _ONCE_LOGS = {
         # operator can fix it (a live downgrade under other openers would destroy their uncheckpointed commits).
         "%s: existing WAL-mode database is on a cross-VM filesystem (virtiofs/9p — typical for Docker Desktop / "
         "OrbStack / Podman host bind mounts). SQLite WAL shared-memory is not coherent across the VM boundary and "
-        "concurrent writers can silently corrupt the database. Hermes does not live-downgrade an on-disk WAL database. "
-        "Fix one of two ways: stop every Hermes process using this database and run `hermes sessions "
+        "concurrent writers can silently corrupt the database. Cybr Agent does not live-downgrade an on-disk WAL database. "
+        "Fix one of two ways: stop every Cybr Agent process using this database and run `hermes sessions "
         "set-journal-mode delete` (set `database.journal_mode: delete` in config.yaml to keep it), "
         "or move the database onto a native volume (e.g. a named Docker volume). This message fires once per process "
         "per database."),

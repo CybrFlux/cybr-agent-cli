@@ -1,12 +1,19 @@
 # Session Storage
 
-Hermes Agent uses a SQLite database (`~/.hermes/state.db`) to persist session
+Cybr Agent uses a SQLite database (`~/.hermes/state.db`) to persist session
 metadata, full message history, and model configuration across CLI and gateway
 sessions. This replaces the earlier per-session JSONL file approach.
 
+The profile's gateway is the **only writer of canonical sessions**: `cybr chat`,
+the TUI, Desktop (local), the API server, ACP, cron, Bot Chat and Kanban workers are
+clients that admit input to its session authority over `/api/ws` (see
+[Gateway local sessions](./gateway-local-sessions.md)). Out-of-process managed
+workers write through that owner (`RuntimeSessionStore` RPC), never by opening
+`state.db` for transcript writes themselves.
+
 Source files: `hermes_state.py` (facade) plus the `hermes_state_*.py` siblings (schema, fts, search, compression, portability, gateway, ...)
 
-## Hermes home and profile isolation
+## Cybr Agent home and profile isolation
 
 `get_hermes_home()` is the authoritative filesystem resolver for state and
 configuration. It uses a context-local override first, then the `HERMES_HOME`
@@ -16,14 +23,14 @@ database is always `get_hermes_home() / "state.db"`, not a path that callers
 should hard-code as `~/.hermes/state.db`.
 
 Named profiles are isolated directories: a profile named `coder`, for example,
-uses `<default Hermes root>/profiles/coder/` and therefore has its own
+uses `<default Cybr Agent root>/profiles/coder/` and therefore has its own
 `state.db`, configuration, logs, and other profile-scoped state. A process that
 creates a database, reads configuration, or starts a child process for a
 profile must retain or pass that profile's `HERMES_HOME`; falling back to the
 default root mixes the wrong profile's state into the operation.
 
 The CLI bootstrap calls `_apply_profile_override()` before importing the rest
-of Hermes. An explicit `--profile`/`-p` resolves that profile and writes the
+of Cybr Agent. An explicit `--profile`/`-p` resolves that profile and writes the
 resolved directory to `HERMES_HOME`. Without an explicit selector, a
 profile-specific `HERMES_HOME` is preserved; otherwise the bootstrap can use
 the default root's active-profile selection. `HOME` only determines the
@@ -41,14 +48,14 @@ home relative to the user's home directory when possible (for example,
 
 Tests must use a temporary `HERMES_HOME` or an explicit temporary database
 path. The live-system guard raises before a test-context process opens a
-production `state.db` under the real default Hermes root or a real named
+production `state.db` under the real default Cybr Agent root or a real named
 profile, preventing fixture data or SQLite side effects from reaching a live
 installation.
 
 `HERMES_STATE_DB_GUARD_BYPASS=1` is a test-only escape hatch for a spawned
 child process that genuinely must access the live database. The equivalent
 in-process escape hatch is `@pytest.mark.live_system_guard_bypass`. Do not set
-either bypass in normal Hermes commands, development shells, or application
+either bypass in normal Cybr Agent commands, development shells, or application
 configuration: it disables the guard (a hard `RuntimeError`) that protects live
 session history, and a shell that exports it hands the bypass to every later
 pytest run.
@@ -56,7 +63,7 @@ pytest run.
 ### Desktop profile isolation and compaction generations
 
 Each named profile stores its transcript in its own `$HERMES_HOME/state.db`,
-including when one `hermes serve` process serves several profiles. In-session
+including when one process (the multiplex gateway, or a `cybr serve`) serves several profiles. In-session
 agent rebuilds (Bot Chat capability refresh and `tools.configure`) must retain
 that session's database handle and bind its profile home during construction.
 Releasing the outgoing agent must not close the handle inherited by its replacement.
@@ -82,7 +89,7 @@ history that appears to revert.
 
 The agent persists an accepted user input before starting its Codex turn. Codex
 then projects that input as a leading `userMessage` notification. At the runtime
-splice boundary, Hermes excludes only that leading item when it exactly matches
+splice boundary, Cybr Agent excludes only that leading item when it exactly matches
 the text serialized into `turn/start`, including rich-input coercion. Later or
 nonmatching user events remain intact, as do separately accepted identical turns.
 This also applies to synthetic/keyless input; it does not depend on a platform
@@ -127,13 +134,27 @@ ownership for a redelivered event.
 ├── compression_locks     — Cross-process compression locking
 ├── async_delegations     — Async delegation bookkeeping
 ├── delivery_obligations  — Gateway outbox (owed replies); created lazily by gateway/delivery_ledger.py
+├── runtime_epoch         — Session authority's owner epoch + instance id (one row)
+├── session_admissions    — Durable per-session input FIFO (queued → started → terminal; unknown on owner loss)
+├── worker_executions     — Managed worker/child/cron/kanban executions bound to a session and epoch
+├── worker_receipts       — Ordered, digest-checked results a managed worker reported
 └── schema_version        — Single-row table tracking migration state
 ```
 
-`hermes sessions recover` copies the row-bearing tables above into the
+`session_admissions`, `worker_executions` and `worker_receipts` reference `sessions`
+with `ON DELETE RESTRICT`: deleting or pruning a session retires its terminal ledger
+rows in the same transaction and refuses while work is live or `unknown`. An input that
+was `started` when its owner died becomes `unknown` at the next owner start and is never
+replayed; its later inputs wait until it is resolved (`prompt.resolve_unknown`).
+
+`cybr sessions recover` copies the row-bearing tables above into the
 recovered database (FTS indexes and `schema_version` are regenerated), including
 the lazily-created `delivery_obligations` ledger when the source has one — its
-row count is verified like `sessions`/`messages`.
+row count is verified like `sessions`/`messages`. The four runtime-ledger tables
+(`runtime_epoch`, `session_admissions`, `worker_executions`, `worker_receipts`) are
+inventoried and reported as excluded, not copied: a partial ledger could replay
+started effects or adopt another owner's workers. A full `cybr backup` restore keeps
+the complete ledger for startup reconciliation instead.
 
 Key design decisions:
 - **WAL mode** for concurrent readers + one writer (gateway multi-platform)
@@ -199,7 +220,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_sessions_title_unique
 
 `user_id` is the principal on the other end of the session: messaging adapters
 store the platform sender id, and `desktop` / dashboard sessions opened through
-an authenticated `hermes serve` (OAuth or the basic username/password provider)
+an authenticated `cybr serve` (OAuth or the basic username/password provider)
 store the login as `<provider>:<user id>` (for example `basic:alice`). Sessions
 with nobody behind them — anonymous loopback use, `subagent`, `cron`, `kanban`
 — keep it empty. The value is set when the row is created and never inferred
@@ -239,7 +260,7 @@ CREATE INDEX IF NOT EXISTS idx_messages_session_id ON messages(session_id, id);
 Notes:
 - `tool_calls` is stored as a JSON string (serialized list of tool call objects)
 - `reasoning_details`, `codex_reasoning_items`, and `codex_message_items` are stored as JSON strings
-- `reasoning`, `reasoning_content` and `reasoning_details` are always kept in history. On the chat-completions wire every assistant turn replays its stored reasoning on the carriers the route reads (`agent/message_sanitization.py::route_reasoning_carriers`): `reasoning_content` everywhere by default; plus `reasoning` and `reasoning_details` on OpenRouter-format gateways (OpenRouter, Kilo, Vercel AI Gateway, Nous Portal); `reasoning_details` on Novita, MiniMax `/v1` and TokenHub; `reasoning` on local servers, Ollama and Upstage. Strict schemas (Mistral, Groq, Cerebras, SambaNova) get no reasoning key, and Fireworks gets `reasoning_content` only. Only DeepSeek, Kimi and MiMo pad a reasoning-less tool-call turn with `" "`. When a route rejects a field by name ("Extra inputs are not permitted, field: messages[N].reasoning_details"), Hermes records it for that provider/host/model, strips it and retries once. The record lasts for the session and never touches history.
+- `reasoning`, `reasoning_content` and `reasoning_details` are always kept in history. On the chat-completions wire every assistant turn replays its stored reasoning on the carriers the route reads (`agent/message_sanitization.py::route_reasoning_carriers`): `reasoning_content` everywhere by default; plus `reasoning` and `reasoning_details` on OpenRouter-format gateways (OpenRouter, Kilo, Vercel AI Gateway, Nous Portal); `reasoning_details` on Novita, MiniMax `/v1` and TokenHub; `reasoning` on local servers, Ollama and Upstage. Strict schemas (Mistral, Groq, Cerebras, SambaNova) get no reasoning key, and Fireworks gets `reasoning_content` only. Only DeepSeek, Kimi and MiMo pad a reasoning-less tool-call turn with `" "`. When a route rejects a field by name ("Extra inputs are not permitted, field: messages[N].reasoning_details"), Cybr Agent records it for that provider/host/model, strips it and retries once. The record lasts for the session and never touches history.
 - Desktop history hydration retains assistant sidecars in both REST and JSON-RPC (`session.resume`, `session.activate`, `session.history`) projections, including rows with reasoning and tool calls. REST may return the SQLite JSON string while RPC returns decoded items; Desktop accepts both. A final Responses reply may live only in `codex_message_items` while `content` is empty. Canonical content still takes precedence, and analysis/commentary items are not promoted to reply text.
 - `reasoning` stores the raw reasoning text for providers that expose it
 - A reasoning-only clean stop (empty `content`, `finish_reason=stop`, reasoning present) is answered with the reasoning text, but the assistant row is never written with that text as `content`: `content` stays empty, the text lives in `reasoning`/`reasoning_content`, and `api_content` carries it so the next request replays the answer byte-identically. History surfaces therefore show it as reasoning, not as a reply.
@@ -267,6 +288,25 @@ and DELETE of the `messages` table. The current triggers are gated on the
 background FTS rebuild can proceed without double-indexing) and cover all three
 indexed columns — see `SCHEMA_SQL` in `hermes_state_common.py` for the exact SQL.
 
+
+## Dashboard browsing and owner maintenance
+
+Session browsing opens `state.db` read-only. GET listing, search, details,
+messages, statistics and export never create an absent database, quarantine a
+zero-byte file, reconcile a stale schema, or trigger auto-archive. Uninitialized
+or incompatible stores return HTTP 503 with owner-start/recovery guidance;
+profile aggregation reports schema failures in its per-profile `errors` list.
+
+The profile's gateway initializes and reconciles its store at startup. The
+standalone `serve` backend retains its existing startup reconciliation worker.
+Configured `sessions.auto_archive` remains active through gateway startup and
+housekeeping, or the standalone backend's maintenance ticker, independently of
+browsing. Explicit mutation endpoints retain their existing write behavior.
+
+SQLite WAL readers still participate in shared-memory coordination: `mode=ro`
+may create empty WAL/SHM sidecars or update SHM read marks. The read-only contract
+forbids canonical schema/data writes, repair and checkpointing; it does not make
+live SQLite coordination files immutable.
 
 ## Schema Version and Migrations
 
@@ -303,8 +343,9 @@ Declarative column adds use `ALTER TABLE ADD COLUMN` wrapped in try/except to ha
 
 ## Write Contention Handling
 
-Multiple hermes processes (gateway + CLI sessions + worktree agents) share one
-`state.db`. The `SessionDB` class handles write contention with:
+Several processes still open one `state.db`: the gateway (the canonical session
+writer), read-only browsers (dashboard, `cybr sessions list`), maintenance commands,
+and writers of non-session tables. The `SessionDB` class handles write contention with:
 
 - **Short SQLite timeout** (1 second) instead of the default 30s
 - **Time-budgeted application-level retry** with random jitter (20-150ms for the
@@ -331,7 +372,7 @@ read from `/proc/locks` — SQLite's byte-range `fcntl` locks encode the lock ki
 in their offset (`state.db-shm` byte 120 = WAL write, 121 = checkpoint,
 123-127 = read slots; the 1 GiB pending-byte page on `state.db` = rollback-journal
 PENDING/RESERVED/SHARED). The open-descriptor scan cannot make this distinction
-because every Hermes process has the DB open. Look for that line in
+because every Cybr Agent process has the DB open. Look for that line in
 `~/.hermes/logs/errors.log` next to the `database is locked` failure.
 
 Lock contention is recognised by SQLite result code (`SQLITE_BUSY` /
@@ -557,7 +598,7 @@ db.delete_session("sess_abc123")
 
 Default path: `get_hermes_home() / "state.db"` — `~/.hermes/state.db` for the
 default profile, `~/.hermes/profiles/<name>/state.db` for a named profile, or
-wherever `HERMES_HOME` points (see [Hermes home and profile isolation](#hermes-home-and-profile-isolation)).
+wherever `HERMES_HOME` points (see [Cybr Agent home and profile isolation](#hermes-home-and-profile-isolation)).
 
 The database file, WAL file (`state.db-wal`), and shared-memory file
 (`state.db-shm`) are all created in the same directory.

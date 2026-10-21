@@ -1,15 +1,15 @@
 """Shared harness for the native-Windows end-to-end suite.
 
-Every test drives REAL Hermes processes (the source launcher / ``python -m
+Every test drives REAL Cybr Agent processes (the source launcher / ``python -m
 hermes_cli.main``) on a real Windows host against the recording loopback
-provider (``tests/fakes/fake_llm_provider.py``). Nothing in Hermes is mocked;
+provider (``tests/fakes/fake_llm_provider.py``). Nothing in Cybr Agent is mocked;
 verdicts come from what reached the provider wire, what landed in ``state.db``
 / on disk, and the live process table (psutil).
 
 Each test gets a fresh fake user profile under ``tmp_path``: ``USERPROFILE`` /
 ``HOME`` / ``LOCALAPPDATA`` / ``APPDATA`` all point inside it and
 ``HERMES_HOME`` is ``<profile>/.hermes``, so no child can read or write the
-runner's real Hermes state.
+runner's real Cybr Agent state.
 """
 
 from __future__ import annotations
@@ -46,7 +46,7 @@ _SECRET_SUFFIXES = ("_API_KEY", "_TOKEN", "_SECRET", "_ACCESS_KEY")
 
 @dataclass
 class WinHome:
-    """One hermetic fake Windows user profile with a Hermes home inside it."""
+    """One hermetic fake Windows user profile with a Cybr Agent home inside it."""
 
     root: Path
     profile: Path
@@ -91,7 +91,13 @@ class WinHome:
         return self.hermes_home / "state.db"
 
 
+#: Every home made this test, with its creation time: the lane's conftest stops the gateway a
+#: prompt auto-started for it (Desktop and CLI attach to one daemon that outlives the turn).
+MADE_HOMES: list[tuple[WinHome, float]] = []
+
+
 def make_home(tmp_path: Path, base_url: str, *, extra_config: str = "") -> WinHome:
+    since = time.time()
     root = tmp_path
     profile = root / "Users" / "e2e"
     hermes_home = profile / ".hermes"
@@ -105,6 +111,7 @@ def make_home(tmp_path: Path, base_url: str, *, extra_config: str = "") -> WinHo
         cfg.setdefault("display", {})["compact"] = True
 
     home.update_config(_hermetic)
+    MADE_HOMES.append((home, since))
     return home
 
 
@@ -182,7 +189,7 @@ def last_user(body: dict[str, Any]) -> str:
 
 
 def tool_results(srv: FakeLLMServer) -> list[str]:
-    """Tool-result messages Hermes sent back to the model, in order, deduped across requests."""
+    """Tool-result messages Cybr Agent sent back to the model, in order, deduped across requests."""
     seen: dict[str, str] = {}
     for body in srv.main_requests():
         for m in body.get("messages") or []:

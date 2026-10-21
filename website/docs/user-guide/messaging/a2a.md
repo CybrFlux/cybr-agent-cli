@@ -1,21 +1,21 @@
 # A2A (Agent-to-Agent)
 
-[A2A](https://a2a-protocol.org) is the open Agent2Agent protocol (v1.0, stewarded by the Linux Foundation) for communication between independent AI agents. The Hermes A2A plugin works in **both directions**: your agent can call other A2A agents as tools, and other agents can send tasks to your Hermes over HTTP.
+[A2A](https://a2a-protocol.org) is the open Agent2Agent protocol (v1.0, stewarded by the Linux Foundation) for communication between independent AI agents. The Cybr Agent A2A plugin works in **both directions**: your agent can call other A2A agents as tools, and other agents can send tasks to your Cybr Agent over HTTP.
 
-It interoperates with any A2A-compliant peer — another Hermes, LangChain, CrewAI, Google ADK agents, or anything built on the official `a2a-sdk`.
+It interoperates with any A2A-compliant peer — another Cybr Agent, LangChain, CrewAI, Google ADK agents, or anything built on the official `a2a-sdk`.
 
 ## When to use A2A
 
-- **Hermes ↔ Hermes across machines** — let your desktop agent hand tasks to a Hermes on a server, or vice versa, each with its own memory, tools, and credentials.
+- **Cybr Agent ↔ Cybr Agent across machines** — let your desktop agent hand tasks to a Cybr Agent on a server, or vice versa, each with its own memory, tools, and credentials.
 - **Delegating to specialist agents** — a peer that advertises `web_search`/`research`/`coding` skills on its Agent Card can be discovered and called mid-conversation.
-- **Being a callable service** — expose your Hermes so other frameworks' agents can send it tasks.
+- **Being a callable service** — expose your Cybr Agent so other frameworks' agents can send it tasks.
 
 When you want multiple agents on the **same machine**, prefer [delegation](../features/delegation.md) (in-process subagents) or the [kanban board](../features/kanban.md) (durable multi-profile work queue) — A2A is for crossing process/machine/framework boundaries.
 
 ## Enable
 
 ```bash
-hermes gateway setup      # pick A2A
+cybr gateway setup      # pick A2A
 ```
 
 Or in `~/.hermes/config.yaml`:
@@ -32,9 +32,9 @@ gateway:
 The outbound client tools ship as the `a2a` toolset, **off by default** — enable it per platform:
 
 ```bash
-hermes tools enable a2a --platform cli        # CLI/TUI sessions
-hermes tools enable a2a --platform telegram   # or any messaging platform
-hermes tools enable a2a --platform a2a        # let inbound A2A tasks call peers (agent chaining)
+cybr tools enable a2a --platform cli        # CLI/TUI sessions
+cybr tools enable a2a --platform telegram   # or any messaging platform
+cybr tools enable a2a --platform a2a        # let inbound A2A tasks call peers (agent chaining)
 ```
 
 The tools are available in every process type — CLI, TUI, gateway, and cron — without the inbound platform needing to be enabled.
@@ -66,7 +66,7 @@ Then just ask: *"Ask the researcher agent to summarize today's arXiv postings."*
 
 ## Inbound: being callable
 
-With the platform enabled, Hermes serves:
+With the platform enabled, Cybr Agent serves:
 
 - **Agent Card** at `GET /.well-known/agent-card.json` (canonical v1.0 path; the legacy `agent.json` also answers) — advertises your agent's name, skills (derived from enabled toolsets), and auth requirements.
 - **JSON-RPC 2.0** at `POST /` — canonical v1.0 methods (`SendMessage`, `SendStreamingMessage`, `GetTask`, `ListTasks`, `CancelTask`, `SubscribeToTask`, push-notification config CRUD) plus the pre-1.0 path-style aliases (`message/send`, …).
@@ -76,6 +76,35 @@ With the platform enabled, Hermes serves:
 Inbound tasks are injected into a **live gateway session** — the same agent, memory, and tools that serve your other channels — and the final reply is returned to the caller as the task result. Conversations are keyed by the A2A `contextId`, so a peer can hold a multi-turn exchange.
 
 Interoperability is verified against the official Python `a2a-sdk` (card resolution, `SendMessage`, streaming).
+
+## Forwarded profile sessions after the ownership cutover
+
+Forwarding to another local profile now submits to that profile's gateway owner;
+there is no fallback `cybr chat` process writing its session database. New
+forwarded conversations retain the exact agent, tenant, authenticated peer and
+context ID in their owner binding.
+
+Historical forwarded sessions cannot be identified safely from their titles.
+The old adapter used `a2a-{agent}-{sanitized-context}` and omitted peer and tenant
+identity. Different contexts such as `ctx/exact` and `ctx-exact`, even from
+different peers, could already share one transcript. The conversation JSONL log
+also used a lossy filename and did not retain that complete identity. Peer names
+inside user-message text are not ownership metadata.
+
+A matching historical title therefore returns `runtime_coordination_required`
+rather than attaching a peer to potentially unrelated history or silently
+starting a replacement. The historical session ID, title and messages remain
+untouched. Generic CLI resume does not bypass this refusal.
+
+**Automatic migration of these historical forwarded sessions is not yet
+supported.** Recovery needs an explicit local-owner decision about the exact
+session-to-agent/tenant/peer/context binding, particularly for already mixed
+transcripts. It also needs an explicit launch-policy decision: historical rows
+can retain the model and some model parameters without the complete original
+cwd, system prompt or frozen tool/config policy. A title match or current profile
+configuration cannot recover information the old writer never stored. There is
+currently no supported migration command; do not retitle or edit database rows
+to bypass the ownership check.
 
 ## Security model
 
@@ -94,7 +123,7 @@ Secure by default; every widening step is explicit:
 |---|---|---|
 | `A2A_PEER_TOKENS` | _(unset)_ | Per-peer credentials `name:token,…` (preferred) |
 | `A2A_BEARER_TOKEN` | _(unset)_ | Shared token; identity falls back to caller IP |
-| `A2A_HOST` | `127.0.0.1` | Bind host — only widens when a token is set |
+| `A2A_HOST` | `127.0.0.1` | Bind host — only widens when a token is set. IPv6 literals such as `::1` or `::` work too, bare or bracketed (`[::1]`) |
 | `A2A_PORT` | `9900` | Inbound port |
 | `A2A_AGENT_NAME` | hostname-derived | Name on the Agent Card |
 | `A2A_PUBLIC_URL` | _(unset)_ | Routable URL advertised on the card (reverse proxies / k8s) |

@@ -17,10 +17,16 @@ from agent.file_safety import _BLOCKED_PROJECT_ENV_BASENAMES as _ENV_FILE_BASENA
 
 logger = logging.getLogger(__name__)
 
+# Browser and CDP results can be a page-controlled JSON tree. The walkers stop
+# at this depth and replace the remainder, so a nested payload cannot raise
+# RecursionError on the way to the model.
+REDACT_WALK_MAX_DEPTH = 320
+REDACT_WALK_DEPTH_MARKER = "[redacted: nesting limit]"
+
 # ---------------------------------------------------------------------------
 # Vault-value redaction registry (profile-scoped, bounded)
 # ---------------------------------------------------------------------------
-# Exact secret values that transited a server-side vault fill (browser_vault_fill). Generic
+# Exact secret values that transited a server-side vault fill (browser_vault). Generic
 # credential-shaped regexes cannot catch an arbitrary user password, so the fill path registers
 # the exact bytes and every browser_* tool result (including browser_cdp Runtime.evaluate
 # passthrough) is scrubbed against them before it can reach the model. Memory only: never
@@ -1007,7 +1013,7 @@ _ENV_DUMP_COMMANDS = frozenset({"env", "printenv", "set", "export", "declare"})
 
 # Commands that read file contents to stdout, plus the filter readers (``grep``/``awk``/``sed``)
 # the model reaches for on config files. A secret-bearing target (``.env`` per AGENTS.md,
-# a shell rc/profile, Hermes' own ``config.yaml`` where ``hermes mcp add --env`` writes
+# a shell rc/profile, Cybr Agent' own ``config.yaml`` where ``hermes mcp add --env`` writes
 # tokens) is a credential dump, so the ENV/YAML assignment pass must run. Arbitrary
 # ``config.yaml`` / source files stay on the code_file path (``MAX_TOKENS: 100``).
 _FILE_READ_COMMANDS = frozenset({
@@ -1058,7 +1064,7 @@ def _command_segments(command: str) -> list[str]:
 
 
 def _is_under_hermes_home(path: str) -> bool:
-    """True when an absolute ``config.yaml`` path sits under the active Hermes home or root.
+    """True when an absolute ``config.yaml`` path sits under the active Cybr Agent home or root.
 
     The default home's basename is an installation detail — ``.hermes`` on POSIX, ``hermes``
     under ``AppData/Local`` on Windows — and a resolved path never spells ``$HERMES_HOME``,
@@ -1084,7 +1090,7 @@ def _is_under_hermes_home(path: str) -> bool:
 
 def _is_secret_file_arg(arg: str) -> bool:
     """``.env``-style or shell rc basename anywhere; ``config.yaml`` only under a
-    ``.hermes`` directory, ``$HERMES_HOME``, or the resolved Hermes home (never arbitrary
+    ``.hermes`` directory, ``$HERMES_HOME``, or the resolved Cybr Agent home (never arbitrary
     YAML). The resolved-home arm is what covers native Windows, where the home directory
     is ``%LOCALAPPDATA%\\hermes`` and carries no ``.hermes`` segment."""
     path = arg.strip("\"'").replace("\\", "/")
@@ -1105,7 +1111,7 @@ def _is_secret_file_arg(arg: str) -> bool:
         return False
     if parts[-1] in _ENV_FILE_BASENAMES or parts[-1] in _SHELL_RC_BASENAMES:
         return True
-    # ``config.yaml`` plus the ``config.yaml.good.<stamp>`` / ``.corrupt.<stamp>`` copies Hermes
+    # ``config.yaml`` plus the ``config.yaml.good.<stamp>`` / ``.corrupt.<stamp>`` copies Cybr Agent
     # writes under ``backups/config/`` — same contents, same secrets.
     if parts[-1] != "config.yaml" and not parts[-1].startswith(("config.yaml.good.", "config.yaml.corrupt.")):
         return False
@@ -1173,7 +1179,7 @@ def redact_for_egress(text: str) -> str:
 def redact_terminal_output(output: str, command: str | None = None, *, force: bool = False) -> str:
     """Single redaction policy for ALL terminal-output surfaces: the ENV/YAML-assignment
     pass runs only when ``command`` is an env dump or reads a secret-bearing file (``.env``,
-    shell rc, Hermes ``config.yaml``); otherwise code_file=True avoids false positives on
+    shell rc, Cybr Agent ``config.yaml``); otherwise code_file=True avoids false positives on
     source/config dumps."""
     if not output:
         return output

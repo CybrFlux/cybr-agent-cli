@@ -79,7 +79,7 @@ export default function PluginPage({ data }: { data: PluginPageData }) {
     : null;
   const added = formatDate(plugin.addedAt);
   const updated = formatDate(plugin.updatedAt);
-  const metaDescription = (prose || plugin.description || `${plugin.name} — a Hermes Agent plugin`).slice(0, 160);
+  const metaDescription = (prose || plugin.description || `${plugin.name} — a Cybr Agent plugin`).slice(0, 160);
 
   return (
     <Layout title={`${plugin.name} · Plugin Catalog`} description={metaDescription}>
@@ -155,19 +155,14 @@ export default function PluginPage({ data }: { data: PluginPageData }) {
               )}
             </p>
             {prose && <p className={styles.lede}>{prose}</p>}
-            {disclosures.map((text) => (
-              <aside key={text} className={styles.disclosure} role="note">
-                <strong>Disclosure</strong> — {text}
-              </aside>
-            ))}
 
             <div className={styles.actions}>
               <a
                 className={styles.installBtn}
                 href={desktopInstallLink(plugin.name)}
-                title="Opens the Install Plugin dialog in Hermes Desktop at the reviewed version. No app? Use the install command."
+                title="Opens the Install Plugin dialog in Cybr Agent Desktop at the reviewed version. No app? Use the install command."
               >
-                Open in Hermes Desktop
+                Open in Cybr Agent Desktop
               </a>
               <div className={styles.installCmd}>
                 <code>{plugin.installCommand}</code>
@@ -275,6 +270,17 @@ export default function PluginPage({ data }: { data: PluginPageData }) {
               </p>
             </aside>
           </div>
+
+          {disclosures.length > 0 && (
+            <section className={styles.section} aria-labelledby="disclosure">
+              <h2 id="disclosure" className={styles.sectionTitle}>Disclosure</h2>
+              {disclosures.map((text) => (
+                <aside key={text} className={styles.disclosure} role="note">
+                  {text}
+                </aside>
+              ))}
+            </section>
+          )}
 
           {author && moreByAuthor.length > 0 && (
             <section className={styles.section} aria-labelledby="more-by">

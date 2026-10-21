@@ -402,7 +402,7 @@ def test_normalize_env_dict_filters_invalid_keys():
 def test_security_args_include_setuid_setgid_for_privdrop(monkeypatch):
     """The default (run_as_host_user=False) invocation must include SETUID and
     SETGID caps so the image's init can drop from root to a non-root user
-    (e.g. via ``s6-setuidgid`` in the bundled Hermes image, or ``gosu``/``su``
+    (e.g. via ``s6-setuidgid`` in the bundled Cybr Agent image, or ``gosu``/``su``
     in user-provided images).
 
     Without these caps the privilege-drop helper fails with
@@ -562,7 +562,7 @@ def test_label_sanitizer_rejects_invalid_characters():
 
 
 def test_reuse_environment_fingerprint_tracks_immutable_configuration():
-    """Containers with different images, mounts, or Hermes homes must not
+    """Containers with different images, mounts, or Cybr Agent homes must not
     share the label used for cross-process reuse."""
     base = docker_env._reuse_environment_fingerprint(
         image="python:3.11",
@@ -950,7 +950,7 @@ def _mock_subprocess_run_with_reuse(monkeypatch, ps_state: str | None,
 def test_reuse_attaches_to_running_container_without_docker_run(monkeypatch):
     """When a labeled container is already ``running``, the reuse probe
     must pick it up and skip ``docker run`` entirely. Regression for the
-    issue #20561 root cause: every Hermes process spawning a new container
+    issue #20561 root cause: every Cybr Agent process spawning a new container
     despite docs claiming "ONE long-lived container shared across sessions"."""
     monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")
     monkeypatch.setattr(docker_env, "_get_active_profile_name", lambda: "default")
@@ -1071,7 +1071,7 @@ def test_reuse_probe_format_is_podman_compatible(monkeypatch):
 
 
 def test_extra_args_proxy_override_refuses_under_egress(monkeypatch):
-    """docker_extra_args are appended after Hermes args, so egress enforcement
+    """docker_extra_args are appended after Cybr Agent args, so egress enforcement
     must reject critical overrides before Docker sees them."""
 
     monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")
@@ -1165,7 +1165,7 @@ def test_extra_args_joined_shorthand_refuses_under_egress(monkeypatch):
 
 def test_reuse_starts_stopped_container_before_attaching(monkeypatch):
     """A labeled container in ``exited`` state must be restarted via
-    ``docker start`` before the new Hermes process uses it. Without this
+    ``docker start`` before the new Cybr Agent process uses it. Without this
     step, ``docker exec`` against a stopped container errors out and the
     first agent command fails opaquely."""
     monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")
@@ -1299,7 +1299,7 @@ def test_cleanup_with_persist_is_noop_for_container(monkeypatch):
     processes inside the container (npm watchers, pytest watchers, etc.).
 
     Resource reclamation in this mode happens via the orphan reaper on next
-    Hermes startup, not on graceful exit. Issue #20561 — the first iteration
+    Cybr Agent startup, not on graceful exit. Issue #20561 — the first iteration
     of this PR did docker stop here, which Ben caught as contradicting the
     "ONE long-lived container" semantics."""
     monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")
@@ -1897,3 +1897,36 @@ def test_docker_env_warnings_never_echo_values(caplog):
     with caplog.at_level(logging.WARNING, logger="tools.environments.docker"):
         docker_env._normalize_env_dict({"TOKEN": ["sk-live-value"], "OK": "1"})
     assert "TOKEN" in caplog.text and "sk-live-value" not in caplog.text
+
+
+@pytest.mark.parametrize("base", ["default", "profile:research-assistant-for-the-quarterly-ops"])
+def test_workspace_container_labels_identify_it_to_the_orphan_reaper(monkeypatch, base):
+    """The orphan reaper must recognise an idle-STOPPED workspace container from the labels the
+    create path actually stamps. ``hermes-task-id`` is truncated to 63 chars, so a profile name of
+    36+ chars cut the ``_ws_<digest>`` suffix and the next sweep ``docker rm``-ed the container,
+    losing everything installed outside the mounts."""
+    monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")
+    calls = _mock_subprocess_run(monkeypatch)
+    _make_dummy_env(task_id=f"{base}:ws:0123456789abcdef")
+    labels = dict(lbl.split("=", 1) for lbl in _labels_in_run_args(_run_args_from_calls(calls)))
+
+    def _inspect(cmd, **kwargs):
+        key = re.search(r'Labels "([^"]+)"', cmd[cmd.index("--format") + 1]).group(1)
+        return subprocess.CompletedProcess(cmd, 0, stdout=labels.get(key, "<no value>") + "\n", stderr="")
+
+    monkeypatch.setattr(docker_env.subprocess, "run", _inspect)
+    assert docker_env._is_idle_workspace_container("/usr/bin/docker", "cid"), labels
+
+
+def test_non_workspace_container_is_not_an_idle_workspace(monkeypatch):
+    monkeypatch.setattr(docker_env, "find_docker", lambda: "/usr/bin/docker")
+    calls = _mock_subprocess_run(monkeypatch)
+    _make_dummy_env(task_id="profile:research-assistant-for-the-quarterly-ops")
+    labels = dict(lbl.split("=", 1) for lbl in _labels_in_run_args(_run_args_from_calls(calls)))
+
+    def _inspect(cmd, **kwargs):
+        key = re.search(r'Labels "([^"]+)"', cmd[cmd.index("--format") + 1]).group(1)
+        return subprocess.CompletedProcess(cmd, 0, stdout=labels.get(key, "<no value>") + "\n", stderr="")
+
+    monkeypatch.setattr(docker_env.subprocess, "run", _inspect)
+    assert not docker_env._is_idle_workspace_container("/usr/bin/docker", "cid"), labels

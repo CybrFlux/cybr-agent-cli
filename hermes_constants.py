@@ -1,4 +1,4 @@
-"""Shared constants for Hermes Agent.
+"""Shared constants for Cybr Agent.
 
 Import-safe, stdlib-only — importable from anywhere without circular-import risk.
 """
@@ -9,7 +9,7 @@ import re
 import shutil
 import stat
 import sys
-from collections.abc import MutableMapping
+from collections.abc import Callable, Mapping, MutableMapping
 from contextvars import ContextVar, Token
 from pathlib import Path
 
@@ -24,7 +24,7 @@ DEFAULT_INDICATOR_STYLE: str = "kaomoji"
 
 
 def set_hermes_home_override(path: str | Path | None) -> Token:
-    """Set a context-local Hermes home override and return its reset token.
+    """Set a context-local Cybr Agent home override and return its reset token.
 
     Deliberately does not mutate ``os.environ`` (shared by every thread in the process).
     """
@@ -33,29 +33,106 @@ def set_hermes_home_override(path: str | Path | None) -> Token:
 
 
 def reset_hermes_home_override(token: Token) -> None:
-    """Restore the previous context-local Hermes home override."""
+    """Restore the previous context-local Cybr Agent home override."""
     _HERMES_HOME_OVERRIDE.reset(token)
 
 
 def get_hermes_home_override() -> str | None:
-    """Return the active context-local Hermes home override, if any."""
+    """Return the active context-local Cybr Agent home override, if any."""
     override = _HERMES_HOME_OVERRIDE.get()
     return str(override) if override is not _UNSET and override else None
 
 
 def _expand_hermes_home(path: str) -> Path:
-    """Expand environment and user-home syntax in a Hermes home path."""
+    """Expand environment and user-home syntax in a Cybr Agent home path."""
     return Path(os.path.expanduser(os.path.expandvars(path)))
+
+
+def _platform_default_hermes_home(environ: Mapping[str, str], user_home: Callable[[], Path]) -> Path:
+    """The platform default that *environ* names, with the literal data-directory suffix."""
+    suffix = environ.get("HERMES_DATA_DIR_SUFFIX", "")
+    if sys.platform == "win32":
+        local_appdata = environ.get("LOCALAPPDATA", "").strip()
+        base = Path(local_appdata) if local_appdata else user_home() / "AppData" / "Local"
+        return base / ("hermes" + suffix)
+    return user_home() / (".hermes" + suffix)
 
 
 def _get_platform_default_hermes_home() -> Path:
     """Return the platform default with the literal data-directory suffix."""
-    suffix = os.environ.get("HERMES_DATA_DIR_SUFFIX", "")
-    if sys.platform == "win32":
-        local_appdata = os.environ.get("LOCALAPPDATA", "").strip()
-        base = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
-        return base / ("hermes" + suffix)
-    return Path.home() / (".hermes" + suffix)
+    return _platform_default_hermes_home(os.environ, Path.home)
+
+
+def _account_home() -> Path:
+    """The OS account's home from the password database, never ``$HOME``: harnesses and profile isolation
+    repoint HOME (root under ``sudo`` has uid 0 too, which keeps the #108674 remap). Falls back to the
+    shared real-home resolver where pwd cannot answer."""
+    try:
+        import pwd
+        return Path(pwd.getpwuid(os.getuid()).pw_dir)  # windows-footgun: ok — POSIX-only module inside try/except
+    except (ImportError, KeyError, OSError, AttributeError):
+        return Path(get_real_home())
+
+
+def account_default_hermes_home() -> Path:
+    """The platform default of the OS ACCOUNT, never of a foreign process ``HOME``.
+
+    Host service identities (``systemctl --user`` units, LaunchAgents) belong to the account, and their
+    definitions are found under the account home. A process started with ``HOME=<scratch>`` used to call
+    ``<scratch>/.hermes`` native, name the bare ``hermes-gateway`` unit, and stop the account's real
+    gateway through it. When the process HOME is the account home the two answers are the same home.
+    """
+    account = _account_home()
+    try:
+        same = Path.home().resolve() == account.resolve()
+    except (OSError, RuntimeError):
+        same = False
+    return _get_platform_default_hermes_home() if same else _platform_default_hermes_home(os.environ, lambda: account)
+
+
+def _hermes_root_of(native_home: Path, env_path: Path | None) -> Path:
+    """The root that holds *env_path*: the native home, a custom root, or *env_path* itself."""
+    if env_path is None:
+        return native_home
+    try:
+        env_path.resolve().relative_to(native_home.resolve())  # under ~/.hermes (normal or profile mode)
+    except ValueError:  # Docker/custom root: <root>/profiles/<name> -> <root>, else HERMES_HOME itself
+        return env_path.parent.parent if env_path.parent.name == "profiles" else env_path
+    return native_home
+
+
+_ENV_REFERENCE = re.compile(r"%([^%]+)%|\$\{([^}]+)\}|\$([A-Za-z0-9_-]+)")
+
+
+def hermes_root_for_environment(environ: Mapping[str, str]) -> Path | None:
+    """The Cybr Agent root that a process started with *environ* resolves, or None.
+
+    Applies the root rules of ``get_default_hermes_root`` to another process's
+    environment. ``%NAME%``, ``${NAME}`` and ``$NAME`` references and a leading
+    ``~`` expand from *environ* alone, never from this process. Returns None
+    when the answer depends on anything outside *environ*: a relative
+    HERMES_HOME, an undefined variable, or a missing user profile folder.
+    """
+    names = {key.upper(): value for key, value in environ.items()}
+    profile = names.get("USERPROFILE" if sys.platform == "win32" else "HOME", "").strip()
+
+    def user_home() -> Path:
+        if not profile:
+            raise LookupError("no user profile folder")
+        return Path(profile)
+
+    raw = names.get("HERMES_HOME", "").strip()
+    try:
+        native_home = _platform_default_hermes_home(names, user_home)
+        if not raw:
+            return native_home
+        expanded = _ENV_REFERENCE.sub(lambda match: names[match.group(match.lastindex).upper()], raw)
+        if expanded == "~" or expanded.startswith(("~/", "~\\")):
+            expanded = str(user_home()) + expanded[1:]
+    except LookupError:
+        return None
+    env_path = Path(expanded)
+    return _hermes_root_of(native_home, env_path) if env_path.is_absolute() else None
 
 
 def sudo_invoker_default_home() -> Path | None:
@@ -109,7 +186,7 @@ def _warn_profile_fallback_once() -> None:
 
 
 def get_hermes_home() -> Path:
-    """Hermes home: context-local override → ``HERMES_HOME`` env var → platform default."""
+    """Cybr Agent home: context-local override → ``HERMES_HOME`` env var → platform default."""
     override = get_hermes_home_override()
     if override:
         return _expand_hermes_home(override)
@@ -127,7 +204,7 @@ _HOME_KEY_CACHE: dict[str, str] = {}
 
 
 def hermes_home_key(path: str | Path | None = None) -> str:
-    """Stable registry key for a Hermes home/profile dir.
+    """Stable registry key for a Cybr Agent home/profile dir.
 
     ``strict=False`` so profiles whose directories don't exist yet still get a key.
 
@@ -158,7 +235,7 @@ def reset_hermes_home_key_cache() -> None:
 
 
 def get_process_hermes_home() -> Path:
-    """Hermes home of the running process, ignoring task overrides.
+    """Cybr Agent home of the running process, ignoring task overrides.
 
     For process-level assets (theme YAML, dashboard plugin manifests) that must stay visible while a
     request is scoped to another profile (e.g. embedded ``/chat`` under ``--open-profile``). Follows
@@ -177,7 +254,7 @@ def pin_process_hermes_home(path: str | Path | None) -> None:
     """Pin the home this process serves as its own profile, for "is this task routed?" decisions.
 
     An embedding host that serves several profiles and mirrors the active turn's profile into
-    ``os.environ["HERMES_HOME"]`` for legacy readers (Hermes WebUI) otherwise makes every turn's own
+    ``os.environ["HERMES_HOME"]`` for legacy readers (Cybr Agent WebUI) otherwise makes every turn's own
     profile look like the launch profile: ``agent.secret_scope.serves_routed_profile()`` turns
     False and that turn's MCP connections fall back to bare, cross-profile names; the sibling
     launch-home checks (``secret_scope._is_process_home``, ``tools.environments.local._is_routed_home``,
@@ -202,11 +279,14 @@ def get_routing_process_hermes_home() -> Path:
     return _expand_hermes_home(pinned) if pinned else get_process_hermes_home()
 
 
-# Hermes-managed runtime downloads at the root of a home (GGUF models, llama.cpp runtimes,
+# Cybr Agent-managed runtime downloads at the root of a home (GGUF models, llama.cpp runtimes,
 # managed Node): re-downloadable on demand and routinely tens to hundreds of GB. Shared by
 # ``hermes backup`` (excludes them) and ``profile create --clone-all`` (skips them from the
 # default profile) so the two lists cannot drift apart.
 LOCAL_RUNTIME_ROOT_DIRS: frozenset[str] = frozenset({"models", "runtimes", "node"})
+
+# Where connector tool results save the files they return, under each profile's home.
+CONNECTOR_DOWNLOADS_SUBDIR = Path("downloads", "connectors")
 
 # get_default_hermes_root() memo keyed on (native home, expanded HERMES_HOME) so it stays
 # fresh when a test or plugin mutates either input; saves ~80us/call at 31+ sites.
@@ -223,26 +303,21 @@ def get_default_hermes_root(*, home: str | Path | None = None) -> Path:
     memo = _default_hermes_root_memo
     if memo is not None and memo[:2] == memo_key:
         return memo[2]
-    result = native_home
-    if env_path is not None:
-        try:
-            env_path.resolve().relative_to(native_home.resolve())  # under ~/.hermes (normal or profile mode)
-        except ValueError:  # Docker/custom root: <root>/profiles/<name> -> <root>, else HERMES_HOME itself
-            result = env_path.parent.parent if env_path.parent.name == "profiles" else env_path
+    result = _hermes_root_of(native_home, env_path)
     _default_hermes_root_memo = (*memo_key, result)
     return result
 
 
 # Tombstone lives beside the profile dir (not inside) so a stale mkdir or rmtree cannot erase it.
 _DELETED_PROFILES_DIR = ".deleted"
-# Files marking a real Hermes home; arbitrary dirs with a ``profiles`` segment lack them.
+# Files marking a real Cybr Agent home; arbitrary dirs with a ``profiles`` segment lack them.
 _HERMES_HOME_MARKERS = ("config.yaml", ".env", "state.db")
 
 
 def _is_hermes_profiles_root(profiles_dir: Path) -> bool:
     """True when *profiles_dir* is provably ``<hermes-home>/profiles``.
 
-    Accepts the classic ``~/.hermes`` layout, a root carrying Hermes-home marker files, a
+    Accepts the classic ``~/.hermes`` layout, a root carrying Cybr Agent-home marker files, a
     ``profiles/.deleted`` tombstone dir (only ``profile delete`` creates it), or the default root.
     """
     root = profiles_dir.parent
@@ -264,7 +339,7 @@ def _is_hermes_profiles_root(profiles_dir: Path) -> bool:
 def named_profile_home(path: str | Path) -> Path | None:
     """Return ``<root>/profiles/<name>`` when *path* is that home or under it.
 
-    Requires ``<name>`` not to start with ``.`` and the ``profiles`` parent to be a real Hermes home;
+    Requires ``<name>`` not to start with ``.`` and the ``profiles`` parent to be a real Cybr Agent home;
     a default home whose path merely contains a ``profiles`` segment is not a named profile.
     """
     current = Path(path)
@@ -280,7 +355,7 @@ def named_profile_home(path: str | Path) -> Path | None:
 def profile_name_for_home(path: str | Path | None) -> str | None:
     """Return the canonical profile id owning *path*, or ``None`` when it is not a profile home.
 
-    The default home is the Hermes root itself, so its basename is an installation detail (``.hermes``
+    The default home is the Cybr Agent root itself, so its basename is an installation detail (``.hermes``
     on POSIX and commonly ``hermes`` on Windows), not the profile id ``default``.
     """
     if path is None or not str(path).strip():
@@ -381,7 +456,11 @@ def mkdir_under_hermes_home(path: str | Path) -> Path:
     """Create *path*, but never materialize a deleted/missing named profile."""
     target = Path(path)
     assert_named_profile_home_live(target)
-    target.mkdir(parents=True, exist_ok=True)
+    # Lazy so this module still imports alone; hermes_dir_acl (stdlib only) ships beside it in every
+    # closure that creates home dirs, and a missing copy fails loudly instead of silently skipping the
+    # elevated grant (tests/pm/test_bootstrap_import_closure.py).
+    from hermes_dir_acl import make_user_dir
+    make_user_dir(target, parents=True, exist_ok=True)
     return target
 
 
@@ -411,7 +490,7 @@ def get_bundled_skills_dir(default: Path | None = None) -> Path:
 
 
 def get_hermes_dir(new_subpath: str, old_name: str, *, home: Path | None = None) -> Path:
-    """Resolve a Hermes subdirectory, honouring a populated legacy ``<old_name>/`` (no migration).
+    """Resolve a Cybr Agent subdirectory, honouring a populated legacy ``<old_name>/`` (no migration).
 
     An empty legacy dir does NOT count (install scaffolds, manual mkdir) so it cannot shadow the new path.
 
@@ -457,7 +536,7 @@ def _run_version_probe(argv: list[str], **kwargs):
 
 
 def _version_probe_ok(path: str) -> bool:
-    """True when ``<path> --version`` exits 0 under the Hermes-managed Node PATH."""
+    """True when ``<path> --version`` exits 0 under the Cybr Agent-managed Node PATH."""
     result = _run_version_probe([path, "--version"], env=with_hermes_node_path())
     return result is not None and result.returncode == 0
 
@@ -667,7 +746,7 @@ def _iter_real_home_candidates(env: dict[str, str] | None = None) -> list[str]:
 
 
 def get_real_home(env: dict[str, str] | None = None) -> str:
-    """The OS user's real home, avoiding the Hermes profile HOME.
+    """The OS user's real home, avoiding the Cybr Agent profile HOME.
 
     ``HOME`` belongs to the OS account and external CLIs keeping credentials under ``~``; a parent
     already running with ``HOME={HERMES_HOME}/home`` is repaired back when possible.
@@ -720,7 +799,7 @@ def get_subprocess_home(env: dict[str, str] | None = None) -> str | None:
 
 
 def apply_subprocess_home_env(env: MutableMapping[str, str]) -> None:
-    """Apply Hermes' subprocess HOME contract to *env* in-place: ``HOME``/``HERMES_REAL_HOME``
+    """Apply Cybr Agent' subprocess HOME contract to *env* in-place: ``HOME``/``HERMES_REAL_HOME``
     per the home mode, and the temp vars re-pointed at ``env["HERMES_HOME"]``'s scratch dir."""
     real_home = get_real_home(env)
     if real_home:
@@ -731,9 +810,9 @@ def apply_subprocess_home_env(env: MutableMapping[str, str]) -> None:
     apply_scratch_tmp_env(env)
 
 
-# --- Scratch dir: Hermes' own temp space, never the system /tmp ---
+# --- Scratch dir: Cybr Agent' own temp space, never the system /tmp ---
 # System temp is tmpfs on most Linux distros and containers, so browser profiles, PTY probes,
-# download spools and every ``tempfile.mkdtemp()`` a Hermes-launched script performs eat RAM
+# download spools and every ``tempfile.mkdtemp()`` a Cybr Agent-launched script performs eat RAM
 # and vanish on reboot. ``HERMES_HOME/cache/scratch`` is real storage with an IDLE retention:
 # an entry lives while anything inside it is still being written and goes 24h after the last
 # write anywhere in its subtree. A fixed age was wrong both ways — a directory's own mtime only
@@ -823,7 +902,7 @@ def _resolve_hermes_uid_gid() -> tuple[int | None, int | None]:
     The entrypoint chowns HERMES_HOME once, but subdirs created at runtime (``profiles/<name>/``)
     need the same chown or they land root:root and block later uid-mapped workers.
 
-    Docker containers running Hermes commonly set these to map the in-container user to a host user so
+    Docker containers running Cybr Agent commonly set these to map the in-container user to a host user so
     volume-mounted state files end up with the right ownership. See #34107.
     """
     if sys.platform == "win32":
@@ -855,7 +934,7 @@ def _chown_to_hermes_uid(path) -> None:
 
 
 def apply_secure_dir_policy(path, *, home: str | Path | None = None) -> None:
-    """Apply the canonical Hermes home-directory permission policy to *path*.
+    """Apply the canonical Cybr Agent home-directory permission policy to *path*.
 
     Owner-only ``0700`` by default, but the operator's explicit and managed sharing choices
     win (#117347): managed installs are left exactly as the package manager / activation
@@ -891,9 +970,9 @@ def apply_secure_dir_policy(path, *, home: str | Path | None = None) -> None:
 
 
 def get_scratch_dir(home: str | Path | None = None, *, prune: bool = True) -> Path:
-    """``<home>/cache/scratch`` (created, owner-only); *home* defaults to the active Hermes home.
+    """``<home>/cache/scratch`` (created, owner-only); *home* defaults to the active Cybr Agent home.
 
-    Every Hermes process and child gets ``TMPDIR``/``TMP``/``TEMP`` pointed here at boot (see
+    Every Cybr Agent process and child gets ``TMPDIR``/``TMP``/``TEMP`` pointed here at boot (see
     :func:`export_scratch_tmp_env`), so ``tempfile`` defaults land here without call sites
     knowing. Entries idle for ``SCRATCH_MAX_IDLE_HOURS`` are pruned at most once per process
     and once per hour across processes (stamp file), so a fan-out of children stays cheap.
@@ -919,8 +998,9 @@ def get_scratch_dir(home: str | Path | None = None, *, prune: bool = True) -> Pa
 def prune_scratch_dir(scratch: Path | None = None, max_idle_hours: float = SCRATCH_MAX_IDLE_HOURS) -> int:
     """Delete top-level scratch entries with no write anywhere in their subtree for
     *max_idle_hours*, reaping processes and git worktree registrations rooted in them
-    first (``hermes_constants_scratch``); return the count removed. Each removal and kill is
-    recorded in ``<home>/logs/scratch-prune.log`` (*scratch* is ``<home>/cache/scratch``)."""
+    first (``hermes_constants_scratch``); return the count removed. Each removal, each
+    kill and each entry rescued mid-prune is recorded in ``<home>/logs/scratch-prune.log``
+    (*scratch* is ``<home>/cache/scratch``)."""
     from hermes_constants_scratch import prune_idle_entries
 
     root = scratch if scratch is not None else get_scratch_dir(prune=False)
@@ -960,7 +1040,7 @@ def apply_scratch_tmp_env(env: MutableMapping[str, str]) -> bool:
     """Point ``TMPDIR``/``TMP``/``TEMP`` in *env* at the scratch dir of ``env["HERMES_HOME"]``.
 
     A temp var the user (or the OS: macOS ``/var/folders``, Windows ``%TEMP%``) set is
-    respected and nothing changes. A value Hermes itself exported earlier — recognisable
+    respected and nothing changes. A value Cybr Agent itself exported earlier — recognisable
     because it equals ``HERMES_SCRATCH_DIR`` — is re-derived, so a child running under another
     profile's home gets that home's scratch dir rather than its parent's. Returns True when
     the vars were (re)written.
@@ -1177,7 +1257,7 @@ def wsl_unc_path_to_posix(path: str) -> str | None:
 
 
 def translate_cwd_for_wsl_backend(cwd: str) -> str:
-    """Map a Windows-host cwd (drive path or ``\\\\wsl.localhost\\`` UNC) to POSIX when Hermes runs in WSL.
+    """Map a Windows-host cwd (drive path or ``\\\\wsl.localhost\\`` UNC) to POSIX when Cybr Agent runs in WSL.
 
     No-op off WSL and for paths already POSIX.
     """
@@ -1362,7 +1442,7 @@ FIRST_PARTY_MODULE_ROOTS = frozenset({
 
 
 def is_first_party_module(name: str | None) -> bool:
-    """True when *name* ships with Hermes (exact first segment; ``startswith`` would claim ``agentops``)."""
+    """True when *name* ships with Cybr Agent (exact first segment; ``startswith`` would claim ``agentops``)."""
     root = str(name).split(".")[0] if name else ""
     return bool(root) and (root in FIRST_PARTY_MODULE_ROOTS or root.startswith("hermes_"))
 

@@ -18,7 +18,7 @@ def _is_windows() -> bool:
 
 
 #: Launcher command names install.ps1's Set-PathVariable exposes from the
-#: managed binary dir (the default Hermes root's ``bin``, next to uv.exe)
+#: managed binary dir (the default Cybr Agent root's ``bin``, next to uv.exe)
 #: on the user PATH. Keep in lockstep with WINDOWS_BIN_LAUNCHERS in
 #: hermes_cli/_launchers.py and scripts/install.ps1.
 _WINDOWS_BIN_LAUNCHERS = ("hermes", "hermes-acp")
@@ -68,7 +68,7 @@ def ensure_windows_bin_launchers(
     python with ``PYTHONPATH=<repo>;<venv>/site-packages``, never the venv
     interpreter (no-boot-through-venv; ``pyvenv.cfg`` is inert dead
     config). The canonical launcher home is
-    the managed binary dir — the default Hermes root's ``bin``
+    the managed binary dir — the default Cybr Agent root's ``bin``
     (``%LOCALAPPDATA%\\hermes\\bin``, next to the managed uv) — which lives
     OUTSIDE the git checkout so no git operation can ever touch it. It is
     a per-machine dir shared by every profile: ``get_hermes_home()`` would
@@ -110,7 +110,7 @@ def ensure_windows_bin_launchers(
 
     root = Path(root)
 
-    # Per-machine anchor: the DEFAULT Hermes root, not get_hermes_home() —
+    # Per-machine anchor: the DEFAULT Cybr Agent root, not get_hermes_home() —
     # under ``hermes -p <name>`` that returns ``profiles\\<name>``, which
     # would fail the managed-clone gate below and silently skip the heal
     # for profile users. The launcher dir serves the whole machine.
@@ -257,7 +257,8 @@ def migrate_windows_bin_path(
     2. verify both launchers are present there — otherwise STOP, leaving
        the user PATH untouched (never strip a working entry before its
        replacement is proven);
-    3. ensure the managed binary dir is on the user PATH (prepend);
+    3. ensure the managed binary dir is on the user PATH (prepend), only
+       when new consoles resolve this home (``_launchers.owns_user_path``);
     4. strip the legacy entries: ``<root>\\bin`` (in-checkout launcher dir
        the update autostash could sweep) and ``<root>\\venv\\Scripts``
        (shadowed the user's ``python``, #83797).
@@ -299,6 +300,14 @@ def migrate_windows_bin_path(
         for name in _WINDOWS_BIN_LAUNCHERS
     ):
         return False  # staging incomplete — leave the PATH alone
+
+    try:
+        from hermes_cli._launchers import owns_user_path
+
+        if not owns_user_path(home):
+            return False  # new consoles resolve another home; leave the User PATH to it
+    except (ImportError, OSError, ValueError):  # an old updater's _launchers, or a failed Win32 call
+        return False
 
     if read_user_path is None:
         read_user_path = _read_user_path_raw

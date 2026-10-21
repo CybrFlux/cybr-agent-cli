@@ -44,9 +44,9 @@ UPGRADE_CANCELLED = "\nSign-in cancelled."
 UPGRADE_UNAVAILABLE_CHAT = "The free tier is not available right now. Try /login again in a moment."
 LOGIN_COMMAND = "/login"
 LOGIN_STARTING = "Starting sign-in..."
-LOGIN_DM_ONLY = "Sign in from a direct message with Hermes."
-LOGIN_BUSY_ELSEWHERE = "Another sign-in is already running on this Hermes. Try again in a few minutes."
-LOGIN_NOT_ALLOWED = "Only an operator of this Hermes can sign it in."
+LOGIN_DM_ONLY = "Sign in from a direct message with Cybr Agent."
+LOGIN_BUSY_ELSEWHERE = "Another sign-in is already running on this Cybr Agent. Try again in a few minutes."
+LOGIN_NOT_ALLOWED = "Only an operator of this Cybr Agent can sign it in."
 # The card form (a surface with its own sign-in button) and the chat form (names /login).
 FREE_TIER_RATE_LIMIT_CARD = (
     "You've used up the allowance for chatting without signing in. It refreshes in {reset}. "
@@ -337,8 +337,8 @@ def run_sign_in(
 
     # Preconditions run inside the scope; the state they produce is yielded outside it, because a
     # scope must never be held across a ``yield``. A sign-in never creates the identity it signs in
-    # from: with none on disk there is nothing to promote and the answer is ``Unavailable`` (the boot
-    # bootstrap is the only creator, NS-845 Q1.2).
+    # from: with none on disk there is nothing to promote and the answer is ``Unavailable`` (the
+    # trial claim and connector use are the only creators, NS-845 Q1.2).
     precondition_state: Optional[SignInState] = None
     state: Optional[dict[str, Any]] = None
     try:
@@ -346,7 +346,7 @@ def run_sign_in(
             state = _core.current_nous_state()
             if state and not _core.is_guest_state(state):
                 precondition_state = AlreadySignedIn()
-            elif not state or not _core.guest_enabled():
+            elif not state or not _core.guest_allowed():
                 precondition_state = Unavailable()
     except Exception as exc:
         # An unreadable auth store means the same thing here: there is no free tier to sign in from.

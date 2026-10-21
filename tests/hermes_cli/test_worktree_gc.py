@@ -215,7 +215,7 @@ class TestReclaim:
         assert probe.returncode != 0, "branch should be gone with its tree"
 
     def test_untracked_files_archived_under_the_active_profile_home(self, repo, tmp_path, monkeypatch):
-        """The archive follows the active Hermes home (a named profile here), never ~/.hermes."""
+        """The archive follows the active Cybr Agent home (a named profile here), never ~/.hermes."""
         native_home = tmp_path / "native"
         profile_home = tmp_path / "root" / "profiles" / "work"
         profile_home.mkdir(parents=True)
@@ -420,7 +420,7 @@ class TestCmdWorktreeJson:
         _add_worktree(repo, "hermes-json")
         assert cmd_worktree(self._ns(repo, "list")) == 0
         payload = json.loads(capsys.readouterr().out)
-        assert set(payload) == {"repo", "trees", "external_trees", "branches"}
+        assert set(payload) == {"repo", "trees", "external_trees", "branches", "archives"}
         names = [t["name"] for t in payload["trees"]]
         assert "hermes-json" in names
         tree = next(t for t in payload["trees"] if t["name"] == "hermes-json")

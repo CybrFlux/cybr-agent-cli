@@ -11,17 +11,35 @@ import sqlite3
 import sys
 import threading
 
+
+def _pm_generation_dirs(prefixes) -> set[Path]:
+    """The PM generation dir (``<installs>/<key>/{environments,test-environment}/<gen>``) around
+    each prefix that is a generation's ``venv``."""
+    found = set()
+    for prefix in prefixes:
+        venv = Path(prefix).resolve()
+        if venv.name in ("venv", ".venv") and venv.parent.parent.name in ("environments", "test-environment"):
+            found.add(venv.parent)
+    return found
+
+
 _INTERPRETER_PREFIXES = tuple({
     Path(p).resolve() for p in (sys.prefix, sys.base_prefix, sys.exec_prefix, sys.base_exec_prefix)
 } | {
     # A PM-activated developer shell runs sys.prefix's python against a dependency generation
-    # whose site-packages sits under the (real) Hermes home; third-party imports from it are the
-    # interpreter's installation, not Hermes state.
+    # whose site-packages sits under the (real) Cybr Agent home; third-party imports from it are the
+    # interpreter's installation, not Cybr Agent state.
     Path(p).resolve() for p in sys.path if p and Path(p).name in ("site-packages", "dist-packages")
+} | {
+    # scripts/run_tests.sh runs a PM generation venv (<installs>/<key>/{environments,test-environment}
+    # /<gen>/venv) that sits under the home whenever HOME is the run's fake home. The generation dir
+    # around the venv is that interpreter's installation too: `hermes update` probes
+    # <venv>/../hermes_cli/main.py to find the checkout owning its venv (update_owning_install).
+    *_pm_generation_dirs((sys.prefix, sys.exec_prefix)),
 } | {
     # The default install checks the repo out INSIDE the home (install.sh:
     # INSTALL_DIR=$HERMES_HOME/hermes-agent). Reading test data, sources for tracebacks, or the
-    # checkout's own .venv is not Hermes state; without this every run from a default install
+    # checkout's own .venv is not Cybr Agent state; without this every run from a default install
     # trips on its first traceback.
     Path(__file__).resolve().parent.parent,
 })
@@ -86,16 +104,18 @@ class HomeIOGuard:
             # probe) reads no state; only its contents are guarded.
             if metadata and absolute in roots:
                 return
-            # ``shutil.which`` stats/accesses ``<PATH entry>/<name>``. A developer shell puts
-            # PM's tool store (~/.hermes/tools/...) on PATH; probing an executable there is
-            # command lookup, not reading Hermes state. CI has no such entries.
+            # ``shutil.which`` stats/accesses ``<PATH entry>/<name>``, and command resolution
+            # realpath()s the entry itself (is it a Cybr Agent-managed bin dir?), which lstats each of
+            # its ancestors. A developer shell puts PM's tool store (~/.hermes/tools/...) on PATH;
+            # probing there is command lookup, not reading Cybr Agent state. CI has no such entries.
             if metadata:
                 path = os.environ.get("PATH", "")
                 cwd = os.getcwd() if self._relative_path_entries(path) else None
-                if os.path.dirname(absolute) in self._path_entries(path, cwd):
+                entries = self._path_entries(path, cwd)
+                if os.path.dirname(absolute) in entries or any(_contains(absolute, entry) for entry in entries):
                     return
             # The interpreter's own installation (a PM-managed python under ~/.hermes/tools):
-            # stdlib source reads (linecache, traceback) are not Hermes state either, nor is
+            # stdlib source reads (linecache, traceback) are not Cybr Agent state either, nor is
             # realpath() walking up through its ancestors.
             for prefix in _INTERPRETER_PREFIX_STRS:
                 if _within(absolute, prefix) or (metadata and _contains(absolute, prefix)):
@@ -131,7 +151,7 @@ class HomeIOGuard:
                 import pytest
                 # pytest.fail, not AssertionError: removal helpers catch Exception and would log
                 # the refusal as a warning while the test passed.
-                pytest.fail(f"TEST BUG: changing the REAL installed Hermes desktop app: {value}\n"
+                pytest.fail(f"TEST BUG: changing the REAL installed Cybr Agent desktop app: {value}\n"
                             "Stub hermes_cli.gui_uninstall.packaged_gui_app_paths to a temporary path.")
         return resolved
 

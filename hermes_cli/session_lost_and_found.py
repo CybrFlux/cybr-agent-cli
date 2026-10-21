@@ -77,9 +77,9 @@ SQLITE3_CLI_GUIDANCE = (
 # 3.50.7 and 3.44.6 — the same version gate hermes_state applies to the
 # embedded library (#69784). The system `sqlite3` CLI on Debian/Ubuntu is
 # routinely in the vulnerable band (e.g. 3.45.1), and #100368's forensics
-# caught exactly this shell converting a live Hermes state.db into two
+# caught exactly this shell converting a live Cybr Agent state.db into two
 # generations. A salvage shell must therefore be version-gated, not just
-# capability-gated, before it is pointed at (a copy of) a Hermes database.
+# capability-gated, before it is pointed at (a copy of) a Cybr Agent database.
 #
 # The predicate lives in hermes_cli.sqlite_runtime (stdlib-only, shared with
 # the installer/update gates) so the embedded runtime and the salvage shell
@@ -87,7 +87,7 @@ SQLITE3_CLI_GUIDANCE = (
 from hermes_cli.sqlite_runtime import is_sqlite_wal_reset_vulnerable as _wal_reset_vulnerable
 
 _WAL_RESET_VULNERABLE_GUIDANCE = (
-    "salvage against a Hermes database with the WAL-reset bug "
+    "salvage against a Cybr Agent database with the WAL-reset bug "
     "(https://sqlite.org/wal.html#walresetbug, fixed in 3.51.3+ / backports "
     "3.50.7 / 3.44.6; the vulnerable fresh-opener can unlink a live WAL/SHM "
     "pair and split the database into two generations, losing acknowledged "
@@ -307,6 +307,17 @@ def _looks_like_source(value: Any) -> bool:
     )
 
 
+def _session_source_index(cells: tuple[Any, ...]) -> Optional[int]:
+    if len(cells) > 1 and _looks_like_source(cells[1]):
+        return 1
+    # Fresh runtime schemas inserted counters after id; upgraded databases
+    # append those same columns. Width alone cannot distinguish the layouts.
+    if (len(cells) > 3 and _looks_like_source(cells[3])
+            and all(v is None or isinstance(v, int) for v in cells[1:3])):
+        return 3
+    return None
+
+
 def classify_lost_and_found_row(nfield: int, cells: tuple[Any, ...]) -> Optional[str]:
     """Classify one lost_and_found record by field count + sentinel values."""
     if len(cells) >= 3 and cells[0] is None:
@@ -321,9 +332,10 @@ def classify_lost_and_found_row(nfield: int, cells: tuple[Any, ...]) -> Optional
     second = cells[1] if len(cells) > 1 else None
     if nfield == SESSION_MODEL_USAGE_NFIELD:  # session id first, model string second
         return "session_model_usage" if isinstance(second, str) and second else None
-    # Any historical sessions width: session id first + recognizable source second (every sessions
-    # layout ever shipped has at least the 14 original columns).
-    if nfield >= SESSIONS_LEGACY_MINIMAL_NFIELD and _looks_like_source(second):
+    # Any historical sessions width: session id first + recognizable source (every sessions layout ever
+    # shipped has at least the 14 original columns). Stores created at the runtime-authority schema carry
+    # runtime_revision/runtime_generation right after id, so the source cell sits at 3 there (#101409 lane).
+    if nfield >= SESSIONS_LEGACY_MINIMAL_NFIELD and _session_source_index(cells) is not None:
         return "sessions"
     return None
 
@@ -347,6 +359,27 @@ def _insert_prefix_row(
     return _execute_insert(dest, table, dest_columns[: len(values)], values)
 
 
+def _sessions_prefix_columns(
+    columns: list[str], defaults: dict[int, Any], cells: tuple[Any, ...],
+) -> tuple[list[str], dict[int, Any]]:
+    """Positional fallback for a sessions record no history layout claimed.
+
+    The destination declares runtime_revision/runtime_generation right after ``id``; an
+    upgraded store appended them at the end instead. Which order produced the record is
+    read off the cells (where the source sits), so the prefix zip lands ``source`` on
+    ``source`` instead of shifting every field by two.
+    """
+    runtime_columns = ["runtime_revision", "runtime_generation"]
+    base_columns = [c for c in columns if c not in runtime_columns]
+    ordered = (
+        [base_columns[0], *runtime_columns, *base_columns[1:]]
+        if _session_source_index(cells) == 3
+        else [*base_columns, *runtime_columns]
+    )
+    named_defaults = {columns[i]: value for i, value in defaults.items()}
+    return ordered, {i: named_defaults[c] for i, c in enumerate(ordered) if c in named_defaults}
+
+
 def _declared_types(conn: sqlite3.Connection, table: str) -> dict[str, str]:
     return {str(row[1]): str(row[2] or "") for row in conn.execute(f'PRAGMA table_info("{table}")')}
 
@@ -355,7 +388,7 @@ def _type_conflicts(value: Any, declared: str) -> bool:
     """True when a salvaged cell cannot have come from a column of this type.
 
     Stricter than SQLite affinity on purpose: SQLite would happily keep a
-    non-numeric string in an INTEGER column, but Hermes never writes one, so
+    non-numeric string in an INTEGER column, but Cybr Agent never writes one, so
     text sitting where a counter is declared means the layout is wrong. A
     TEXT column always yields ``str`` (numbers are coerced on write), a REAL
     column always yields ``float``, an INTEGER column yields ``int``.
@@ -699,11 +732,15 @@ def map_lost_and_found_rows(lf_conn: sqlite3.Connection, dest: sqlite3.Connectio
         # Per-kind destination columns + NOT NULL substitutes. Identity fields are never fabricated:
         # rows with a NULL session id / role / source were already rejected by classify_lost_and_found_row.
         targets: dict[str, tuple[list[str], dict[int, Any]]] = {}
-        for kind_name, protected in (("sessions", (0, 1)), ("messages", (1, 2)), ("session_model_usage", (0, 1))):
+        for kind_name, protected in (
+            ("sessions", ("id", "source")), ("messages", ("session_id", "role")),
+            ("session_model_usage", ("session_id", "model")),
+        ):
+            columns = _table_columns(dest, kind_name)
             defaults = _notnull_defaults(dest, kind_name)
-            for index in protected:
-                defaults.pop(index, None)
-            targets[kind_name] = (_table_columns(dest, kind_name), defaults)
+            for name in protected:
+                defaults.pop(columns.index(name), None)
+            targets[kind_name] = (columns, defaults)
         dest_types = {table: _declared_types(dest, table) for table in targets}
         lf_tables = [
             str(row[0]) for row in
@@ -780,6 +817,8 @@ def map_lost_and_found_rows(lf_conn: sqlite3.Connection, dest: sqlite3.Connectio
                     values = list(cells[:len(columns)])
                     if kind == "messages":
                         values[0] = lf_rowid
+                    elif kind == "sessions":
+                        columns, defaults = _sessions_prefix_columns(columns, defaults, cells)
                     inserted = _insert_prefix_row(dest, kind, columns, values, defaults)
             except sqlite3.DatabaseError:
                 report["unmapped_rows"] += 1

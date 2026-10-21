@@ -66,7 +66,7 @@ class SlashCommandsMixin:
             "Queue a prompt to run after the current turn finishes",
             "prompt to run next",
         ),
-        "version": ("Show Hermes version", "Show Hermes version", None),
+        "version": ("Show Cybr Agent version", "Show Cybr Agent version", None),
     }
 
 
@@ -109,7 +109,7 @@ class SlashCommandsMixin:
         handler = getattr(self, f"_cmd_{cmd}")
 
         # Handlers run outside the per-turn cwd-pinning context. ``/compress``
-        # and ``/model`` REBUILD the system prompt, so unpinned they'd bake the Hermes install tree
+        # and ``/model`` REBUILD the system prompt, so unpinned they'd bake the Cybr Agent install tree
         # into the persisted cached prompt. Pin inside a fresh context: no leak, no teardown.
         def _dispatch() -> str | None:
             try:
@@ -151,7 +151,7 @@ class SlashCommandsMixin:
         try:
             from model_tools import get_tool_definitions
             from types import SimpleNamespace
-            from agent.memory_manager import inject_memory_provider_tools
+            from agent.memory_manager_tools import inject_memory_provider_tools
 
             toolsets = _expand_acp_enabled_toolsets(getattr(state.agent, "enabled_toolsets", None))
             tools = get_tool_definitions(
@@ -309,4 +309,4 @@ class SlashCommandsMixin:
     def _cmd_version(self, args: str, state: SessionState) -> str:
         from hermes_cli.version_info import get_version_info
 
-        return f"Hermes Agent v{get_version_info().derived_version}"
+        return f"Cybr Agent v{get_version_info().derived_version}"

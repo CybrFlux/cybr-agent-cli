@@ -1,4 +1,4 @@
-"""ACP agent server — exposes Hermes Agent via the Agent Client Protocol."""
+"""ACP agent server — exposes Cybr Agent via the Agent Client Protocol."""
 
 from __future__ import annotations
 
@@ -32,6 +32,7 @@ from acp_adapter.events import (
     make_message_cb, make_step_cb, make_thinking_cb, make_tool_progress_cb,
 )
 from acp_adapter.model_catalog import build_model_state, encode_model_choice
+from acp_adapter import modes as _modes
 from acp_adapter.permissions import make_approval_callback
 from acp_adapter.provenance import session_provenance_meta
 from acp_adapter.session import SessionManager, SessionState, _expand_acp_enabled_toolsets
@@ -231,25 +232,21 @@ class _TurnCallbacks:
 
 
 class HermesACPAgent(SlashCommandsMixin, acp.Agent):
-    """ACP Agent implementation wrapping Hermes AIAgent."""
+    """ACP Agent implementation wrapping Cybr Agent AIAgent."""
 
-    _EDIT_APPROVAL_POLICY_CONFIG_ID = "edit_approval_policy"
-    _EDIT_APPROVAL_POLICY_DEFAULT = "ask"
-    _MODE_DEFAULT = "default"
-    # mode id -> (edit approval policy, display name, description)
-    _MODES: dict[str, tuple[str, str, str]] = {
-        "default": ("ask", "Default", "Ask before edits."),
-        "accept_edits": (
-            "workspace_session",
-            "Accept Edits",
-            "Auto-allow workspace and temp-dir edits; still asks for sensitive paths.",
-        ),
-        "dont_ask": (
-            "session", "Don't Ask", "Auto-allow file edits for this session except sensitive paths."
-        ),
-    }
-    _MODE_TO_EDIT_APPROVAL_POLICY = {mode: spec[0] for mode, spec in _MODES.items()}
-    _EDIT_APPROVAL_POLICY_TO_MODE = {spec[0]: mode for mode, spec in _MODES.items()}
+    # mode id -> (edit approval policy, display name, description): ``acp_adapter/modes.py``
+    _EDIT_APPROVAL_POLICY_CONFIG_ID = _modes.EDIT_APPROVAL_POLICY_CONFIG_ID
+    _EDIT_APPROVAL_POLICY_DEFAULT = _modes.DEFAULT_EDIT_APPROVAL_POLICY
+    _MODE_DEFAULT = _modes.DEFAULT_MODE
+    _MODES = _modes.MODES
+    _MODE_TO_EDIT_APPROVAL_POLICY = _modes.MODE_TO_EDIT_APPROVAL_POLICY
+    _EDIT_APPROVAL_POLICY_TO_MODE = _modes.EDIT_APPROVAL_POLICY_TO_MODE
+
+    def __new__(cls, session_manager=None):
+        if session_manager is None:
+            from acp_adapter.gateway_server import GatewayACPAgent
+            return GatewayACPAgent()
+        return super().__new__(cls)
 
     def __init__(self, session_manager: SessionManager | None = None):
         super().__init__()
@@ -296,7 +293,7 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
         return policy, state.cwd
 
     def _build_model_state(self, state: SessionState) -> SessionModelState | None:
-        """Authenticated providers + models, from the shared Hermes inventory (same substrate
+        """Authenticated providers + models, from the shared Cybr Agent inventory (same substrate
         as ``hermes model``/TUI/dashboard) so the selector isn't just the current curated list."""
         model = str(state.model or getattr(state.agent, "model", "") or "").strip()
         provider = getattr(state.agent, "provider", None) or detect_provider() or "openrouter"
@@ -448,7 +445,7 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
             return
         try:
             from model_tools import get_tool_definitions
-            from agent.memory_manager import inject_memory_provider_tools
+            from agent.memory_manager_tools import inject_memory_provider_tools
 
             agent = state.agent
             agent.enabled_toolsets = _expand_acp_enabled_toolsets(
@@ -766,7 +763,7 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
         with contextlib.ExitStack() as stack:
             # HERMES_SESSION_KEY scopes per-session caches (interactive sudo password) to this
             # session, not the reused thread. ``cwd`` pins what the system prompt reports as the
-            # working directory — otherwise it advertises the Hermes workspace while tools are
+            # working directory — otherwise it advertises the Cybr Agent workspace while tools are
             # rooted at the client's project and edits land outside it. ``cron_session=""`` masks
             # any leaked process-global HERMES_CRON_SESSION.
             def _session_context() -> Callable[[], None]:
@@ -816,7 +813,7 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
                 return {"final_response": f"Error: {e}", "messages": state.history}
 
     async def prompt(self, prompt: list[PromptBlock], session_id: str, **kwargs: Any) -> PromptResponse:
-        """Run Hermes on the user's prompt and stream events back to the editor."""
+        """Run Cybr Agent on the user's prompt and stream events back to the editor."""
         state = await asyncio.to_thread(self.session_manager.get_session, session_id)
         if state is None:
             logger.error("prompt: session %s not found", session_id)
@@ -1040,7 +1037,7 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
                     self._switch_model, state, model_id, keep_endpoint=True)
             except ModelRejected as exc:
                 # A model no provider can serve is a bad ``modelId`` param (-32602), not an agent
-                # internal error (-32603): the client attributes it to the request, not to Hermes (#72439).
+                # internal error (-32603): the client attributes it to the request, not to Cybr Agent (#72439).
                 # Only the switch_model rejection maps here; a ValueError from the rebuild itself
                 # (disabled provider, context window below the floor) stays on the -32603 path.
                 from acp.exceptions import RequestError
@@ -1074,7 +1071,7 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
     async def set_config_option(
         self, config_id: str, session_id: str, value: str, **kwargs: Any
     ) -> SetSessionConfigOptionResponse | None:
-        """Accept ACP config option updates even when Hermes has no typed ACP config surface yet."""
+        """Accept ACP config option updates even when Cybr Agent has no typed ACP config surface yet."""
         state = await asyncio.to_thread(self.session_manager.get_session, session_id)
         if state is None:
             logger.warning("Session %s: config update requested for missing session", session_id)

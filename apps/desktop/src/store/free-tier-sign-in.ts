@@ -6,7 +6,7 @@ import { gatewayActivationEpoch } from '@/store/gateway'
 import type { FreeTierStatus } from '@/types/hermes'
 
 import { $freeTierStatus, type FreeTierRequester, NOUS_PROVIDER_ID, refreshFreeTierStatus } from './free-tier'
-import { guidedOnboardingActive } from './onboarding-gate'
+import { $localModelOfferPending } from './local-model-offer'
 import { onboardingSurfaceActive } from './onboarding-presence'
 
 const POLL_MS = 2000
@@ -187,8 +187,12 @@ export function syncFreeTierOffer(status: FreeTierStatus | null, requestGateway:
   void claimFreeTierOffer(requestGateway)
 }
 
+// The local-model offer after onboarding goes first; the sign-in offer is claimed once it is answered.
 const offerBlocked = () =>
-  offerClaiming || guidedOnboardingActive() || onboardingSurfaceActive() || $freeTierSignIn.get().status !== 'closed'
+  offerClaiming ||
+  onboardingSurfaceActive() ||
+  $localModelOfferPending.get() ||
+  $freeTierSignIn.get().status !== 'closed'
 
 async function claimFreeTierOffer(requestGateway: FreeTierRequester) {
   if (offerBlocked()) {
@@ -279,7 +283,7 @@ async function openSignInUrl(url: string) {
 }
 
 /**
- * Drive one sign-in attempt end to end: resolve what identity this Hermes is
+ * Drive one sign-in attempt end to end: resolve what identity this Cybr Agent is
  * on, start the transfer, open the consent page, then poll until it resolves.
  * Safe to call again from a "Try again" button — it clears any previous timers
  * first.

@@ -109,7 +109,7 @@ node scripts/build/desktop.mjs --source /work/source \
 
 | Builder | Required CLI arguments | Additional CLI arguments | Product contents |
 |---|---|---|---|
-| `tui.mjs` | `--source`, `--out` | None | `dist/entry.js` and `package.json` with `type: module` |
+| `tui.mjs` | `--source`, `--out` | None | `dist/entry.js`, gateway/clipboard Python helpers in `dist/scripts/`, and `package.json` with `type: module` |
 | `web.mjs` | `--source`, `--out`, `--icons` | None | `index.html`, Vite assets, and public assets |
 | `desktop.mjs` | `--source`, `--out`, `--icons`, `--stamp`, `--native-deps` | `--typecheck`, `--platform` | Renderer assets, `electron-main.mjs`, `electron-preload.js`, and native `node_modules` |
 
@@ -122,7 +122,7 @@ Each compiler publishes `hermes-build.json` inside its output (inside `dist/`
 for TUI). `freshness.mjs` owns this receipt and all source input selection.
 TUI inputs are its source tree, the Ink source alias, shared sources, their
 manifests and TypeScript configuration, dependency locks, and its compiler and
-shared compiler helpers. Tests, workspace documentation, dependency-provider
+shared compiler helpers, plus the shipped Python runtime helpers. Tests, workspace documentation, dependency-provider
 recipes, and other products' compiler recipes do not invalidate the TUI.
 It records product/host identity, content hashes of workspace/shared sources and
 build inputs, and the exact supplied icon directory, desktop install stamp, and
@@ -180,7 +180,7 @@ The web builder reads `web/public/` beneath it and requires `favicon.ico`.
 The desktop builder reads `apps/desktop/public/` beneath it and requires
 `apple-touch-icon.png`.
 
-Run the generator with a Hermes runtime Python (Pillow and resvg-py are core
+Run the generator with a Cybr Agent runtime Python (Pillow and resvg-py are core
 dependencies):
 
 ```sh
@@ -286,12 +286,12 @@ uses `python -m pm.build_env --prune-cache --cache PATH`; add `--ci` only when t
 cache will not be packaged for offline installation.
 
 Native bundle staging keeps its HOME and PM state temporary, but not its uv
-cache. `scripts.bundles.stage --cache PATH` (or `hermes pm bundle --cache PATH`)
+cache. `scripts.bundles.stage --cache PATH` (or `cybr pm bundle --cache PATH`)
 selects the persistent cache explicitly. Direct staging also accepts the
 provider's `UV_CACHE_DIR`; otherwise it uses the output parent's `.uv-cache`.
 The PM runtime and application dependency builds receive this same cache.
-General PM staging uses `setup-pm` and `save-pm-cache` to restore and save it
-after the build, including failures, under its v2 namespace. Desktop composition
+General PM staging uses `setup-pm`, which restores and saves it automatically on
+success. Desktop composition
 instead prepares the full dependency set before its single dependency snapshot
 save. The packaged `uv-cache/` is a copy, not the writable build cache.
 
@@ -374,7 +374,7 @@ match the supplied PM runtime. The assembler does not create that environment.
   from this map.
 
 Source-layout placement writes project distribution metadata without building
-a Hermes wheel. It also writes `site_packages/hermes-agent.pth` with a relative
+a Cybr Agent wheel. It also writes `site_packages/hermes-agent.pth` with a relative
 code path. Source-layout placement therefore requires an output-owned dependency
 directory, including in `fixed` mode. Reference placement does not write this file.
 

@@ -273,13 +273,8 @@ class CLIStatusBarMixin:
         except Exception:
             pass
         try:
-            from tools.process_registry import process_registry
-            snapshot["active_background_processes"] = process_registry.count_running()
-        except Exception:
-            pass
-        try:
-            from tools.async_delegation import active_count as _async_active_count
-            snapshot["active_background_subagents"] = _async_active_count()
+            from hermes_cli.gateway_tools import background_counts
+            snapshot.update(background_counts())
         except Exception:
             pass
 
@@ -544,14 +539,14 @@ class CLIStatusBarMixin:
 
     def _agent_spacer_height(self, width: Optional[int] = None) -> int:
         """Spacer height above the status bar while the agent runs."""
-        if not getattr(self, "_agent_running", False):
+        if not getattr(self, "_agent_running", False) or getattr(self, "_modern_layout", False):
             return 0
         return 0 if self._use_minimal_tui_chrome(width=width) else 1
 
     def _spinner_widget_height(self, width: Optional[int] = None) -> int:
         """Visible height of the spinner/status line above the status bar."""
         spinner_line = self._render_spinner_text()
-        if not spinner_line or self._use_minimal_tui_chrome(width=width):
+        if not spinner_line or self._use_minimal_tui_chrome(width=width) or getattr(self, "_modern_layout", False):
             return 0
         width = width or self._get_tui_terminal_width()
         if width and width > 10:
@@ -602,7 +597,9 @@ class CLIStatusBarMixin:
         if getattr(self, "tool_progress_mode", "all") == "off":
             return False
         agent = getattr(self, "agent", None)
-        if agent is not None and getattr(agent, "quiet_mode", False):
+        # The interactive agent itself runs quiet unless --verbose, so in the classic layout this
+        # line only shows under --verbose; the glyph layout closes every interactive turn with it.
+        if agent is not None and getattr(agent, "quiet_mode", False) and not getattr(self, "_modern_layout", False):
             return False
         return bool(getattr(self, "_interactive_turn", False))
 
@@ -643,7 +640,10 @@ class CLIStatusBarMixin:
         try:
             started = getattr(self, "_turn_summary_start", 0.0) or 0.0
             line = collector.render(max(0.0, time.monotonic() - started) if started else 0.0)
-            if line:
+            if line and getattr(self, "_modern_layout", False):
+                from hermes_cli.cli_modern_layout import turn_footer
+                _cprint(turn_footer(line))
+            elif line:
                 _cprint(f"  {_D}{line}{_RST}")
         except Exception:
             logger.debug("Turn summary render failed", exc_info=True)
@@ -1041,9 +1041,9 @@ class CLIStatusBarMixin:
 
         if _ok("model"):
             if styled:
-                segs.append([(_SB, " ☤ "), (_STRONG, model_short)])
+                segs.append([(_SB, " ∿ "), (_STRONG, model_short)])
             else:
-                segs.append([("", f"☤ {model_short}")])
+                segs.append([("", f"∿ {model_short}")])
         narrow, wide = width < 52, width >= 76
         if narrow:
             # Narrow bars put duration ahead of the goal segment; the other tiers reverse it.
@@ -1118,7 +1118,7 @@ class CLIStatusBarMixin:
             session_title = (snapshot.get("session_title") or "") if show_title else ""
             segs = self._status_bar_segments(
                 snapshot, width, field_set, self._is_session_yolo_active(), styled=False)
-            parts = ["".join(t for _, t in seg) for seg in segs] or [f"☤ {model_short}"]
+            parts = ["".join(t for _, t in seg) for seg in segs] or [f"∿ {model_short}"]
             # Narrow bars always join the battery with │; wider tiers use the tier separator.
             if battery_label:
                 parts.insert(0, battery_label)
@@ -1128,7 +1128,7 @@ class CLIStatusBarMixin:
                 text = (" · " if width < 76 else " │ ").join(parts)
             return self._right_align_status_title(text, session_title, width)
         except Exception:
-            return f"☤ {self.model if getattr(self, 'model', None) else 'Hermes'}"
+            return f"∿ {self.model if getattr(self, 'model', None) else 'Cybr Agent'}"
 
     def _get_status_bar_fragments(self):
         if (
@@ -1136,6 +1136,9 @@ class CLIStatusBarMixin:
             or getattr(self, "_model_picker_state", None)
             or getattr(self, "_command_palette_state", None)):
             return []
+        if getattr(self, "_modern_layout", False):
+            from hermes_cli.cli_modern_layout import status_line_fragments
+            return status_line_fragments(self)
         try:
             snapshot = self._get_status_bar_snapshot()
             # prompt_toolkit's own width: shutil's can be stale (esp. over SSH) and an overflow
@@ -1151,7 +1154,7 @@ class CLIStatusBarMixin:
                 snapshot, width, field_set, self._is_session_yolo_active(), styled=True)
             sep = " · " if width < 76 else " │ "
             frags: list = []
-            for seg in segs or [[(_SB, " ☤ "), (_STRONG, snapshot["model_short"])]]:
+            for seg in segs or [[(_SB, " ∿ "), (_STRONG, snapshot["model_short"])]]:
                 if frags:
                     frags.append((_DIM, sep))
                 frags.extend(seg)
@@ -1164,7 +1167,7 @@ class CLIStatusBarMixin:
             if stash_indicator and _ok("stash"):
                 frags.extend([(_DIM, " · "), (_STRONG, stash_indicator)])
             frags.append((_SB, " "))  # one-cell right margin
-            # Battery is the first element when enabled: prepend ahead of the ☤ marker.
+            # Battery is the first element when enabled: prepend ahead of the ∿ marker.
             battery_label = snapshot.get("battery_label") or ""
             if battery_label and _ok("battery"):
                 battery_style = self._battery_status_style(snapshot.get("battery_category", "dim"))

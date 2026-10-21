@@ -1,4 +1,4 @@
-"""Gateway restart/drain, Hermes update and background-action status dashboard routes.
+"""Gateway restart/drain, Cybr Agent update and background-action status dashboard routes.
 
 Extracted from ``hermes_cli.web_server``; helpers/state that tests monkeypatch on
 ``web_server`` stay there and are late-bound (cycle-safe).
@@ -55,7 +55,7 @@ _ACTION_LOG_TAIL_MAX_CHUNK_BYTES = 64 * 1024
 _UPDATE_ACTION_COMPLETED_RE = re.compile(r"^=== hermes-update completed ([0-9a-f]{32}) ===$")
 _UPDATE_ACTION_STARTED_RE = re.compile(r"^=== hermes-update started .* ([0-9a-f]{32}) ===$")
 
-_MANAGED_EXTERNALLY_MESSAGE = "Hermes updates are managed outside this dashboard in containerized environments."
+_MANAGED_EXTERNALLY_MESSAGE = "Cybr Agent updates are managed outside this dashboard in containerized environments."
 
 # Per-kind dashboard error codes the UI keys on, by admission-refusal code.
 _UPDATE_REFUSAL_ERROR_CODES = {
@@ -159,9 +159,10 @@ def _persisted_action_id(log_dir: Path, name: str) -> Optional[str]:
 
 @router.post("/api/gateway/restart")
 async def restart_gateway(profile: Optional[str] = None):
-    """Kick off a ``hermes gateway restart`` in the background."""
+    """Kick off a ``hermes gateway restart --interrupt`` in the background: the user-commanded force
+    path that supersedes a drain (D6, 19b26244046), so live sessions do not refuse it."""
     with http_failure("Failed to spawn gateway restart", 500, "Failed to restart gateway"):
-        proc, _reused = _spawn_gateway_restart(profile)
+        proc, _reused = _spawn_gateway_restart(profile, interrupt=True)
     return {"ok": True, "pid": proc.pid, "name": "gateway-restart"}
 
 
@@ -276,13 +277,13 @@ async def update_hermes():
 
 _NON_APPLYABLE_MESSAGES = {
     "docker": format_docker_update_message,
-    "apt": lambda: "Hermes is managed by Termux APT; run `pkg upgrade hermes-agent`.",
+    "apt": lambda: "Cybr Agent is managed by Termux APT; run `pkg upgrade hermes-agent`.",
 }
 
 
 @router.get("/api/hermes/update/check")
 async def check_hermes_update(force: bool = False, profile: Optional[str] = None):
-    """Report whether a Hermes update is available, without applying it.
+    """Report whether a Cybr Agent update is available, without applying it.
 
     Returns install_method ('apt'|'git'|'docker'|'nix'|'nixos'|'unknown'),
     current_version, behind (commits behind, 0 = up to date, -1 = unknown count,
@@ -340,8 +341,15 @@ async def check_hermes_update(force: bool = False, profile: Optional[str] = None
         payload["message"] = "You're on the latest version."
     else:
         payload["update_available"] = True
+        if status.get("rollback"):
+            # A stable release this build already contains: applying it moves back.
+            payload.update(rollback_to=status.get("sourceVersion"),
+                           message=f"This build is newer than stable release v{status.get('sourceVersion')}. "
+                                   "Updating moves it back to that release.")
         # "What's changed" for the desktop's remote update overlay; best-effort
-        # (empty list on any failure).
+        # (empty list on any failure). Channel + release name pick its notes source.
+        payload.update(channel=status.get("channel"), branch=status.get("branch"),
+                       source_version=status.get("sourceVersion"))
         payload["commits"] = [{**row, "sha": row["sha"][:7], "at": row["at"] // 1000}
                               for row in status.get("commits", [])[:20]]
     return payload

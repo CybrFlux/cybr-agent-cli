@@ -1,4 +1,4 @@
-"""Profile distributions — shareable, packaged Hermes profiles via git.
+"""Profile distributions — shareable, packaged Cybr Agent profiles via git.
 
 Sources: a git URL (``github.com/user/repo``, ``https://...``, ``git@...``, ``ssh://``,
 ``git://``) or a local directory that already contains ``distribution.yaml`` (profile
@@ -23,7 +23,7 @@ import hermes_yaml as yaml
 from hermes_cli._subprocess_compat import noninteractive_git_env
 from hermes_cli.archive_safe import normalize_archive_parts
 from hermes_cli.profiles import (
-    DEFAULT_EXPORT_EXCLUDE_ROOT, SETUP_PROFILE_MARKER, profile_path_contains_private_store,
+    DEFAULT_EXPORT_EXCLUDE_ROOT, profile_path_contains_private_store,
     profile_path_is_private,
 )
 from utils import rmtree_readonly
@@ -48,7 +48,7 @@ _CRON_STORE_REL = ("cron", "jobs.json")
 
 
 def _is_installer_owned_path(parts: tuple[str, ...]) -> bool:
-    """Entries a distribution never writes: credential stores (and Hermes' copies of them) at any
+    """Entries a distribution never writes: credential stores (and Cybr Agent' copies of them) at any
     depth, and runtime-owned entries nested under otherwise distribution-owned roots."""
     if profile_path_is_private(parts):
         return True
@@ -56,7 +56,7 @@ def _is_installer_owned_path(parts: tuple[str, ...]) -> bool:
         return False
     if parts[0] == "cron":
         return parts[:2] != _CRON_STORE_REL
-    # Root-level dot entries under skills are Hermes bookkeeping (.hub,
+    # Root-level dot entries under skills are Cybr Agent bookkeeping (.hub,
     # .usage.json, curator state, bundled manifest, locks, archives, ...).
     return parts[0] == "skills" and len(parts) == 2 and parts[1].startswith(".")
 
@@ -200,13 +200,13 @@ def check_hermes_requires(spec: str, current_version: str) -> None:
     m = _VERSION_OP_RE.match(spec)
     op, target = m.groups() if m else (">=", spec.strip())
     if not _VERSION_OPS[op](_parse_semver(current_version), _parse_semver(target)):
-        raise DistributionError(f"This distribution requires Hermes {op}{target}, but you have {current_version}.")
+        raise DistributionError(f"This distribution requires Cybr Agent {op}{target}, but you have {current_version}.")
 
 
 def _env_template_from_manifest(manifest: DistributionManifest) -> str:
     """Generate a ``.env.template`` body from env_requires."""
     lines = [
-        "# Environment variables required by this Hermes distribution.",
+        "# Environment variables required by this Cybr Agent distribution.",
         "# Copy to `.env` and fill in your own values before running.", "",
     ]
     for req in manifest.env_requires:
@@ -262,7 +262,7 @@ def _stage_source(source: str, workdir: Path) -> tuple[Path, str]:
         rmtree_readonly(staged / ".git")
         missing = (
             f"No {MANIFEST_FILENAME} at the root of {src_str!r}. "
-            "This repository is not a Hermes profile distribution."
+            "This repository is not a Cybr Agent profile distribution."
         )
     elif (path_guess := Path(src_str).expanduser()).is_dir():
         staged = path_guess.resolve()
@@ -320,7 +320,7 @@ def plan_install(source: str, workdir: Path, override_name: Optional[str] = None
     manifest = read_manifest(staged)
     if manifest is None:
         raise DistributionError(
-            f"No {MANIFEST_FILENAME} found at the distribution root — this source is not a Hermes distribution."
+            f"No {MANIFEST_FILENAME} found at the distribution root — this source is not a Cybr Agent distribution."
         )
     check_hermes_requires(manifest.hermes_requires, get_version_info().base_version)  # fail fast
     canon = _canon_valid(override_name or manifest.name)
@@ -572,9 +572,6 @@ def _copy_dist_payload(staged: Path, target: Path, manifest: DistributionManifes
 
     # Make sure the manifest on disk reflects resolved name + source
     write_manifest(target, manifest)
-    from hermes_cli.setup_profile import release_setup_copy, setup_marker_state
-    shipped_marker = any(rel_parts == (SETUP_PROFILE_MARKER,) for _, rel_parts in entries)
-    release_setup_copy(target, setup_state=setup_marker_state(target) if shipped_marker else None)
 
 
 def _bootstrap_user_dirs(target: Path) -> None:

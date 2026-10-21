@@ -17,7 +17,7 @@ import gateway.run as gateway_run
 from gateway.config import GatewayConfig, HomeChannel, Platform, PlatformConfig
 from gateway.platforms.base import SendResult
 
-ONLINE_NOTICE = "♻️ Gateway online — Hermes is back and ready."
+ONLINE_NOTICE = "♻️ Gateway online — Cybr Agent is back and ready."
 
 
 def _adapter():
@@ -53,10 +53,9 @@ def boot_notice(tmp_path, monkeypatch):
     runner._redeliver_failed_obligations_for_platform = AsyncMock()
     runner._schedule_resume_pending_sessions = Mock()
     monkeypatch.setattr("gateway.channel_directory.build_channel_directory", AsyncMock())
-    # Unrelated conversation recovery and optional account-status text are isolated.
+    # Unrelated conversation recovery is isolated.
     runner._claim_pending_obligations = AsyncMock(return_value=[])
     runner._redeliver_claimed_obligations = AsyncMock(return_value=0)
-    runner._free_tier_startup_line = Mock(return_value=None)
     marker = tmp_path / ".restart_pending.json"
     marker.write_text("{}", encoding="utf-8")
     return runner, marker

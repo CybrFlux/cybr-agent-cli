@@ -71,6 +71,10 @@ class WebhookTarget(_ToolMatcherMixin):
 def register_from_config(cfg: Optional[dict[str, Any]]) -> list[WebhookTarget]:
     """Register every configured outbound webhook on the plugin manager.  Malformed ``hooks.outbound``
     means zero targets — never raises.  Returns the targets that ended up wired (deduplicated)."""
+    from agent.safe_worker_policy import safe_worker_enabled
+
+    if safe_worker_enabled():
+        return []
     if not isinstance(cfg, dict):
         return []
     from utils import env_var_enabled
@@ -223,6 +227,10 @@ def _make_callback(event: str, target: WebhookTarget):
     """Build the notify-only closure ``invoke_hook()`` calls per firing."""
 
     def _callback(**kwargs: Any) -> None:
+        from agent.safe_worker_policy import safe_worker_enabled
+
+        if safe_worker_enabled():
+            return
         if event in _TOOL_SCOPED_EVENTS and not target.matches_tool(kwargs.get("tool_name")):
             return
         delivery_id = uuid.uuid4().hex
@@ -254,7 +262,7 @@ def _serialize_payload(event: str, kwargs: dict[str, Any], delivery_id: str) -> 
 
 def _build_delivery(event: str, target: WebhookTarget, body: bytes, delivery_id: str) -> dict[str, Any]:
     headers = {
-        "Content-Type": "application/json", "User-Agent": "Hermes-Agent-Outbound-Webhook",
+        "Content-Type": "application/json", "User-Agent": "Cybr Agent-Outbound-Webhook",
         "X-Hermes-Event": event, "X-Hermes-Delivery": delivery_id,
     }
     if target.secret:

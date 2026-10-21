@@ -317,6 +317,7 @@ def _count_commits_between(git_cmd: list[str], cwd: Path, base: str, head: str) 
 
 def _should_skip_upstream_prompt() -> bool:
     """Check if user previously declined to add upstream."""
+    return True  # cybr: releases come only from the CybrFlux branch; never offer or merge another upstream
     from hermes_constants import get_hermes_home
     return (get_hermes_home() / SKIP_UPSTREAM_PROMPT_FILE).exists()
 
@@ -339,7 +340,7 @@ def _offer_upstream_remote(git_cmd: list[str], cwd: Path, *, assume_yes: bool, i
     ``--yes`` means "don't block", not "mutate my remotes", so a non-interactive skip is NOT persisted."""
     from hermes_cli.update_cmd import _add_upstream_remote, _mark_skip_upstream_prompt
     print(
-        "\nℹ Your fork is not tracking the official Hermes repository.\n"
+        "\nℹ Your fork is not tracking the official Cybr Agent repository.\n"
         "  This means you may miss updates from NousResearch/hermes-agent.\n"
     )
     if assume_yes or (input_fn is None and not (sys.stdin.isatty() and sys.stdout.isatty())):
@@ -530,11 +531,15 @@ def _classify_fetch_failure(stderr: str) -> str:
 
 
 def _print_fetch_failure(stderr: str) -> None:
-    """Print the classified diagnosis plus the first raw stderr line."""
+    """Print the classified diagnosis plus bounded raw stderr for diagnosis."""
     stderr = (stderr or "").strip()
     print(_classify_fetch_failure(stderr))
     if stderr:
-        print(f"  {stderr.splitlines()[0]}")
+        lines = stderr.splitlines()
+        for line in lines[:15]:
+            print(f"  {line}")
+        if len(lines) > 15:
+            print(f"  ... ({len(lines) - 15} more lines omitted)")
 
 
 def _probe_fork_bomb(argv: list) -> Optional[bool]:
@@ -565,7 +570,7 @@ def _portable_git_candidates() -> list:
     """PortableGit candidates: shared root first (where the managed tree actually lives, not the
     profile-scoped HERMES_HOME), then profile home as a fallback for custom layouts.
 
-    The Hermes-managed PortableGit tree lives under the SHARED root (``<root>/git/...``), not the
+    The Cybr Agent-managed PortableGit tree lives under the SHARED root (``<root>/git/...``), not the
     profile-scoped HERMES_HOME (``<root>/profiles/<name>``), so a profile-scoped ``hermes update`` must look
     there (monerostar review, #87876).
     """

@@ -49,6 +49,12 @@ export const ERROR_CODE_KEYS = [
   'empty_response',
   'loop_error',
   'SESSION_NOT_OWNED',
+  // The gateway that owns the chat is mid-turn and could not queue this send: transient.
+  'SESSION_OWNER_BUSY',
+  // The chat is a scheduled job's session: it only runs that job, so a typed message never runs there.
+  'cron_session_read_only',
+  // The owner did not confirm a forwarded send in time; it may already be queued: no Retry.
+  'SESSION_OWNER_UNCONFIRMED',
   'disk_full',
   // Raised by the desktop, never by the backend: the backend reported a turn
   // over after its events stopped, and no reply reached this window.
@@ -244,7 +250,7 @@ export interface ErrorRecoveryPlan {
   startNewSession: boolean
   /** Open the preceding user message in the edit composer (safety refusal). */
   editMessage: boolean
-  /** Reveal the Hermes data folder so the user can free space (disk_full). */
+  /** Reveal the Cybr Agent data folder so the user can free space (disk_full). */
   openHermesFolder: boolean
   /** Settings → Keys deep link (auth, api_key). */
   updateApiKey: boolean
@@ -267,6 +273,9 @@ const SWITCH_PROVIDER_LAYERS: readonly ErrorSurfaceLayer[] = ['auth', 'billing',
 // conversation, a blocked prompt, a chat another surface owns).
 const CODE_PLANS: Partial<Record<ErrorCodeKey, Partial<ErrorRecoveryPlan>>> = {
   SESSION_NOT_OWNED: { retry: false, startNewSession: true },
+  SESSION_OWNER_BUSY: { retry: true, startNewSession: false },
+  SESSION_OWNER_UNCONFIRMED: { retry: false, startNewSession: false },
+  cron_session_read_only: { retry: false, startNewSession: true },
   content_policy_blocked: { editMessage: true, retry: false },
   context_overflow: { compress: true, retry: false, startNewSession: true },
   disk_full: { openHermesFolder: true, retry: true },
@@ -305,6 +314,8 @@ export function errorRecoveryPlan(surface: ErrorSurface | null | undefined): Err
 export function formatErrorDiagnostics(input: {
   appVersion?: string
   errorText: string
+  /** Epoch seconds the failure was recorded (the bubble's own time), never the copy time. */
+  failedAt?: number
   model?: string
   provider?: string
   surface?: ErrorSurface | null
@@ -315,8 +326,8 @@ export function formatErrorDiagnostics(input: {
   const model = input.surface?.model || input.model
 
   const lines = [
-    '── Hermes error details ──',
-    `time: ${new Date().toISOString()}`,
+    '── Cybr Agent error details ──',
+    input.failedAt ? `time: ${new Date(input.failedAt * 1000).toISOString()}` : null,
     input.surface ? `layer: ${input.surface.layer}` : null,
     input.surface ? `code: ${input.surface.code}` : null,
     input.surface ? `retryable: ${input.surface.retryable}` : null,

@@ -380,8 +380,9 @@ def begin_update_receipt(*, previous: dict | None = None, correlation_id: str | 
                 rows = list((prior.get("plan") or {}).get("runtimes") or [])
                 rows += list(prior.get("pending_manual_serves") or [])
                 rows += list(prior.get("carried_manual_serves") or [])  # a run killed before finalize
-                receipt.data["carried_manual_serves"] = [
-                    row for row in rows if isinstance(row, dict) and row.get("supervisor") == "manual-serve"]
+                from hermes_cli.update_serve_obligations import is_reminder_row
+
+                receipt.data["carried_manual_serves"] = [row for row in rows if is_reminder_row(row)]
     except Exception as exc:  # pragma: no cover - defensive
         logger.debug("Could not start update receipt: %s", exc)
         return
@@ -536,7 +537,7 @@ _GIT_FILE_PERMISSION = re.compile(r"Permission denied(?! *\()|\bEACCES\b")
 def git_error_stop_class(exc: BaseException) -> Optional[str]:
     """The closed stop token for a git ``CalledProcessError`` that is about to end the run, or None.
 
-    Reads only the failed argv and fixed git/Hermes phrases in its output, never stores either.
+    Reads only the failed argv and fixed git/Cybr Agent phrases in its output, never stores either.
     """
     if not isinstance(exc, subprocess.CalledProcessError):
         return None
@@ -732,7 +733,7 @@ def _collection_enabled_now() -> Optional[bool]:
 
 
 #: The leading label of a stop reason the parked copy may keep, exactly what the classifier reads:
-#: an exception type name (plus its errno token) or one of the fixed phrases Hermes writes
+#: an exception type name (plus its errno token) or one of the fixed phrases Cybr Agent writes
 #: (shared_metrics_update._STOP_REASON_PREFIX_CLASSES); never the message after it.
 _PARKED_REASON_LABEL = re.compile(
     r"(?:[A-Z][A-Za-z0-9_]{0,63}:(?: \[(?:Errno|WinError) \d+\])?"
@@ -815,7 +816,7 @@ def _bare_collection_enabled() -> Optional[bool]:
 
 
 def _park_metric_receipt(data: dict[str, Any], enabled: Optional[bool]) -> None:
-    """Keep the bounded fields for the next Hermes start (stdlib only): ``report_pending_updates``
+    """Keep the bounded fields for the next Cybr Agent start (stdlib only): ``report_pending_updates``
     records them when collection is on, ``begin_process`` purges them when it is off. Collection
     known off: park nothing and purge what an earlier run parked."""
     from hermes_constants import get_hermes_home
@@ -1051,7 +1052,7 @@ _CODE_ROOT_MAX_DEPTH = 8
 
 
 def _code_root_for_path(raw: Any) -> Optional[Path]:
-    """Return the Hermes checkout containing an absolute process path."""
+    """Return the Cybr Agent checkout containing an absolute process path."""
     if not isinstance(raw, str) or not raw:
         return None
     with suppress(Exception):

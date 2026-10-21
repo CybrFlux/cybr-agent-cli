@@ -202,7 +202,7 @@ def _print_loopback_ssh_hint(redirect_uri: str, *, docs_url: str | None = None) 
     divider = "-" * 60
     print(
         f"\n{divider}\nRemote session detected — SSH tunnel required\n{divider}\n"
-        f"Hermes is waiting for the OAuth callback on {redirect_uri}\n"
+        f"Cybr Agent is waiting for the OAuth callback on {redirect_uri}\n"
         "but your browser is on a different machine. Run this command\n"
         "in a NEW terminal on your local machine BEFORE opening the URL:\n\n"
         f"  ssh -N -L {port}:127.0.0.1:{port} {_ssh_user_at_host()}\n\n"
@@ -216,14 +216,19 @@ def _default_verify() -> bool | ssl.SSLContext:
     """Platform-aware default SSL verify for httpx clients.
 
     On macOS with Homebrew Python the system OpenSSL cannot find the system trust store, so pin
-    certifi's bundle when importable; elsewhere defer to httpx's built-in default.
+    certifi's bundle when importable; elsewhere defer to httpx's built-in default. The bundle is
+    resolved through ``agent.ssl_verify``, the one place that re-derives a path an
+    install-environment rotation deleted: the Nous credential exchange builds its context here, and
+    in a long-lived gateway it can be the first TLS client constructed after the rotation.
     """
+    from agent.ssl_verify import certifi_bundle_path, platform_ssl_context
+    bundle = certifi_bundle_path()
+    if bundle is None:
+        # No usable certifi bundle (absent, or deleted by a rotation and not re-derivable):
+        # httpx's ``True`` would still resolve through certifi, so hand over the platform store.
+        return platform_ssl_context()
     if sys.platform == "darwin":
-        try:
-            import certifi
-            return ssl.create_default_context(cafile=certifi.where())
-        except ImportError:
-            pass
+        return ssl.create_default_context(cafile=bundle)
     return True
 
 
@@ -434,7 +439,7 @@ def _offer_existing_oauth_credentials(
         existing = resolve()
         api_key = existing.get("api_key", "")
         if isinstance(api_key, str) and api_key and not is_expiring(api_key, 60):
-            print(f"Existing {display_name} credentials found in Hermes auth store.")
+            print(f"Existing {display_name} credentials found in Cybr Agent auth store.")
             if _prompt_yes_no("Use existing credentials? [Y/n]: ", default="y"):
                 config_path = _update_config_for_provider(
                     provider_id, existing.get("base_url", default_base_url))

@@ -1,8 +1,10 @@
+# health: allow FILE_LINES -- platform-tables refactor: core's PLATFORM_HINTS/_PLATFORM_DEFAULTS rows for this platform moved onto its register() call (hint text lives in adapter_hint.py); the growth is only those kwargs
 """Telegram platform adapter (python-telegram-bot): inbound messages/media/commands, outbound replies."""
 
 import asyncio
 import contextlib
 import dataclasses
+import hashlib
 import inspect
 import json
 import logging
@@ -180,9 +182,11 @@ _MEDIA_KIND_KEYS = {
 from gateway.platforms.event import MessageEvent, MessageType, ProcessingOutcome
 from plugins.platforms.telegram.telegram_entities import expand_link_entities
 from plugins.platforms.telegram.telegram_held_inbound import TelegramHeldInboundMixin
-from plugins.platforms.telegram.telegram_ids import normalize_telegram_chat_id
+from plugins.platforms.telegram.telegram_ids import normalize_telegram_chat_id, parse_send_target, parse_telegram_message_id
+from plugins.platforms.telegram.telegram_topic_transfer import TopicTransferFn, apply_root_dm_topic_transfer
 from plugins.platforms.telegram.telegram_network import (
     SEED_FALLBACK_IPS, TelegramFallbackTransport, discover_fallback_ips, parse_fallback_ip_env, tcp_keepalive_socket_options)
+from plugins.platforms.telegram.telegram_topic_routing import TelegramTopicRoutingMixin
 from utils import env_float, env_int
 
 _TELEGRAM_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
@@ -511,7 +515,7 @@ class _PollingStallError(RuntimeError):
     """
 
 
-class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
+class TelegramAdapter(TelegramHeldInboundMixin, TelegramTopicRoutingMixin, BasePlatformAdapter):
     """Telegram bot adapter: users/groups, MarkdownV2 replies, forum topics, media."""
 
     # Bound for the per-(chat_id, status_key) status-message cache; FIFO half-trim on overflow.
@@ -625,6 +629,8 @@ class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
         self._pending_photo_batch_tasks: dict[str, asyncio.Task] = {}
         self._media_group_events: dict[str, MessageEvent] = {}
         self._media_group_tasks: dict[str, asyncio.Task] = {}
+        # Flushes past their pop, by (family, key): a newer chunk must not cancel them (teardown still does).
+        self._committed_flush_tasks: dict[tuple[str, str], asyncio.Task] = {}
         # Aggregate client-side splits of long messages into one MessageEvent; bounds are conservative
         # for Telegram's ~1 edit/s flood envelope.
         self._text_batch_delay_seconds = self._env_float_clamped(
@@ -680,6 +686,9 @@ class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
         self._send_path_degraded: bool = False
         self._general_request_drain_lock = asyncio.Lock()
         self._dm_topics: dict[str, int] = {}  # topic_name -> message_thread_id
+        # (chat_id, sender_id) -> (new topic id, last Message.date, monotonic record time) for client-created
+        # DM topics whose thread-less opener may still arrive (#136567); see TelegramTopicRoutingMixin.
+        self._pending_created_topics: dict[tuple[str, str], tuple[str, float, float]] = {}
         self._forum_command_registered: set[int] = set()  # forum chats with commands registered
         self._command_menu_fingerprint: str = ""  # language + menu payload last pushed via set_my_commands
         self._forum_lock = asyncio.Lock()
@@ -1005,12 +1014,11 @@ class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
 
     @classmethod
     def _metadata_reply_to_message_id(cls, metadata: Optional[dict[str, Any]]) -> Optional[int]:
-        reply_to = (metadata or {}).get("telegram_reply_to_message_id")
-        return int(reply_to) if reply_to is not None else None
+        return parse_telegram_message_id((metadata or {}).get("telegram_reply_to_message_id"))
 
     @staticmethod
     def _dm_topic_fallback(metadata: Optional[dict[str, Any]]) -> bool:
-        """True for Hermes private-chat topic lanes (``telegram_dm_topic_reply_fallback``)."""
+        """True for Cybr Agent private-chat topic lanes (``telegram_dm_topic_reply_fallback``)."""
         return bool(metadata and metadata.get("telegram_dm_topic_reply_fallback"))
 
     @classmethod
@@ -1028,8 +1036,8 @@ class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
     @classmethod
     def _reply_to_message_id_for_send(
         cls, reply_to: Optional[str], metadata: Optional[dict[str, Any]] = None, reply_to_mode: Optional[str] = None) -> Optional[int]:
-        if reply_to:
-            return int(reply_to)
+        if (anchor := parse_telegram_message_id(reply_to)) is not None:
+            return anchor
         if cls._dm_topic_fallback(metadata) and reply_to_mode != "off":
             return cls._metadata_reply_to_message_id(metadata)
         return None
@@ -1041,15 +1049,15 @@ class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
         """Telegram send kwargs for forum and direct-message topic routing.
 
         Forum topics use ``message_thread_id``; native Bot API DM topics opt in via explicit ``direct_messages_topic_id``
-        metadata; Hermes private-chat topic lanes are marked ``telegram_dm_topic_reply_fallback``. Anchor-less synthetic sends
-        prefer the Hermes topic's ``message_thread_id`` (the native DM-topic id renders in a different chat lane).
+        metadata; Cybr Agent private-chat topic lanes are marked ``telegram_dm_topic_reply_fallback``. Anchor-less synthetic sends
+        prefer the Cybr Agent topic's ``message_thread_id`` (the native DM-topic id renders in a different chat lane).
         ``reply_to_mode="off"`` suppresses the anchor but keeps ``message_thread_id``.
 
         Live replies send the private topic thread id together with a reply anchor. Synthetic/resumed sends
         without an anchor (loop wakeups, background-process notifications, queued follow-ups after a gateway
-        restart) prefer the Hermes topic's ``message_thread_id`` so they stay in the active topic lane
+        restart) prefer the Cybr Agent topic's ``message_thread_id`` so they stay in the active topic lane
         (#87051); ``direct_messages_topic_id`` is only used when no topic thread resolves, since the native
-        DM-topic id does not match the Hermes topic lane and can render the message in a different chat
+        DM-topic id does not match the Cybr Agent topic lane and can render the message in a different chat
         lane.
         """
         fallback = cls._dm_topic_fallback(metadata)
@@ -1057,9 +1065,9 @@ class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
             if reply_to_message_id is None:
                 reply_to_message_id = cls._metadata_reply_to_message_id(metadata)
             if reply_to_message_id is None:
-                # Anchor-less synthetic send: prefer the Hermes topic thread id (see docstring).
+                # Anchor-less synthetic send: prefer the Cybr Agent topic thread id (see docstring).
                 # Anchor-less synthetic sends (loop wakeups, watch notifications, restart-resumed
-                # follow-ups) must stay in the active topic lane: prefer the Hermes topic thread id when it
+                # follow-ups) must stay in the active topic lane: prefer the Cybr Agent topic thread id when it
                 # resolves (#87051). Routing via direct_messages_topic_id here sent these to a different
                 # lane than the topic the session runs in.
                 thread_message_id = cls._message_thread_id_for_send(thread_id)
@@ -1427,7 +1435,7 @@ class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
         metadata_reply_to = self._metadata_reply_to_message_id(metadata)
         private_dm_topic_send = self._is_private_dm_topic_send(chat_id, thread_id, metadata)
         dm_topic_reply_to_off = private_dm_topic_send and self._reply_to_mode == "off" and self._dm_topic_fallback(metadata)
-        reply_to_source = reply_to or (str(metadata_reply_to) if private_dm_topic_send and metadata_reply_to is not None else None)
+        reply_to_source = next((str(i) for i in (parse_telegram_message_id(reply_to), metadata_reply_to if private_dm_topic_send else None) if i is not None), None)
         if private_dm_topic_send:
             should_thread = reply_to_source is not None and self._reply_to_mode != "off"
         else:
@@ -2455,7 +2463,7 @@ class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
             f"Telegram polling could not recover after {MAX_CONFLICT_RETRIES} retries "
             f"({sum(10 + i * 10 for i in range(1, MAX_CONFLICT_RETRIES + 1))}s total wait). "
             "The previous gateway session is still held open on Telegram's servers, "
-            "or another process is using the same bot token. To recover: ensure no other Hermes or OpenClaw instance is running "
+            "or another process is using the same bot token. To recover: ensure no other Cybr Agent or OpenClaw instance is running "
             "with this token, then restart the gateway with 'hermes gateway restart'.")
         logger.error("[%s] %s Original error: %s", self.name, message, _redact_telegram_error_text(error))
         # Snapshot whether WE transition to fatal: a concurrent retry task suspended past the entry
@@ -2879,7 +2887,12 @@ class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
 
     async def handle_message(self, event: MessageEvent) -> None:
         self._accept_update()
+        await apply_root_dm_topic_transfer(self, event)  # opt-in dm_topic_auto_transfer (#139136)
         await super().handle_message(event)
+
+    def set_topic_transfer_fn(self, fn: Optional[TopicTransferFn]) -> None:
+        """Install the runner's root-DM topic-transfer hook (``dm_topic_auto_transfer``); None clears."""
+        self._topic_transfer_fn = fn
 
     def _register_handlers(self, app) -> None:
         """Register every PTB handler on ``app`` (initial connect and the transient-init rebuild)."""
@@ -2892,6 +2905,11 @@ class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
         app.add_handler(TelegramMessageHandler(
             filters.PHOTO | filters.VIDEO | filters.AUDIO | filters.VOICE | filters.Document.ALL | filters.Sticker.ALL,
             self._handle_media_message))
+        # Topic-creation service messages carry the new topic id and no text, so no other handler sees
+        # them. They are a routing signal only (never an agent turn): see _handle_forum_topic_created.
+        created_filter = getattr(getattr(filters, "StatusUpdate", None), "FORUM_TOPIC_CREATED", None)
+        if created_filter is not None:
+            app.add_handler(TelegramMessageHandler(created_filter, self._handle_forum_topic_created))
         app.add_handler(CallbackQueryHandler(self._handle_callback_query))
         # Inline command picker; inert until the owner enables inline mode via BotFather /setinline.
         app.add_handler(InlineQueryHandler(self._handle_inline_query))
@@ -3289,6 +3307,7 @@ class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
         pending_tasks = self._collect_live_tasks(
             [
                 *self._media_group_tasks.values(), *self._pending_photo_batch_tasks.values(), *self._pending_text_batch_tasks.values(),
+                *getattr(self, "_committed_flush_tasks", {}).values(),
                 getattr(self, "_polling_error_task", None), getattr(self, "_polling_progress_verifier_task", None),
                 # Hold-queue redispatch must be cancellable+awaitable on teardown too.
                 getattr(self, "_held_inbound_redispatch_task", None),
@@ -4183,7 +4202,7 @@ class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
         """Send an inline-keyboard Yes/No prompt for the gateway ``/update`` watcher."""
         def build():
             default_hint = t("platform.telegram.prompt.default_hint", default=default) if default else ""
-            text = self.format_message(f"☤ *{t('platform.telegram.prompt.update_header')}*\n\n{prompt}{default_hint}")
+            text = self.format_message(f"∿ *{t('platform.telegram.prompt.update_header')}*\n\n{prompt}{default_hint}")
             keyboard = InlineKeyboardMarkup([[
                 InlineKeyboardButton(t("platform.telegram.prompt.affirm"), callback_data="update_prompt:y"),
                 InlineKeyboardButton(t("platform.telegram.prompt.negate"), callback_data="update_prompt:n")]])
@@ -4847,8 +4866,8 @@ class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
             return
         resolved_text: Optional[str] = None
         try:
-            from tools.clarify_gateway import _entries as _clarify_entries  # type: ignore
-            entry = _clarify_entries.get(clarify_id)
+            from tools.clarify_gateway import get_pending
+            entry = get_pending(clarify_id)
             if entry and entry.choices and 0 <= idx < len(entry.choices):
                 resolved_text = entry.choices[idx]
         except Exception:
@@ -4880,7 +4899,7 @@ class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
             return
         await query.answer(text=_toast("platform.telegram.prompt.update_sent", answer=answer))
         word = t("platform.telegram.prompt.affirm_word" if answer == "y" else "platform.telegram.prompt.negate_word")
-        await self._edit_md_quiet(query, f"☤ {t('platform.telegram.prompt.update_answered', answer=f'*{word}*')}")
+        await self._edit_md_quiet(query, f"∿ {t('platform.telegram.prompt.update_answered', answer=f'*{word}*')}")
         try:
             from hermes_constants import get_hermes_home
             response_path = get_hermes_home() / ".update_response"
@@ -5418,9 +5437,9 @@ class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
             logger.warning(
                 "[%s] URL-based send_photo failed, trying file upload: %s", self.name, _redact_telegram_error_text(e), exc_info=True)
             try:
-                from gateway.platforms.base import _ssrf_redirect_guard
+                from gateway.platforms.base import ssrf_redirect_guard
                 from tools.url_safety import create_ssrf_safe_async_client
-                async with create_ssrf_safe_async_client(timeout=30.0, event_hooks={"response": [_ssrf_redirect_guard]}) as client:
+                async with create_ssrf_safe_async_client(timeout=30.0, event_hooks={"response": [ssrf_redirect_guard]}) as client:
                     resp = await client.get(image_url)
                     resp.raise_for_status()
                     image_data = resp.content
@@ -6383,7 +6402,7 @@ class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
         # Learn the live handle BEFORE any mention gate routes on it, then drop our own echoed messages.
         # Filter out the bot's own messages (returned by getUpdates in some environments like
         # groups/supergroups where the bot can see its own messages). Without this, outbound messages are
-        # counted as incoming unread in the Hermes inbox (#52363). Otherwise a BotFather rename leaves the
+        # counted as incoming unread in the Cybr Agent inbox (#52363). Otherwise a BotFather rename leaves the
         # stale handle in place and the exclusive-mention gate reads a message addressed to us as one
         # addressed to some other bot.
         self._observe_bot_identity_from_message(message)
@@ -6548,6 +6567,7 @@ class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
         """Shared delayed-flush body: sleep, pop, hold if teardown started, else dispatch. A cancel after
         the pop but before durable dispatch re-holds the event (never lose it)."""
         current_task = asyncio.current_task()
+        committed = self.__dict__.setdefault("_committed_flush_tasks", {})
         event = None
         try:
             await asyncio.sleep(delay)
@@ -6559,6 +6579,13 @@ class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
             event = pending.pop(key, None)
             if not event:
                 return
+            # Committed: leave the per-key slot so a newer chunk re-arms without cancelling this
+            # dispatch mid-flight (e.g. during a root-DM createForumTopic, whose ID would be lost).
+            tasks.pop(key, None)
+            prior = committed.get((where, key))
+            committed[(where, key)] = current_task
+            if prior is not None and not prior.done():
+                await asyncio.wait({prior})  # dispatch in order, after the earlier batch settles
             if self._should_drop_delayed_delivery():
                 self._hold_inbound_event(event, where=f"{where}-flush")
                 event = None
@@ -6572,6 +6599,8 @@ class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
                 self._hold_inbound_event(event, where=f"{where}-flush-cancelled")
             raise
         finally:
+            if committed.get((where, key)) is current_task:
+                committed.pop((where, key), None)
             if tasks.get(key) is current_task:
                 tasks.pop(key, None)
 
@@ -7079,6 +7108,10 @@ class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
         # (message_thread_id=None) normalize to the General-topic id so replies route back to General
         # (#22423).
         thread_id_str = self._effective_message_thread_id(message)
+        # A new private-chat topic's opening message can arrive with no thread id at all (#136567); the
+        # creation it follows is then the only source of the topic id. Adopt it before anything downstream
+        # (gating, batching, session routing, topic recovery) reads the event source.
+        thread_id_str = self._adopt_created_topic_thread(message, chat_type, thread_id_str)
         chat_topic, topic_skill = self._resolve_topic_binding(message, chat_type, thread_id_str)
         has_full_name = hasattr(chat, "full_name")
         if user:
@@ -7102,7 +7135,20 @@ class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
             message_id=str(message.message_id), platform_update_id=update_id,
             reply_to_message_id=reply_to_id, reply_to_text=reply_to_text, auto_skill=topic_skill,
             channel_prompt=group_identity_prompt(self, message, channel_prompt),
-            timestamp=message.date)
+            edit_revision=self._edit_revision(message, update_id), timestamp=message.date)
+
+    @staticmethod
+    def _edit_revision(message, update_id: Optional[int]) -> Optional[str]:
+        """Identity of one edit of a message, None for a new send. ``edit_date`` has whole-second
+        resolution, so two edits in one second would share it: the update id is unique per edit and
+        stable on redelivery; without one, the edited text tells same-second edits apart."""
+        edit_date = getattr(message, "edit_date", None)
+        if not hasattr(edit_date, "timestamp"):
+            return None
+        if update_id is not None:
+            return f"u{update_id}"
+        text = (getattr(message, "text", None) or getattr(message, "caption", None) or "").encode()
+        return f"{int(edit_date.timestamp())}.{hashlib.sha256(text).hexdigest()[:16]}"
 
     # -- Message reactions (processing lifecycle) --
 
@@ -7162,8 +7208,6 @@ class TelegramAdapter(TelegramHeldInboundMixin, BasePlatformAdapter):
 
 # -- Plugin registration glue: register(ctx) plus the hook implementations (adapter factory, YAML→env/extra
 # config, setup wizard, standalone sender).
-
-
 # ────────────────────────────────────────────────────────────────────────── Plugin migration glue (#41112 /
 # #3823) Added when the Telegram adapter (+ its telegram_network satellite) moved from gateway/platforms/
 # into this bundled plugin. Mirrors the Discord (#24356) / Slack migrations: a register(ctx) entry point
@@ -7259,8 +7303,9 @@ def _apply_yaml_config(yaml_cfg: dict, telegram_cfg: dict) -> dict | None:
             extras.setdefault(key, value)
         _set_env(env, value)
 
-    if "disable_topic_auto_rename" in telegram_cfg:
-        extras.setdefault("disable_topic_auto_rename", telegram_cfg["disable_topic_auto_rename"])
+    for _topic_key in ("disable_topic_auto_rename", "dm_topic_auto_transfer"):
+        if _topic_key in telegram_cfg:
+            extras.setdefault(_topic_key, telegram_cfg[_topic_key])
     _effective_rm = telegram_cfg.get("require_mention", yaml_cfg.get("require_mention"))
     if _effective_rm is not None:
         _set_env("TELEGRAM_REQUIRE_MENTION", str(_effective_rm).lower())
@@ -7288,8 +7333,7 @@ def _apply_yaml_config(yaml_cfg: dict, telegram_cfg: dict) -> dict | None:
     if _telegram_rtm is not None:
         _set_env("TELEGRAM_REPLY_TO_MODE", "off" if _telegram_rtm is False else str(_telegram_rtm).lower())
     _bridge_gate("allow_from", "TELEGRAM_ALLOWED_USERS", telegram_cfg.get("allow_from"))
-    _bridge_gate(
-        "group_allow_from", "TELEGRAM_GROUP_ALLOWED_USERS", telegram_cfg.get("group_allow_from") or _telegram_extra.get("group_allow_from"))
+    _bridge_gate("group_allow_from", "TELEGRAM_GROUP_ALLOWED_USERS", telegram_cfg.get("group_allow_from") or _telegram_extra.get("group_allow_from"))
     _bridge_gate(
         "group_allowed_chats", "TELEGRAM_GROUP_ALLOWED_CHATS",
         telegram_cfg.get("group_allowed_chats") or _telegram_extra.get("group_allowed_chats"))
@@ -7309,10 +7353,21 @@ def _apply_yaml_config(yaml_cfg: dict, telegram_cfg: dict) -> dict | None:
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Hermes plugin system."""
+    """Plugin entry point — called by the Cybr Agent plugin system."""
+    from .adapter_hint import PLATFORM_HINT
+    from .dashboard_card import DASHBOARD_CARD
+    from . import gateway_env  # env -> GatewayConfig bridge (gateway.config_env)
     ctx.register_platform(
         name="telegram", label="Telegram", adapter_factory=_build_adapter, check_fn=telegram_deps_present,
+        **DASHBOARD_CARD,
         ensure_deps_fn=check_telegram_requirements, is_connected=_is_connected, required_env=["TELEGRAM_BOT_TOKEN"],
-        install_hint=t("platform.telegram.install_hint"), setup_fn=interactive_setup, apply_yaml_config_fn=_apply_yaml_config,
-        allowed_users_env="TELEGRAM_ALLOWED_USERS", allow_all_env="TELEGRAM_ALLOW_ALL_USERS", cron_deliver_env_var="TELEGRAM_HOME_CHANNEL",
-        standalone_sender_fn=_standalone_send, max_message_length=4096, emoji="✈️", allow_update_command=True)
+        install_hint=t("platform.telegram.install_hint"), setup_fn=interactive_setup, apply_yaml_config_fn=_apply_yaml_config, cron_deliver_env_var="TELEGRAM_HOME_CHANNEL",
+        standalone_sender_fn=_standalone_send, max_message_length=4096, emoji="✈️", allow_update_command=True,
+        platform_hint=PLATFORM_HINT,
+        display_tier="high",
+        # Mobile inbox: quiet tool_progress / busy-ack, but keep interim commentary and heartbeats.
+        display_overrides={"tool_progress": "off", "busy_ack_detail": False},
+        target_ref_syntax_fn=parse_send_target,
+        env_overrides=gateway_env.ENV_OVERRIDES,
+        env_enable_credentials=gateway_env.ENV_ENABLE_CREDENTIALS, **gateway_env.AUTHZ,
+    )

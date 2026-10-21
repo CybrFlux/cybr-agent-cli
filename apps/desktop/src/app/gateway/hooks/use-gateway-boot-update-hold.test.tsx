@@ -66,7 +66,6 @@ function fakeDesktop() {
     onPowerResume: vi.fn(unsubscribe),
     revalidateConnection: vi.fn(async () => ({ ok: true, rebuilt: false })),
     onWindowStateChanged: vi.fn(unsubscribe),
-    touchBackend: vi.fn(async () => undefined),
     profile: { get: vi.fn(async () => ({ profile: 'default' })) }
   }
 }
@@ -154,7 +153,7 @@ it('a hold published after boot (a pool/profile backend) still reaches the block
   const progress = {
     error: null,
     fakeMode: false,
-    message: 'Hermes is ready',
+    message: 'Cybr Agent is ready',
     phase: 'backend.ready',
     progress: 100,
     retryable: false,

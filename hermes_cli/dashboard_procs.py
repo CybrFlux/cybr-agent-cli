@@ -73,7 +73,7 @@ def _scan_dashboard_processes(*, exclude_pids: set[int] | None = None) -> list[t
     ``hermes update`` (every API call 401s). *exclude_pids* (Desktop's HERMES_DESKTOP_CHILD_PID
     backends) are never returned.
 
-    *exclude_pids* is an optional set of PIDs that must never be returned. This is used by the Hermes
+    *exclude_pids* is an optional set of PIDs that must never be returned. This is used by the Cybr Agent
     Desktop Electron app to protect its own backend child process: when the desktop spawns ``hermes serve``
     as a backend and triggers an auto-update, the update must not kill the backend that the desktop itself
     manages. The desktop sets the environment variable ``HERMES_DESKTOP_CHILD_PID`` on the spawned backend
@@ -163,9 +163,12 @@ def _pid_passwd_home(pid: int) -> str | None:
     return None
 
 
-def _hermes_home_for_pid(pid: int) -> str | None:
-    """The Hermes home *pid* runs on, tri-state: ``None`` ONLY when its environment is unreadable
-    (another user, hardened ``/proc``) — callers spare those, never guess.
+def _hermes_home_for_pid(pid: int, *, require_launch_identity: bool = False) -> str | None:
+    """Resolve a process home for discovery, or require pinned launch identity for termination.
+
+    By default, ``None`` means an unreadable environment (another user, hardened ``/proc``).
+    ``require_launch_identity`` also refuses missing argv, relative/missing home anchors and
+    any profile selection that would depend on today's sticky ``active_profile``.
 
     A readable environment always resolves, replaying ``_apply_profile_override`` on the target's
     exec-time env + argv (``hermes -p X serve`` rewrites ``HERMES_HOME`` in ``os.environ`` AFTER
@@ -176,14 +179,28 @@ def _hermes_home_for_pid(pid: int) -> str | None:
     the profile is the ``--profile``/``-p`` flag, else the root's sticky ``active_profile`` unless
     the process has a fixed identity (supervised child, post-swap updater, Desktop SSH backend).
     """
+    # Destructive callers require launch evidence; discovery may still use sticky selection.
     env = _pid_environ(pid)
     if env is None:
         return None
     from hermes_cli.main_dashboard import _dashboard_cmdline_for_pid
     from hermes_cli.profiles import get_active_profile, normalize_profile_name, profile_root_for_env_home
-    argv = _dashboard_cmdline_for_pid(pid) or []
+    argv = _dashboard_cmdline_for_pid(pid)
+    if require_launch_identity and argv is None:
+        # The dashboard argv reader has no Windows implementation; psutil does.
+        import psutil
+        argv = psutil.Process(pid).cmdline()
+    if require_launch_identity and not argv:
+        return None
+    argv = argv or []
     env_home = env.get("HERMES_HOME", "").strip()
     profile = _profile_flag_value(argv)
+    if require_launch_identity:
+        anchor = (env.get('LOCALAPPDATA') or env.get('USERPROFILE')) if sys.platform == 'win32' else env.get('HOME')
+        if env_home and not Path(env_home).is_absolute():
+            return None
+        if not env_home and (not anchor or not Path(anchor).is_absolute()):
+            return None
     if profile is None and env_home and (
         Path(env_home).parent.name == "profiles" or env.get("HERMES_UPDATE_POST_SWAP") == "1"
     ):
@@ -198,6 +215,8 @@ def _hermes_home_for_pid(pid: int) -> str | None:
     fixed_identity = any(env.get(k) for k in ("HERMES_SUPERVISED_CHILD", "HERMES_S6_SUPERVISED_CHILD",
                                                "HERMES_GATEWAY_EXTERNAL_SUPERVISOR")) or is_desktop_ssh_backend_argv(argv)
     if profile is None and not fixed_identity:
+        if require_launch_identity:
+            return None  # The sticky profile at launch is unknowable; never read today's value.
         profile = get_active_profile(root)
     canon = normalize_profile_name(profile) if profile else "default"
     return str(root) if canon == "default" else str(root / "profiles" / canon)
@@ -265,10 +284,10 @@ def _normalized_home_for_compare(home: str) -> str:
 
 
 def _pids_owned_by_hermes_home(pids: list[int], home: str) -> list[int]:
-    """Return only *pids* whose resolved Hermes home (``_hermes_home_for_pid``) is ``home``.
+    """Return only *pids* whose resolved Cybr Agent home (``_hermes_home_for_pid``) is ``home``.
 
     Dashboard argv is discovery-only: it is not an ownership proof because
-    several Hermes installs and profiles can run the same command on one
+    several Cybr Agent installs and profiles can run the same command on one
     machine.  An unreadable process environment is deliberately not treated
     as a match, so a stop request fails closed rather than taking down an
     unrelated backend.
@@ -604,19 +623,23 @@ def _kill_stale_dashboard_processes(
 
     Manually-started dashboards are not auto-restarted because we don't know the original launch args
     (--host, --port, --insecure, --tui, --no-open). See #68934.
-    *already_restarted_units* names units (no ``.service`` suffix) the caller already restarted directly —
-    e.g. ``hermes update``'s systemd fleet-restart loop, which restarts ``hermes-serve*`` units before this
-    function runs. Without excluding them, a Serve-only install's freshly restarted process is found again
-    here and restarted a second time for no benefit (review on #83595).
+    *already_restarted_units* names units (no ``.service`` suffix) the caller already handled directly —
+    e.g. ``hermes update``'s systemd fleet-restart loop, which restarts, declines (without root) or fails
+    ``hermes-serve*``/``hermes-dashboard*`` units, reporting each, before this function runs. Without excluding them,
+    a Serve-only install's freshly restarted process is found again here and restarted a second time for
+    no benefit (review on #83595), and a declined system unit is retried into a polkit prompt (#141021).
     """
     from hermes_cli import main_dashboard as _dash
 
-    if restart_managed and _dash._restart_managed_dashboard_service(reason):
+    _dash_unit = str(getattr(_dash, "_DASHBOARD_SYSTEMD_UNIT", "hermes-dashboard.service")).removesuffix(".service")
+    # The update's fleet loop already handled the dashboard unit (restarted it, or declined for lack
+    # of root and printed the manual command): a second attempt here restarts a healthy unit twice,
+    # or retries without --no-ask-password and dumps a polkit/tty error under the same advice (#141021).
+    if (restart_managed and _dash_unit not in (already_restarted_units or ())
+            and _dash._restart_managed_dashboard_service(reason)):
         # The dashboard unit is handled but other backends (e.g. hermes-serve.service) are not:
         # mark the unit handled so the filter below drops its PIDs, and keep going.
-        _dash_unit = getattr(_dash, "_DASHBOARD_SYSTEMD_UNIT", "hermes-dashboard.service")
-        already_restarted_units = set(already_restarted_units or ()) | {
-            str(_dash_unit).removesuffix(".service")}
+        already_restarted_units = set(already_restarted_units or ()) | {_dash_unit}
     exclude = _exclude_pids_from_env()
     if restart_managed:
         # An SSH-owned backend belongs to an attached Desktop client; killing it strands that
@@ -834,7 +857,7 @@ _HEX32 = set("0123456789abcdef")
 
 
 def _hermes_home_dir() -> Path:
-    """The process's Hermes home: remote-backend locks are a process-level asset, so a request scoped
+    """The process's Cybr Agent home: remote-backend locks are a process-level asset, so a request scoped
     to another profile must still see the same lock dir."""
     from hermes_constants import get_process_hermes_home
     return get_process_hermes_home()

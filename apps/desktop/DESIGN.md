@@ -130,8 +130,8 @@ Reduced motion settles immediately without retaining empty clearance.
 Settings → Appearance → Window layout offers **Minimize to tray**, off by default and
 local to this desktop installation. When enabled, minimizing ordinary windows
 hides them without stopping their work. Close, Alt+F4, and Cmd+Q keep their
-normal behavior. The tray's **Show Hermes** restores hidden windows;
-**Quit Hermes** keeps the ordinary active-work confirmation and teardown.
+normal behavior. The tray's **Show Cybr Agent** restores hidden windows;
+**Quit Cybr Agent** keeps the ordinary active-work confirmation and teardown.
 On macOS the tray lives in the menu bar; the Dock icon hides only when no normal
 window remains visible and returns on restore. If the tray is unavailable,
 ordinary minimize/close behavior is retained rather than hiding an unreachable app.
@@ -466,6 +466,11 @@ from their root base tokens; do not multiply the global tokens or nest CSS zoom.
   Its spring updates the DOM directly without per-frame React renders.
 - Quick, functional transitions (~100ms on controls). Respect
   `prefers-reduced-motion` for anything beyond a fade.
+- Hover paints instantly; only the return eases. Put the transition on the
+  resting state and drop it while hovered (`transition-colors duration-100
+  hover:transition-none`, or the CSS equivalent on `:hover`). A group that
+  dims siblings goes instant too. Exceptions are named, e.g. the catalog
+  card's arc border fades in and out.
 - Choreographed exits (e.g. onboarding's "matrix" fade-down) stagger per-element
   then settle the surface — the outer container's fade is *delayed* so it
   doesn't swallow the inner animation. Don't let a global fade race the detail.

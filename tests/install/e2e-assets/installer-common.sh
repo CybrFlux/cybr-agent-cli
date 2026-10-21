@@ -19,6 +19,9 @@ arm_source_redirect() {
     "$real_git" config --file "$cfg" --add "url.file://$serve.insteadOf" "$url"
   done
   export GIT_CONFIG_GLOBAL="$cfg"
+  # serve.git publishes commits on main, not releases: HEAD's installer would otherwise
+  # install the latest stable release its tags name. Older installers ignore the variable.
+  export HERMES_INSTALL_CHANNEL=main
   [ "$(git -C "$repo" remote get-url origin)" = "file://$serve" ] \
     || fail 'git URL redirect did not reach the staged repository'
 
@@ -62,8 +65,8 @@ resolve_update_ref() {
     | git -C "$repo" hash-object -w --stdin)" || return
   tree="$( { git -C "$repo" ls-tree -z "$parent"; printf '100644 blob %s\t.hermes-e2e-next\0' "$blob"; } \
     | git -C "$repo" mktree -z)" || return
-  GIT_AUTHOR_NAME='Hermes E2E' GIT_AUTHOR_EMAIL='e2e@hermes.invalid' \
-    GIT_COMMITTER_NAME='Hermes E2E' GIT_COMMITTER_EMAIL='e2e@hermes.invalid' \
+  GIT_AUTHOR_NAME='Cybr Agent E2E' GIT_AUTHOR_EMAIL='e2e@hermes.invalid' \
+    GIT_COMMITTER_NAME='Cybr Agent E2E' GIT_COMMITTER_EMAIL='e2e@hermes.invalid' \
     git -C "$repo" commit-tree "$tree" -p "$parent" -m 'e2e: synthetic next commit'
 }
 

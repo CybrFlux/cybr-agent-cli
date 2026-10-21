@@ -36,6 +36,7 @@
 //     force a needless full re-login every ~15 min — hence cookiesHaveLiveSession.
 import { readStatusCode } from './api-transport'
 import { sharesHostBackend } from './host-backend-singleton'
+import { profileCollectionRoute, profileRouteSuffix } from './profile-routes'
 
 const AT_COOKIE_VARIANTS = ['__Host-hermes_session_at', '__Secure-hermes_session_at', 'hermes_session_at']
 const RT_COOKIE_VARIANTS = ['__Host-hermes_session_rt', '__Secure-hermes_session_rt', 'hermes_session_rt']
@@ -128,7 +129,7 @@ export function gatewayTicketTransportMessage(error: unknown): string {
 
   if (['ETIMEDOUT', 'ETIMEOUT', 'ENETUNREACH', 'EHOSTUNREACH', 'EAI_AGAIN', 'ENOTFOUND'].includes(code)) {
     return (
-      'Could not reach the remote Hermes gateway while refreshing its WebSocket ticket: ' +
+      'Could not reach the remote Cybr Agent gateway while refreshing its WebSocket ticket: ' +
       'the connection timed out or the host could not be resolved. ' +
       'Check your network/VPN path and the gateway URL, then reconnect.'
     )
@@ -136,13 +137,13 @@ export function gatewayTicketTransportMessage(error: unknown): string {
 
   if (code === 'ECONNREFUSED') {
     return (
-      'Could not reach the remote Hermes gateway while refreshing its WebSocket ticket: ' +
+      'Could not reach the remote Cybr Agent gateway while refreshing its WebSocket ticket: ' +
       'the connection was refused. The gateway process is likely down or listening on another port. ' +
       'Start the gateway (or fix its URL), then reconnect.'
     )
   }
 
-  return 'Could not reach the remote Hermes gateway while refreshing its WebSocket ticket. Try reconnecting.'
+  return 'Could not reach the remote Cybr Agent gateway while refreshing its WebSocket ticket. Try reconnecting.'
 }
 
 function gatewayTicketFailure(error, authMessage, transportMessage) {
@@ -301,7 +302,7 @@ function connectionScopeKey(profile) {
   return String(profile ?? '').trim() || null
 }
 
-/** Which Hermes profile the remote SSH dashboard should actually run as.
+/** Which Cybr Agent profile the remote SSH dashboard should actually run as.
  *  Registry pool keys (`conn:mac-mini::default`) are desktop routing labels —
  *  they must never be sent to the remote as a profile name. `default` and
  *  empty mean the remote root home. */
@@ -422,7 +423,7 @@ function remoteRequestMatchesBaseUrl(requestUrl, baseUrl) {
 }
 
 // True for connection modes that resolve to a REMOTE backend. 'cloud' is a
-// Hermes Cloud connection (cloud-auto-discovery Q3/Q6): it carries a
+// Cybr Agent Cloud connection (cloud-auto-discovery Q3/Q6): it carries a
 // remote-shaped block and reuses the entire remote connect/probe/reconnect
 // path, so every resolution site treats it exactly like 'remote'. The only
 // places that distinguish cloud from remote are the settings UI (which card to
@@ -504,8 +505,8 @@ function normalizeSshConfig(entry) {
   }
 
   // A Desktop profile can be a local routing label rather than the profile
-  // name used by the remote Hermes installation. Preserve an explicit mapping
-  // when it is a valid Hermes profile identifier; otherwise fall back to the
+  // name used by the remote Cybr Agent installation. Preserve an explicit mapping
+  // when it is a valid Cybr Agent profile identifier; otherwise fall back to the
   // historical same-name behavior in the caller.
   const remoteProfile = String(entry.remoteProfile || '').trim()
 
@@ -605,7 +606,7 @@ function profileRemoteOverride(config, profile) {
 }
 
 // Validate a remote profile mapping the same way the SSH path does (a valid
-// Hermes profile identifier, never a reserved alias). Invalid/blank → no
+// Cybr Agent profile identifier, never a reserved alias). Invalid/blank → no
 // mapping, so callers fall back to the historical same-name behavior.
 function normalizeRemoteProfileName(value) {
   const remoteProfile = String(value || '').trim()
@@ -1007,7 +1008,7 @@ function translateSelfProfileQuery(path, profile, backendProfile) {
  * gateway host serving every profile, scoped per request). An explicit
  * `?profile=` already on the path wins; an empty profile is a no-op.
  */
-function pathWithProfileScope(path, profile) {
+function pathWithProfileScope(path, profile, method?: string) {
   const scopedProfile = connectionScopeKey(profile)
 
   if (!scopedProfile) {
@@ -1028,7 +1029,10 @@ function pathWithProfileScope(path, profile) {
     return path
   }
 
-  if (parsed.searchParams.has('profile')) {
+  // A path that already names its profile never also carries the ambient one: the two disagree
+  // whenever the sidebar is on another profile or "All profiles", and the gateway refuses the pair.
+  if (parsed.searchParams.has('profile')
+      || (profileRouteSuffix(parsed.pathname) && !profileCollectionRoute(parsed.pathname, method))) {
     return path
   }
 
@@ -1051,9 +1055,9 @@ export interface RegistryBackendRequestScope {
  * isolated SSH backends already own one profile but may translate a Desktop
  * alias in an existing self-profile filter.
  */
-function pathForRegistryBackendRequest(path, profile, backend: RegistryBackendRequestScope) {
+function pathForRegistryBackendRequest(path, profile, backend: RegistryBackendRequestScope, method?: string) {
   return backend.sharedRemote || backend.sharedPrimary || backend.mode === 'local'
-    ? pathWithProfileScope(path, profile)
+    ? pathWithProfileScope(path, profile, method)
     : translateSelfProfileQuery(path, profile, backend.remoteProfile)
 }
 

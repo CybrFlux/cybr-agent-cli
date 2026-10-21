@@ -19,6 +19,15 @@ def cmd_sessions_lazy(args, **kwargs):
     return cmd_sessions(args, **kwargs)
 
 
+def _add_rename_and_discard(sessions_subparsers) -> None:
+    sessions_rename = sessions_subparsers.add_parser(
+        "rename", help="Set or change a session's title")
+    sessions_rename.add_argument("session_id", help="Session ID to rename")
+    sessions_rename.add_argument("title", nargs="+", help="New title for the session")
+    from hermes_cli.sessions_discard import add_discard_parser
+    add_discard_parser(sessions_subparsers)
+
+
 def build_sessions_parser(subparsers, *, cmd_sessions: Callable) -> None:
     """Attach the ``sessions`` subcommand to ``subparsers``."""
     sessions_parser = subparsers.add_parser(
@@ -126,18 +135,18 @@ def build_sessions_parser(subparsers, *, cmd_sessions: Callable) -> None:
             "and are older than AGE (default 30 days). Ordinary prune can "
             "never reach these — it only ever selects ended sessions")
     _flag(sessions_prune, "--force",
-        help="Run even while another Hermes process (gateway, Desktop, dashboard, cron) holds state.db — rewriting the store under a live writer can leave every agent refusing turns until all writers are stopped")
+        help="With no gateway running: run even while another Cybr Agent process (Desktop, dashboard, cron) holds state.db — rewriting the store under a live writer can leave every agent refusing turns until all writers are stopped. With the gateway running, prune always goes through it")
 
     sessions_archive = sessions_subparsers.add_parser(
         "archive", help="Bulk-archive (soft-hide) sessions matching filters — no deletion")
-    _add_session_filter_args(
-        sessions_archive, "Only archive sessions older than AGE (duration like '5h'/'2d', "
-        "bare number of days, or ISO timestamp)")
+    _add_session_filter_args(sessions_archive, "Only archive sessions older than AGE (duration like '5h'/'2d', "
+                             "bare number of days, or ISO timestamp)")
+    _flag(sessions_archive, "--include-open", help="Also archive never-ended sessions, e.g. Desktop chats")
 
     sessions_optimize = sessions_subparsers.add_parser(
         "optimize", help="Reclaim disk space: merge FTS5 segments + VACUUM (no data change)")
     _flag(sessions_optimize, "--force",
-        help="Run even while another Hermes process (gateway, Desktop, dashboard, cron) holds state.db — rewriting the store under a live writer can leave every agent refusing turns until all writers are stopped")
+        help="Run even while another Cybr Agent process (gateway, Desktop, dashboard, cron) holds state.db — rewriting the store under a live writer can leave every agent refusing turns until all writers are stopped")
 
     sessions_clean_markers = sessions_subparsers.add_parser("clean-markers",
         help="Permanently clear stale tool-call marker content left by sessions from before #78148",
@@ -169,7 +178,7 @@ def build_sessions_parser(subparsers, *, cmd_sessions: Callable) -> None:
     _flag(sessions_optimize_storage, "--yes", "-y", default=False,
         help="Skip the disk-space confirmation prompt")
     _flag(sessions_optimize_storage, "--force",
-        help="Run even while another Hermes process (gateway, Desktop, dashboard, cron) holds state.db — rewriting the store under a live writer can leave every agent refusing turns until all writers are stopped")
+        help="Run even while another Cybr Agent process (gateway, Desktop, dashboard, cron) holds state.db — rewriting the store under a live writer can leave every agent refusing turns until all writers are stopped")
 
     sessions_repair = sessions_subparsers.add_parser(
         "repair", help="Repair a malformed state.db schema so hidden sessions reappear",
@@ -183,7 +192,7 @@ def build_sessions_parser(subparsers, *, cmd_sessions: Callable) -> None:
 
     sessions_set_journal_mode = sessions_subparsers.add_parser(
         "set-journal-mode", help="Convert state.db between journal_mode=WAL and DELETE offline (every holder stopped)",
-        description="Switch the on-disk journal mode of the session store. Hermes never "
+        description="Switch the on-disk journal mode of the session store. Cybr Agent never "
             "live-downgrades a WAL database at startup (other processes may hold "
             "uncheckpointed commits), so `database.journal_mode: delete` cannot "
             "self-apply to an existing WAL store. Run this with the gateway, "
@@ -191,10 +200,10 @@ def build_sessions_parser(subparsers, *, cmd_sessions: Callable) -> None:
             "the file, switches the mode, and verifies the file header.")
     sessions_set_journal_mode.add_argument("mode", choices=("delete", "wal"), help="Target journal mode")
     sessions_set_journal_mode.add_argument("--db", default=None, metavar="PATH",
-        help="Convert another Hermes SQLite store (e.g. kanban.db) instead of the profile's state.db")
+        help="Convert another Cybr Agent SQLite store (e.g. kanban.db) instead of the profile's state.db")
     _flag(sessions_set_journal_mode, "--force",
         help="Proceed when the holder scan itself fails (cannot prove the store is quiet) after stopping every "
-            "Hermes process yourself; a process the scan does find is still refused")
+            "Cybr Agent process yourself; a process the scan does find is still refused")
 
     sessions_repair_routing = sessions_subparsers.add_parser(
         "repair-routing", help="Re-stamp gateway sessions that lost their routing identity",
@@ -270,11 +279,7 @@ def build_sessions_parser(subparsers, *, cmd_sessions: Callable) -> None:
         "--report", type=Path, help="JSON report path (defaults to <output>.recovery.json)")
 
     sessions_subparsers.add_parser("stats", help="Show session store statistics")
-
-    sessions_rename = sessions_subparsers.add_parser(
-        "rename", help="Set or change a session's title")
-    sessions_rename.add_argument("session_id", help="Session ID to rename")
-    sessions_rename.add_argument("title", nargs="+", help="New title for the session")
+    _add_rename_and_discard(sessions_subparsers)
 
     sessions_pin = sessions_subparsers.add_parser(
         "pin", help="Pin session(s) — durable keep flag, exempt from auto-archive",
@@ -311,9 +316,9 @@ def build_sessions_parser(subparsers, *, cmd_sessions: Callable) -> None:
         "--limit", type=int, default=500, help="Max sessions to load (default: 500)")
 
     sessions_import = sessions_subparsers.add_parser(
-        "import", help="Import a Claude Code or Codex CLI session into Hermes",
+        "import", help="Import a Claude Code or Codex CLI session into Cybr Agent",
         description="Pull a conversation started in Claude Code (~/.claude/projects) "
-            "or Codex CLI (~/.codex/sessions) into the Hermes session store "
+            "or Codex CLI (~/.codex/sessions) into the Cybr Agent session store "
             "so it can be resumed with 'hermes --resume <id>'. The foreign "
             "files are only read, never modified.")
     sessions_import.add_argument("--from", dest="from_source", choices=["claude", "codex"],

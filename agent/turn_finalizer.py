@@ -701,7 +701,7 @@ def finalize_turn(
         # explanation appended since): it carries no new text for the client to paint.
         "response_reused": bool(final_response) and final_response == getattr(agent, "_reused_response_text", None),
         "model": agent.model,
-        # requested_model / served_model: proxy-reported deployment or Hermes' own fallback route.
+        # requested_model / served_model: proxy-reported deployment or Cybr Agent' own fallback route.
         **result_model_fields(agent),
         "provider": agent.provider,
         "base_url": agent.base_url,
@@ -743,8 +743,9 @@ def finalize_turn(
     if _cleanup_errors:
         result["cleanup_errors"] = _cleanup_errors
     # A /steer landing after the final assistant turn has no tool batch to drain into;
-    # hand it back so it becomes the next user turn instead of being lost.
-    _leftover_steer = agent._drain_pending_steer()
+    # hand it back so it becomes the next user turn instead of being lost. A gateway transfer
+    # (ticketed) stays buffered: the claim's settlement returns it to its own queue place.
+    _leftover_steer = (getattr(agent, "_drain_leftover_steer", None) or agent._drain_pending_steer)()
     if _leftover_steer:
         result["pending_steer"] = _leftover_steer
     agent._response_was_previewed = False

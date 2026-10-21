@@ -121,8 +121,9 @@ class Sandbox:
         return str(python)
 
     def run(self, argv: list[str], *, timeout: float = 600, cwd: Path | None = None,
-            input: str | None = None) -> subprocess.CompletedProcess:
-        return H.run(argv, env=self.env, cwd=cwd or self.root, writable=[self.root], timeout=timeout, input=input)
+            input: str | None = None, env: dict[str, str] | None = None) -> subprocess.CompletedProcess:
+        return H.run(argv, env=env or self.env, cwd=cwd or self.root, writable=[self.root], timeout=timeout,
+                     input=input)
 
     def cli(self, *args: str, timeout: float = 600) -> subprocess.CompletedProcess:
         return self.run([self.hermes, *args], timeout=timeout)
@@ -161,8 +162,17 @@ def run_installer(sb: Sandbox, *, timeout: float = 1800) -> subprocess.Completed
     """HEAD's scripts/install.sh, non-interactive, as the documented `curl | bash` run does it."""
     script = sb.root / "install.sh"
     shutil.copy(H.WORKTREE / "scripts" / "install.sh", script)
-    return sb.run(["bash", str(script), "--non-interactive"],
-                  timeout=timeout, input="")
+    return sb.run(["bash", str(script), "--non-interactive"], timeout=timeout, input="",
+                  env=fresh_install_env(sb))
+
+
+def fresh_install_env(sb: Sandbox) -> dict[str, str]:
+    """The sandbox env, plus `main` as the channel for a FRESH install: sandbox origins publish
+    commits on main and no release tags, so the stable default has nothing to install. The
+    install saves the choice, which carries every rerun (a rerun passes nothing, as users do)."""
+    if sb.checkout.exists():
+        return sb.env
+    return {**sb.env, "HERMES_INSTALL_CHANNEL": "main"}
 
 
 def pin_main_channel(sb: Sandbox) -> None:
@@ -180,7 +190,7 @@ def provider_config(base_url: str, version: int | None, extra: str = "") -> str:
     """A hand-edited user config: comments, a key HEAD does not know, and the fake provider."""
     ver = f"_config_version: {version}\n" if version is not None else ""
     return (
-        "# My Hermes config. Hand-edited; comments must survive.\n"
+        "# My Cybr Agent config. Hand-edited; comments must survive.\n"
         "model:\n"
         "  provider: custom\n"
         f"  base_url: {base_url}  # local fake provider\n"
@@ -188,7 +198,7 @@ def provider_config(base_url: str, version: int | None, extra: str = "") -> str:
         "  context_length: 128000\n"
         "agent:\n"
         "  api_max_retries: 1   # keep it snappy\n"
-        "# A key this Hermes version does not know about (from a plugin or a newer release).\n"
+        "# A key this Cybr Agent version does not know about (from a plugin or a newer release).\n"
         "my_future_section:\n"
         "  nested_flag: true\n"
         "  words: \"unicode é 漢字 and a # that is not a comment\"\n"

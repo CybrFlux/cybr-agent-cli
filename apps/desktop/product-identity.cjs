@@ -1,6 +1,6 @@
 // The desktop product identity — THE single source for every name-shaped
-// value a variant owns. HERMES_DESKTOP_VARIANT=light builds "Hermes
-// Light", the remote-only client; everything else is full "Hermes".
+// value a variant owns. HERMES_DESKTOP_VARIANT=light builds "Cybr Agent
+// Light", the remote-only client; everything else is full "Cybr Agent".
 //
 // Consumed at build time by electron-builder.config.cjs (packaging
 // identity). electron/product-identity.ts is the typed runtime accessor.
@@ -9,14 +9,14 @@
 'use strict'
 
 const variants = {
-  '': { display: 'Hermes', kebab: 'hermes', pascal: 'Hermes' },
+  '': { display: 'Cybr Agent', kebab: 'hermes', pascal: 'Cybr Agent' },
   light: {
-    display: 'Hermes Light',
+    display: 'Cybr Agent Light',
     kebab: 'hermes-light',
     pascal: 'HermesLight'
   },
   bundled: {
-    display: 'Hermes Agent',
+    display: 'Cybr Agent',
     kebab: 'hermes-bundled',
     pascal: 'HermesBundled'
   }
@@ -81,7 +81,7 @@ const identity = {
           // validated + re-signed by the Store on submission.
           identityName: 'NousResearchInc.HermesAgent',
           publisher: 'CN=EE6D86E4-606F-4E38-B940-AD7248C9D519',
-          publisherDisplayName: 'Nous Research Inc.'
+          publisherDisplayName: 'CybrFlux'
         }
       }
     : {})

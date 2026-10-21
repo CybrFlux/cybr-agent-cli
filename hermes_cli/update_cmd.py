@@ -1,4 +1,4 @@
-"""Hermes update pipeline: dispatchers (``_cmd_update_impl``/``_cmd_update_check``) + git plumbing.
+"""Cybr Agent update pipeline: dispatchers (``_cmd_update_impl``/``_cmd_update_check``) + git plumbing.
 
 Each concern lives in ``update_cmd_<concern>.py`` and is re-imported here so
 ``hermes_cli.update_cmd.<name>`` keeps resolving (and stays monkeypatchable). Imports are one-way:
@@ -104,7 +104,7 @@ from hermes_cli.update_cmd_git import (
     _prune_orphan_rescue_refs, _push_synced_fork, _should_skip_upstream_prompt, _sync_fork_with_upstream,
     _sync_with_upstream_if_needed, UpstreamTargetBroken)
 from hermes_cli.update_cmd_maint import (
-    _PRE_UPDATE_SNAPSHOT_KEEP, _PRE_UPDATE_SNAPSHOT_MAX_FILE_SIZE, _clear_stale_sqlite_sidecars,
+    _PRE_UPDATE_SNAPSHOT_KEEP, _PRE_UPDATE_SNAPSHOT_MAX_FILE_SIZE,
     _checkout_version, _ensure_acp_launcher, _ensure_fhs_path_guard, _finish_dashboard_update_cleanup,
     _format_time_ago, _post_update_sqlite_runtime_status, _print_bundled_skills_sync_report,
     _print_curator_first_run_notice, _print_curator_recent_run_notice,
@@ -717,9 +717,9 @@ def _print_update_check_result(behind: int | None, compare_branch: str) -> None:
         print("✓ Already up to date.")
         return
     if behind is not None:
-        print(f"☤ Update available: {behind} {'commit' if behind == 1 else 'commits'} behind {compare_branch}.")
+        print(f"∿ Update available: {behind} {'commit' if behind == 1 else 'commits'} behind {compare_branch}.")
     else:
-        print(f"☤ Update available (behind {compare_branch}).")
+        print(f"∿ Update available (behind {compare_branch}).")
     from hermes_cli.config import recommended_update_command
     print(f"  Run '{recommended_update_command()}' to install.")
 
@@ -1265,6 +1265,11 @@ def _refuse_before_commit_point(git_cmd, target_ref, _windows_gateway_resume) ->
     """Preconditions that used to fail AFTER the swap: refuse with the install untouched."""
     reason = _commit.preflight_refusal(git_cmd, _m().PROJECT_ROOT, target_ref, _UPDATE_CRITICAL_FILES)
     if reason is None:
+        from hermes_cli.update_downgrade_guard import downgrade_refusal
+        reason = downgrade_refusal(git_cmd, _m().PROJECT_ROOT, target_ref)
+        if reason is not None:
+            _record_stop("downgrade_refused")
+    if reason is None:
         return
     print(reason)
     print("  No update was applied; your install is unchanged.")
@@ -1556,7 +1561,7 @@ def _begin_update_receipt_and_plan(args):
 
     # Plan phase: snapshot runtimes/supervisors/version (read-only; probe failure records
     # nothing). Re-read AFTER the restart phase to reconcile — the plan is the worklist.
-    # Plan phase (#91277 Phase 2): snapshot the pre-update fleet — every running Hermes runtime, its
+    # Plan phase (#91277 Phase 2): snapshot the pre-update fleet — every running Cybr Agent runtime, its
     # supervisor, and its running code version — into the receipt, so a post-mortem can compare what the
     # update SAW against what it did. ``_pre_update_plan`` is read again AFTER the restart phase to
     # reconcile every planned runtime against the phase's bookkeeping (restart via declared mechanism — the
@@ -1698,7 +1703,7 @@ def _handle_update_called_process_error(
             print(f"✗ {stage} (the code update itself succeeded).")
             _print_called_process_error_tail(e)
             print()
-            print("  Hermes may not start until the dependencies are installed. Fix the error above")
+            print("  Cybr Agent may not start until the dependencies are installed. Fix the error above")
             print("  (usually network or disk space), then run `hermes update` again.")
             if _m()._is_windows():
                 print("  If `hermes update` itself will not start, retry through the venv interpreter:")
@@ -1823,7 +1828,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
     opts = _resolve_update_options(args, gateway_mode)
     gw_input_fn, assume_yes = opts.gw_input_fn, opts.assume_yes
 
-    print("☤ Updating Hermes Agent...")
+    print("∿ Updating Cybr Agent...")
     print()
 
     _pre_update_plan = _begin_update_receipt_and_plan(args)
@@ -1840,7 +1845,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         import atexit as _atexit
         _atexit.register(_m()._resume_windows_gateways_after_update, _windows_gateway_resume)
     desktop_dir = _m().PROJECT_ROOT / "apps" / "desktop"
-    # An installed Hermes.app only this update refreshes counts even with no release/ build
+    # An installed Cybr Agent.app only this update refreshes counts even with no release/ build
     # beside it: without one it was never rebuilt, so it never got newer (#52339).
     had_desktop_app_before_update = (
         _m()._desktop_packaged_executable(desktop_dir) is not None

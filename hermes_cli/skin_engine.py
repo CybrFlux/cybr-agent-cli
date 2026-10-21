@@ -1,4 +1,4 @@
-"""Hermes skin/theme engine — the theme SDK for every surface."""
+"""Cybr Agent skin/theme engine — the theme SDK for every surface."""
 
 import logging
 from dataclasses import dataclass, field
@@ -56,37 +56,37 @@ def _wings(*glyphs) -> list[list[str]]:
             for g in glyphs]
 
 
-# Branding shared by every Hermes-named built-in (mono/daylight override help_header).
+# Branding shared by every Cybr Agent-named built-in (mono/daylight override help_header).
 _HERMES_BRANDING: dict[str, str] = _branding(
-    "Hermes", "☤", "Goodbye! ☤", prompt="❯", help_header="(^_^)? Available Commands")
+    "Cybr", "∿", "Goodbye! ∿", prompt="❯", help_header="(^_^)? Available Commands")
 
 _BUILTIN_SKINS: dict[str, dict[str, Any]] = {
     "default": {
-        "name": "default", "description": "Classic Hermes — gold and kawaii",
+        "name": "default", "description": "Classic Cybr Agent — lime on black",
         # Dark-authored; values match the TUI's DARK_THEME so both render the same gold.
         "colors": {
-            "banner_border": "#CD7F32", "banner_title": "#FFD700", "banner_accent": "#FFBF00",
-            "banner_dim": "#B8860B", "banner_text": "#FFF8DC", "ui_accent": "#FFBF00",
-            "ui_label": "#DAA520", "ui_ok": "#4caf50", "ui_error": "#ef5350", "ui_warn": "#ffa726",
-            "prompt": "#FFF8DC", "input_rule": "#CD7F32", "response_border": "#FFD700",
-            "status_bar_bg": "#1a1a2e", "status_bar_text": "#C0C0C0",
-            "status_bar_strong": "#FFD700", "status_bar_dim": "#8A7A4A",
+            "banner_border": "#4F8F00", "banner_title": "#A6F000", "banner_accent": "#8BD600",
+            "banner_dim": "#5E9B00", "banner_text": "#E9FFD0", "ui_accent": "#8BD600",
+            "ui_label": "#7DC000", "ui_ok": "#4caf50", "ui_error": "#ef5350", "ui_warn": "#ffa726",
+            "prompt": "#E9FFD0", "input_rule": "#4F8F00", "response_border": "#A6F000",
+            "status_bar_bg": "#0b0d08", "status_bar_text": "#C0C0C0",
+            "status_bar_strong": "#A6F000", "status_bar_dim": "#6B8530",
             "status_bar_good": "#8FBC8F", "status_bar_warn": "#FFD700", "status_bar_bad": "#FF8C00",
             "status_bar_critical": "#FF6B6B", "session_label": "#DAA520",
-            "session_border": "#8B8682", "completion_menu_bg": "#1a1a2e",
-            "completion_menu_current_bg": "#333355", "selection_bg": "#3a3a55",
-            "shell_dollar": "#4dabf7", "voice_status_bg": "#1a1a2e"},
+            "session_border": "#8B8682", "completion_menu_bg": "#0b0d08",
+            "completion_menu_current_bg": "#1C2A0C", "selection_bg": "#243512",
+            "shell_dollar": "#4dabf7", "voice_status_bg": "#0b0d08"},
         # Light overlay (merged onto `colors`). Goldenrod ladder: on white the vivid
-        # #FFD700/#FFBF00 read as glare and WCAG-darkened mustard (#867000) as mud; the
-        # statusbar's goldenrod family (#B8860B/#DAA520) keeps the hue, tames saturation.
+        # #A6F000/#8BD600 read as glare and WCAG-darkened mustard (#3A7000) as mud; the
+        # statusbar's goldenrod family (#5E9B00/#7DC000) keeps the hue, tames saturation.
         # Hierarchy on white: ink body 8.9:1 > fade 5.2 > label 3.7 > muted 3.3 > title 2.7 >
         # headers 2.4. Fills (*_bg) flip the dark navy surfaces to light polarity.
         "light_colors": {
-            "banner_title": "#C8961E", "banner_accent": "#D89B04", "banner_dim": "#B8860B",
-            "banner_text": "#5C4718", "ui_accent": "#D89B04", "ui_label": "#A97E10",
+            "banner_title": "#5C9A00", "banner_accent": "#4F8A00", "banner_dim": "#5E9B00",
+            "banner_text": "#2A4A0A", "ui_accent": "#4F8A00", "ui_label": "#487A00",
             "ui_ok": "#2E7D32", "ui_error": "#C62828", "ui_warn": "#D97706", "prompt": "#5C4718",
-            "response_border": "#C8961E", "session_label": "#A97E10", "status_bar_text": "#6F6F6F",
-            "status_bar_strong": "#C8961E", "status_bar_dim": "#9A8A5A",
+            "response_border": "#5C9A00", "session_label": "#487A00", "status_bar_text": "#6F6F6F",
+            "status_bar_strong": "#5C9A00", "status_bar_dim": "#7A9A4A",
             "status_bar_good": "#2E7D32", "status_bar_warn": "#C8961E", "status_bar_bad": "#C2410C",
             "status_bar_critical": "#B91C1C", "shell_dollar": "#1E6FC0",
             "completion_menu_bg": "#F5F5F5", "completion_menu_current_bg": "#E0D1BF",
@@ -491,23 +491,23 @@ def get_active_help_header(fallback: str = "(^_^)? Available Commands") -> str:
     return _active_branding("help_header", fallback)
 
 
-def get_active_goodbye(fallback: str = "Goodbye! ☤") -> str:
+def get_active_goodbye(fallback: str = "Goodbye! ∿") -> str:
     return _active_branding("goodbye", fallback)
 
 
 # Palette resolution order for prompt_toolkit styles: (name, skin color key, fallback). A
 # fallback starting with "@" names an earlier entry (so a missing key inherits its remapped value).
 _STYLE_PALETTE = (
-    ("prompt", "prompt", ""), ("input_rule", "input_rule", "#CD7F32"),
-    ("title", "banner_title", "#FFD700"), ("text", "banner_text", "#FFF8DC"),
+    ("prompt", "prompt", ""), ("input_rule", "input_rule", "#4F8F00"),
+    ("title", "banner_title", "#A6F000"), ("text", "banner_text", "#E9FFD0"),
     ("dim", "banner_dim", "#555555"), ("label", "ui_label", "@title"), ("warn", "ui_warn", "#FF8C00"),
-    ("error", "ui_error", "#FF6B6B"), ("status_bg", "status_bar_bg", "#1a1a2e"),
+    ("error", "ui_error", "#FF6B6B"), ("status_bg", "status_bar_bg", "#0b0d08"),
     ("status_text", "status_bar_text", "@text"), ("status_strong", "status_bar_strong", "@title"),
     ("status_dim", "status_bar_dim", "@dim"), ("ok", "ui_ok", "#8FBC8F"),
     ("status_good", "status_bar_good", "@ok"), ("status_warn", "status_bar_warn", "@warn"),
     ("accent", "banner_accent", "@warn"), ("status_bad", "status_bar_bad", "@accent"),
     ("status_critical", "status_bar_critical", "@error"), ("voice_bg", "voice_status_bg", "@status_bg"),
-    ("menu_bg", "completion_menu_bg", "#1a1a2e"), ("menu_current_bg", "completion_menu_current_bg", "#333355"),
+    ("menu_bg", "completion_menu_bg", "#0b0d08"), ("menu_current_bg", "completion_menu_current_bg", "#1C2A0C"),
     ("menu_meta_bg", "completion_menu_meta_bg", "@menu_bg"),
     ("menu_meta_current_bg", "completion_menu_meta_current_bg", "@menu_current_bg"))
 
@@ -553,6 +553,6 @@ def get_prompt_toolkit_style_overrides() -> dict[str, str]:
         palette[name] = skin.get_color(key, palette[fallback[1:]] if fallback.startswith("@") else fallback)
     # This badge paints both sides; foreground-only light remapping destroys its contrast.
     palette["badge_bg"] = skin.colors.get(
-        "status_bar_strong", skin.colors.get("banner_title", "#FFD700"))
-    palette["badge_fg"] = skin.colors.get("status_bar_bg", "#1a1a2e")
+        "status_bar_strong", skin.colors.get("banner_title", "#A6F000"))
+    palette["badge_fg"] = skin.colors.get("status_bar_bg", "#0b0d08")
     return {cls: tpl.format(**palette) for cls, tpl in _STYLE_TEMPLATES.items()}

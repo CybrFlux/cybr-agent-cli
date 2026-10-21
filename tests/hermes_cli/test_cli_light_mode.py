@@ -55,7 +55,7 @@ class TestLightModeDetection:
         monkeypatch.delenv("HERMES_LIGHT", raising=False)
         monkeypatch.delenv("HERMES_TUI_LIGHT", raising=False)
         monkeypatch.delenv("HERMES_TUI_THEME", raising=False)
-        monkeypatch.setenv("HERMES_TUI_BACKGROUND", "#1a1a2e")
+        monkeypatch.setenv("HERMES_TUI_BACKGROUND", "#0b0d08")
         monkeypatch.delenv("COLORFGBG", raising=False)
         assert cli_mod._detect_light_mode() is False
 
@@ -100,19 +100,19 @@ class TestLightModeRemap:
     def test_remap_no_op_in_dark_mode(self, cli_mod, monkeypatch):
         monkeypatch.setenv("HERMES_LIGHT", "0")
         # Cache is None from the fixture; first call sticks at False.
-        assert cli_mod._maybe_remap_for_light_mode("#FFF8DC") == "#FFF8DC"
+        assert cli_mod._maybe_remap_for_light_mode("#E9FFD0") == "#E9FFD0"
 
     def test_remap_known_dark_color(self, cli_mod, monkeypatch):
         monkeypatch.setenv("HERMES_LIGHT", "1")
         # Force the detect cache to True for this test.
         cli_mod._LIGHT_MODE_CACHE = True
-        assert cli_mod._maybe_remap_for_light_mode("#FFF8DC") == "#1A1A1A"
-        assert cli_mod._maybe_remap_for_light_mode("#FFD700") == "#9A6B00"
+        assert cli_mod._maybe_remap_for_light_mode("#E9FFD0") == "#1A1A1A"
+        assert cli_mod._maybe_remap_for_light_mode("#A6F000") == "#9A6B00"
 
     def test_remap_case_insensitive(self, cli_mod, monkeypatch):
         cli_mod._LIGHT_MODE_CACHE = True
         # Lowercase input should still remap.
-        assert cli_mod._maybe_remap_for_light_mode("#fff8dc") == "#1A1A1A"
+        assert cli_mod._maybe_remap_for_light_mode("#e9ffd0") == "#1A1A1A"
 
     def test_remap_unknown_color_passthrough(self, cli_mod, monkeypatch):
         cli_mod._LIGHT_MODE_CACHE = True
@@ -149,8 +149,8 @@ class TestSkinConfigHook:
         try:
             set_active_skin(skin_name)
             skin = get_active_skin()
-            background = skin.colors.get("status_bar_strong", skin.colors.get("banner_title", "#FFD700"))
-            foreground = skin.colors.get("status_bar_bg", "#1a1a2e")
+            background = skin.colors.get("status_bar_strong", skin.colors.get("banner_title", "#A6F000"))
+            foreground = skin.colors.get("status_bar_bg", "#0b0d08")
             assert get_prompt_toolkit_style_overrides()["status-bar-session-title"] == (
                 f"bg:{background} {foreground} bold"
             )
@@ -177,7 +177,7 @@ class TestSkinConfigHook:
         cli_mod._LIGHT_MODE_CACHE = True
         skin = SkinConfig(
             name="test",
-            colors={"banner_text": "#FFF8DC", "response_border": "#FFD700"},
+            colors={"banner_text": "#E9FFD0", "response_border": "#A6F000"},
         )
         # The wrapper kicks in at get_color, not at construction time.
         assert skin.get_color("banner_text") == "#1A1A1A"
@@ -187,8 +187,8 @@ class TestSkinConfigHook:
         from hermes_cli.skin_engine import SkinConfig
 
         cli_mod._LIGHT_MODE_CACHE = False
-        skin = SkinConfig(name="test", colors={"banner_text": "#FFF8DC"})
-        assert skin.get_color("banner_text") == "#FFF8DC"
+        skin = SkinConfig(name="test", colors={"banner_text": "#E9FFD0"})
+        assert skin.get_color("banner_text") == "#E9FFD0"
 
 
 @pytest.mark.platforms("linux")

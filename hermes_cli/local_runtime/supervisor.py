@@ -25,6 +25,7 @@ import urllib.request
 from pathlib import Path
 
 from hermes_cli.local_runtime.binaries import runtimes_root
+from hermes_cli.local_runtime.endpoint import child_query
 from hermes_cli.local_runtime.processes import server_child_env, spawn_server
 
 logger = logging.getLogger(__name__)
@@ -42,7 +43,7 @@ _DEFAULT_PORT = 18434
 
 
 def state_path() -> Path:
-    """Endpoint state for other Hermes processes (provider resolution routes llamacpp-alias
+    """Endpoint state for other Cybr Agent processes (provider resolution routes llamacpp-alias
     requests at the managed server from this)."""
     return runtimes_root() / "server.json"
 
@@ -108,7 +109,7 @@ def _direct_io_args(executable: Path) -> tuple[str, ...]:
 
 
 class LlamaServerSupervisor:
-    """Own one llama-server router process for the life of a Hermes session."""
+    """Own one llama-server router process for the life of a Cybr Agent session."""
 
     # A model that has gone quiet gets its VRAM back after this long. A constant, not a knob:
     # long enough that an active conversation never trips it, short enough that a wandered-off
@@ -460,15 +461,21 @@ class LlamaServerSupervisor:
     def _probe_idle(self, model_id: str | None = None) -> bool | None:
         """Tri-state idle probe for the sweeper: True = confirmed idle, False = confirmed
         busy, None = the probe itself failed. The sweeper must never mistake a dead probe
-        for activity — that resets the idle clock and pins the model's VRAM."""
+        for activity — that resets the idle clock and pins the model's VRAM. A model that
+        isn't loaded is idle: the router answers 400 for it (the reads don't autoload)."""
         try:
             loaded = ([model_id] if model_id is not None
                       else [m for m, status in self.models().items() if status in _RESIDENT])
             for mid in loaded:
-                slots = self._request(f"/slots?model={mid}")
+                try:
+                    slots = self._request(f"/slots?{child_query(mid)}")
+                except urllib.error.HTTPError as exc:
+                    if exc.code == 400:
+                        continue
+                    raise
                 if any(s.get("is_processing") for s in slots):
                     return False
-                with self._open(f"/metrics?model={mid}", timeout_s=10, json_type=False) as r:
+                with self._open(f"/metrics?{child_query(mid)}", timeout_s=10, json_type=False) as r:
                     text = r.read().decode()
                 for line in text.splitlines():
                     if (line.startswith("llamacpp:requests_processing")

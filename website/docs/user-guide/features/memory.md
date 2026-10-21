@@ -1,12 +1,12 @@
 ---
 sidebar_position: 3
 title: "Persistent Memory"
-description: "How Hermes Agent remembers across sessions — MEMORY.md, USER.md, and session search"
+description: "How Cybr Agent remembers across sessions — MEMORY.md, USER.md, and session search"
 ---
 
 # Persistent Memory
 
-Hermes Agent has bounded, curated memory that persists across sessions. This lets it remember your preferences, your projects, your environment, and things it has learned.
+Cybr Agent has bounded, curated memory that persists across sessions. This lets it remember your preferences, your projects, your environment, and things it has learned.
 
 ## How It Works
 
@@ -17,10 +17,10 @@ Two files make up the agent's memory:
 | **MEMORY.md** | Agent's personal notes — environment facts, conventions, things learned | 2,200 chars (~800 tokens) |
 | **USER.md** | User profile — your preferences, communication style, expectations | 1,375 chars (~500 tokens) |
 
-Both are stored in `~/.hermes/memories/` and are injected into the system prompt as a frozen snapshot at session start. The agent manages its own memory via the `memory` tool — it can add, replace, or remove entries.
+Both are stored in `~/.hermes/memories/` and are injected into the system prompt as a frozen snapshot at session start. The agent manages its own memory via the `memory` tool — it can add, patch, or remove entries.
 
-:::caution One agent per Hermes home
-Don't point two agent processes at the same Hermes home directory. Memory writes are automatic and load back into the system prompt at session start, so two writers sharing one home will compound each other's entries into state neither of them (nor you) authored. Memory is scoped per [profile](../profiles.md) by design — give a second agent its own profile, and if they need shared memory, use an [external memory provider](./memory-providers.md) instead.
+:::caution One agent per Cybr Agent home
+Don't point two agent processes at the same Cybr Agent home directory. Memory writes are automatic and load back into the system prompt at session start, so two writers sharing one home will compound each other's entries into state neither of them (nor you) authored. Memory is scoped per [profile](../profiles.md) by design — give a second agent its own profile, and if they need shared memory, use an [external memory provider](./memory-providers.md) instead.
 :::
 
 :::info
@@ -28,9 +28,9 @@ Character limits keep memory focused. Memory does **not** auto-compact: when a
 write would exceed the limit, the `memory` tool returns an error instead of
 silently dropping entries. The agent then makes room itself — consolidating or
 removing entries in the same turn before retrying (see [What Happens When Memory
-is Full](#what-happens-when-memory-is-full)). Note that `replace` is also bound
-by the limit: swapping an entry for a longer one can still overflow, so the new
-content must be shortened (or another entry removed) to fit.
+is Full](#what-happens-when-memory-is-full)). Note that `patch` is also bound
+by the limit: a patch that lengthens an entry can still overflow, so the new
+text must be shortened (or another entry removed) to fit.
 :::
 
 ## How Memory Appears in the System Prompt
@@ -79,7 +79,7 @@ The most common report looks like this: you tell the agent where something lives
 
 2. **Check the write wasn't staged.** With `write_approval: true`, writes outside the interactive CLI are held for review and never reach the file until approved — run `/memory pending` and `/memory approve all`. See [Controlling memory writes](#controlling-memory-writes-write_approval).
 
-3. **Check you are reading the same memory you wrote.** Memory is per [profile](../profiles.md): `hermes -p work` (or `work chat` / `work gateway start`) reads `~/.hermes/profiles/work/memories/`, not `~/.hermes/memories/`. A CLI session in the default profile and a Telegram bot on another profile do not share notes. `hermes profile list` shows what exists.
+3. **Check you are reading the same memory you wrote.** Memory is per [profile](../profiles.md): `cybr -p work` (or `work chat` / `work gateway start`) reads `~/.hermes/profiles/work/memories/`, not `~/.hermes/memories/`. A CLI session in the default profile and a Telegram bot on another profile do not share notes. `cybr profile list` shows what exists.
 
 4. **Check memory is enabled.** `memory.memory_enabled: false` (or `memory` under `agent.disabled_toolsets`) removes the tool entirely — the model cannot save anything, whatever it says. See [Configuration](#configuration).
 
@@ -92,25 +92,43 @@ Two things that do **not** make the agent remember: variables in `.env` (those a
 The agent uses the `memory` tool with these actions:
 
 - **add** — Add a new memory entry
-- **replace** — Replace an existing entry with updated content (uses substring matching via `old_text`)
+- **patch** — Replace one span inside an existing entry and keep the rest (`old_text` is the span, `content` its replacement)
 - **remove** — Remove an entry that's no longer relevant (uses substring matching via `old_text`)
 
 There is no `read` action — memory content is automatically injected into the system prompt at session start. The agent sees its memories as part of its conversation context.
 
+Every tool call requires a top-level `target`: `"memory"` for agent notes or `"user"`
+for the user profile. A batch uses that one target for every operation:
+
+```json
+{"target": "user", "operations": [{"action": "add", "content": "User prefers metric units"}]}
+```
+
+Missing or null targets, and a target inside an operation that differs from the top-level
+one, return an error before writing or staging approval. Correct the payload and retry; use separate calls to update both stores.
+
 ### Substring Matching
 
-The `replace` and `remove` actions use short unique substring matching — you don't need the full entry text. The `old_text` parameter just needs to be a unique substring that identifies exactly one entry:
+The `patch` and `remove` actions use short unique substring matching — you don't need the full entry text. The `old_text` parameter just needs to be a unique substring that identifies exactly one entry:
 
 ```python
 # If memory contains "User prefers dark mode in all editors"
-memory(action="replace", target="memory",
-       old_text="dark mode",
-       content="User prefers light mode in VS Code, dark mode in terminal")
+memory(action="patch", target="memory",
+       old_text="dark mode in all editors",
+       content="light mode in VS Code, dark mode in terminal")
+# -> "User prefers light mode in VS Code, dark mode in terminal"
 ```
 
 If the substring matches multiple entries, an error is returned asking for a more specific match.
 
-`replace` overwrites the **whole matched entry** with `content` — `old_text` only locates the entry, it is not cut out and replaced. The new `content` must be the complete new entry, including every part of the old one you want to keep. (A whole-entry `old_text` equal to the entry itself is matched exactly and wins over substring matches.)
+`patch` replaces only the `old_text` span inside the matched entry and keeps everything else. The span must
+occur once in that entry; if it appears more than once, the call is rejected and the agent retries with more
+surrounding text. To drop text from an entry, patch a longer span that contains it. To rewrite a whole entry,
+pass the whole entry as `old_text` (an exact whole-entry match wins over substring matches).
+
+There is no `replace` action. It overwrote the whole matched entry, and models used it as a find-and-swap,
+which wiped the other facts in multi-fact entries. A `replace` call now returns an error pointing at `patch`;
+writes staged for approval before this change still apply as staged.
 
 ## Two Targets Explained
 
@@ -171,15 +189,15 @@ When you try to add an entry that would exceed the limit, the tool returns an er
 ```json
 {
   "success": false,
-  "error": "Memory at 2,100/2,200 chars; adding this entry (250 chars) would exceed the limit by 153 chars. Retry as ONE 'operations' batch that removes or shortens (replace) stale entries from current_entries below to free at least 153 chars AND adds this entry — the limit is checked only on the batch result.",
+  "error": "Memory at 2,100/2,200 chars; adding this entry (250 chars) would exceed the limit by 153 chars. Retry as ONE 'operations' batch that removes or shortens (patch) stale entries from current_entries below to free at least 153 chars AND adds this entry — the limit is checked only on the batch result.",
   "current_entries": ["..."],
   "usage": "2,100/2,200"
 }
 ```
 
 The agent then reissues one `operations` batch that frees at least the stated number of
-characters (removes, or `replace`s with shorter versions) and adds the new entry; the limit
-is checked only on the batch's final result. A `replace`/`remove` whose `old_text` matches no
+characters (removes, or shortening `patch`es) and adds the new entry; the limit
+is checked only on the batch's final result. A `patch`/`remove` whose `old_text` matches no
 entry fails the same way, with the entries it most resembles under `closest_entries`.
 
 **Best practice:** When memory is above 80% capacity (visible in the system prompt header), consolidate entries before adding new ones. For example, merge three separate "project uses X" entries into one comprehensive project description entry.
@@ -224,7 +242,7 @@ Beyond MEMORY.md and USER.md, the agent can search its past conversations using 
 - The agent can also scroll forward/backward inside any session it finds
 
 ```bash
-hermes sessions list    # Browse past sessions
+cybr sessions list    # Browse past sessions
 ```
 
 See [Session Search Tool](../sessions.md#session-search-tool) for the three calling shapes (discovery / scroll / browse) and the response format.
@@ -244,21 +262,21 @@ See [Session Search Tool](../sessions.md#session-search-tool) for the three call
 
 ## Learning Journey (`/journey`)
 
-The learning journey is a timeline view of everything Hermes has learned — saved skills and memory entries plotted over time (oldest at top, newest at bottom), with a playable "constellation" scrubber that replays the build-up. The same graph data drives three surfaces:
+The learning journey is a timeline view of everything Cybr Agent has learned — saved skills and memory entries plotted over time (oldest at top, newest at bottom), with a playable "constellation" scrubber that replays the build-up. The same graph data drives three surfaces:
 
-- **Classic CLI / standalone** — `hermes journey` (aliases: `hermes learning`, `hermes memory-graph`) renders the timeline in the terminal. Flags: `--play` animates the build-up (`--fps` to tune it), `--width`/`--height` override the render size, `--no-color` disables color, and `--json` dumps the raw graph payload.
+- **Classic CLI / standalone** — `cybr journey` (aliases: `cybr learning`, `cybr memory-graph`) renders the timeline in the terminal. Flags: `--play` animates the build-up (`--fps` to tune it), `--width`/`--height` override the render size, `--no-color` disables color, and `--json` dumps the raw graph payload.
 - **TUI** — `/journey` (aliases: `/learning`, `/memory-graph`) opens the timeline as an overlay.
 - **Desktop app** — `/journey` opens the Star Map / memory-graph panel, an interactive visual of the same nodes.
 
 A skill appears on the timeline as soon as it has a learning signal: it was created in this profile (a `/learn` result or a foreground `skill_manage` create), created by the background review, or used at least once. Bundled skills and hand-written skills that have never been used stay out of the timeline.
 
-Beyond viewing, the journey is also where you **prune and correct** what Hermes has learned:
+Beyond viewing, the journey is also where you **prune and correct** what Cybr Agent has learned:
 
 | Command | What it does |
 |---------|--------------|
-| `hermes journey list` | List node ids — skill names and `memory:<source>:<index>:<fingerprint>` ids for memory chunks (pass one back exactly as printed). |
-| `hermes journey delete <node> [-y]` | Delete a node. Skills are **archived** (restorable), memory chunks are removed. `-y` skips the confirmation. |
-| `hermes journey edit <node>` | Open the node's content (a skill's `SKILL.md` or the memory chunk) in `$EDITOR`. |
+| `cybr journey list` | List node ids — skill names and `memory:<source>:<index>:<fingerprint>` ids for memory chunks (pass one back exactly as printed). |
+| `cybr journey delete <node> [-y]` | Delete a node. Skills are **archived** (restorable), memory chunks are removed. `-y` skips the confirmation. |
+| `cybr journey edit <node>` | Open the node's content (a skill's `SKILL.md` or the memory chunk) in `$EDITOR`. |
 
 The same `list` / `delete <id>` / `edit <id>` subcommands work from the in-chat `/journey` command on the CLI, and the desktop panel offers edit/delete on nodes directly.
 
@@ -304,7 +322,7 @@ visible to the model. Prefer your provider's own recall budget when available.
 The opt-in uses the shared `hooks.output_spill` threshold, preview lengths, and
 directory; `hooks.output_spill.enabled: false` still disables it. Normal plugin
 hooks continue to spill by default, independently of the memory opt-in. Settings
-are captured at provider registration: restart Hermes after changing them.
+are captured at provider registration: restart Cybr Agent after changing them.
 See [oversized prefetch results](../../developer-guide/memory-provider-plugin.md#oversized-prefetch-results)
 for the configuration details.
 
@@ -335,10 +353,10 @@ This is the answer to "the agent saved a wrong assumption about me": set
 `write_approval: true`, and every save — especially the unprompted background
 ones — waits for your yes/no before it ever enters your profile.
 
-A staged `replace` or `remove` (the background review stages these even with the
+A staged `patch` or `remove` (the background review stages these even with the
 gate off) records the full entry it targets, and `/memory pending` shows it.
 Approval applies to exactly that entry: if it changed after the write was staged,
-the write is refused and stays pending for you to reject. A `replace`/`remove`
+the write is refused and stays pending for you to reject. A `replace`/`patch`/`remove`
 staged before this pinning existed has no verifiable target and is refused too:
 reject it and recreate the change. `/memory approve` lists the full text of
 every entry it overwrote or removed.
@@ -346,7 +364,7 @@ every entry it overwrote or removed.
 ## Background review notifications (`display.memory_notifications`)
 
 After a turn, the background self-improvement review may quietly save a memory
-or update a skill. This is Hermes' consent-aware learning loop: repeated
+or update a skill. This is Cybr Agent' consent-aware learning loop: repeated
 corrections and durable workflow lessons become compact memory entries or
 procedural skills, while `write_approval` can stage those writes for review
 before they affect future sessions. By default it surfaces a short
@@ -525,13 +543,13 @@ Full details in [Gating agent skill writes](./skills.md#gating-agent-skill-write
 
 ## External Memory Providers
 
-For deeper, persistent memory that goes beyond MEMORY.md and USER.md, Hermes ships with 2 external memory provider plugins — RetainDB and ByteRover — and more, such as Honcho, Hindsight, Supermemory, Mem0, OpenViking and Holographic, are available from the [plugin catalog](plugins.md) via `hermes plugins install <name>`.
+For deeper, persistent memory that goes beyond MEMORY.md and USER.md, Cybr Agent ships with 2 external memory provider plugins — RetainDB and ByteRover — and more, such as Honcho, Hindsight, Supermemory, Mem0, OpenViking and Holographic, are available from the [plugin catalog](plugins.md) via `cybr plugins install <name>`.
 
 External providers run **alongside** built-in memory (never replacing it) and add capabilities like knowledge graphs, semantic search, automatic fact extraction, and cross-session user modeling.
 
 ```bash
-hermes memory setup      # pick a provider and configure it
-hermes memory status     # check what's active
+cybr memory setup      # pick a provider and configure it
+cybr memory status     # check what's active
 ```
 
 See the [Memory Providers](./memory-providers.md) guide for full details on each provider, setup instructions, and comparison.

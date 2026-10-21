@@ -1,4 +1,4 @@
-"""Skills configuration for Hermes Agent. `hermes skills` enters this module."""
+"""Skills configuration for Cybr Agent. `hermes skills` enters this module."""
 from typing import List, Optional, Set
 
 from hermes_cli.config import cfg_get, load_config, save_config
@@ -57,8 +57,8 @@ def save_disabled_skills(config: dict, disabled: set[str], platform: Optional[st
 def _list_all_skills() -> list[dict]:
     """Return all installed skills (ignoring disabled state)."""
     try:
-        from tools.skills_tool import _find_all_skills
-        return _find_all_skills(skip_disabled=True)
+        from tools.skills_tool import find_all_skills
+        return find_all_skills(skip_disabled=True)
     except Exception:
         return []
 

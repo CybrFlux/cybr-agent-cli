@@ -37,7 +37,7 @@ def _rows():
             "profile": "default",
             "handle": "hermes",
             "connection_id": "cloud-1",
-            "connection_label": "Hermes Cloud",
+            "connection_label": "Cybr Agent Cloud",
             "title": "Moxie",
             "description": "Main cloud agent",
         },
@@ -108,7 +108,7 @@ def test_resolve_ambiguous_handle_across_connections(root):
 # ── outbox / replies ─────────────────────────────────────────────────────────
 
 
-def test_enqueue_claim_is_atomic_and_single_shot(root):
+def test_enqueue_claim_replays_exact_identity_until_reply(root):
     bot_relay.write_remote_roster(root, _rows())
     roster = bot_relay.read_remote_roster(root)
     target = bot_relay.resolve_remote_target("researcher", roster)
@@ -120,7 +120,9 @@ def test_enqueue_claim_is_atomic_and_single_shot(root):
     assert [e["id"] for e in claimed] == [env["id"]]
     assert claimed[0]["target_connection"] == "ssh-vps"
     assert claimed[0]["message"] == "hi"
-    # second drain: nothing (no double delivery)
+    # Reconnect replays the same admission identity, never a fresh turn.
+    assert bot_relay.claim_pending_envelopes(root) == claimed
+    bot_relay.write_reply(root, env['id'], reply='done')
     assert bot_relay.claim_pending_envelopes(root) == []
 
 
@@ -353,7 +355,7 @@ def test_relay_route_queues_envelope_and_spawns_waiter(tmp_path, monkeypatch):
     home = _managed_home(tmp_path)
     bot_relay.write_remote_roster(home, [
         {"profile": "default", "handle": "hermes", "connection_id": "cloud-1",
-         "connection_label": "Hermes Cloud", "title": "Moxie"},
+         "connection_label": "Cybr Agent Cloud", "title": "Moxie"},
     ])
 
     spawned = {}
@@ -367,7 +369,7 @@ def test_relay_route_queues_envelope_and_spawns_waiter(tmp_path, monkeypatch):
     agent = _FakeAgent(home)
     out = json.loads(message_agent_tool(target="hermes", message="ping", agent=agent))
     assert out.get("status") == "queued"
-    assert "Hermes Cloud" in spawned["label"]
+    assert "Cybr Agent Cloud" in spawned["label"]
     # envelope landed in the outbox with attribution prefixed
     pending = bot_relay.claim_pending_envelopes(home)
     assert len(pending) == 1
@@ -437,11 +439,11 @@ def test_protocol_section_lists_remote_teammates(tmp_path):
     home = _managed_home(tmp_path)
     bot_relay.write_remote_roster(home, [
         {"profile": "default", "handle": "hermes", "connection_id": "cloud-1",
-         "connection_label": "Hermes Cloud", "title": "Moxie"},
+         "connection_label": "Cybr Agent Cloud", "title": "Moxie"},
     ])
     section = bot_mode_probe.get_bot_mode_protocol_section(home, force_refresh=True)
     # Offered under its title slug: bare `@hermes` is THIS gateway's own default (#103731).
-    assert "`@moxie`" in section and "Hermes Cloud" in section
+    assert "`@moxie`" in section and "Cybr Agent Cloud" in section
 
 
 def test_capability_fingerprint_changes_with_relay_roster(tmp_path):
@@ -610,6 +612,56 @@ def test_the_outbox_is_claimed_oldest_first(root):
     assert [e["message"] for e in claimed] == ["do this first", "then this"]
 
 
+def test_replayed_unanswered_dm_precedes_mail_queued_after_it(root):
+    """A Desktop that reconnects before the first DM's reply drains it again as a replay, beside a
+    second DM queued since. Both reach the target's delivery lane in this list's order, so the
+    claimed-but-unanswered one (sent first) must come first — not after the fresh outbox row."""
+    first = bot_relay.enqueue_envelope(
+        root, target=_target(), message="do this first",
+        sender_profile="default", sender_handle="hermes",
+    )
+    base = bot_relay.relay_root(root)
+    now = _time2.time()
+    _os2.utime(base / bot_relay.OUTBOX_DIR / f"{first['id']}.json", (now - 2, now - 2))
+    assert [e["id"] for e in bot_relay.claim_pending_envelopes(root)] == [first["id"]]
+    second = bot_relay.enqueue_envelope(
+        root, target=_target(), message="then this",
+        sender_profile="default", sender_handle="hermes",
+    )
+    _os2.utime(base / bot_relay.OUTBOX_DIR / f"{second['id']}.json", (now - 1, now - 1))
+
+    drained = bot_relay.claim_pending_envelopes(root)
+
+    assert [e["message"] for e in drained] == ["do this first", "then this"]
+    assert [e["id"] for e in drained] == [first["id"], second["id"]]  # stable ids, no re-mint
+
+
+def test_pre_upgrade_claim_settles_unknown_instead_of_stranding_its_waiter(root):
+    """A claimed envelope from the old lane (no ``canonical_delivery_v1``) is never replayed into the
+    authority, but its waiter must still resolve: once the old drain's re-offer point passes it gets
+    a terminal ``unknown`` reply (not auto-retryable) and is never handed out again."""
+    from tools.bot_failure_reasons import UNKNOWN, is_auto_retryable
+
+    base = bot_relay._ensure_dirs(root)
+    legacy = {"id": "a" * 32, "created_at": int(_time2.time()) - 60, "from_profile": "default",
+              "from_handle": "hermes", "target_connection": "cloud-1", "target_profile": "default",
+              "target_handle": "hermes", "message": "legacy"}
+    path = base / bot_relay.CLAIMED_DIR / f"{legacy['id']}.json"
+    path.write_text(json.dumps(legacy), encoding="utf-8")
+    reply_path = base / bot_relay.REPLIES_DIR / f"{legacy['id']}.json"
+    claimed_at = _time2.time() - 60
+    _os2.utime(path, (claimed_at, claimed_at))
+    assert bot_relay.claim_pending_envelopes(root) == []
+    assert not reply_path.exists()  # inside the old lane's in-flight window: no verdict yet
+
+    claimed_at = _time2.time() - bot_relay.REOFFER_AFTER_SECONDS - 10
+    _os2.utime(path, (claimed_at, claimed_at))
+    assert bot_relay.claim_pending_envelopes(root) == []
+    reply = json.loads(reply_path.read_text(encoding="utf-8"))
+    assert reply["reason"] == UNKNOWN and not is_auto_retryable(reply["reason"])
+    assert reply["error"] and not reply["reply"]
+
+
 def test_drain_delivers_fresh_envelope_under_ttl(root):
     env = bot_relay.enqueue_envelope(
         root, target=_target(), message="on time",
@@ -648,7 +700,7 @@ def test_message_agent_surfaces_runtime_offline_refusal(tmp_path, monkeypatch):
     home = _managed_home(tmp_path)
     bot_relay.write_remote_roster(home, [
         {"profile": "default", "handle": "hermes", "connection_id": "cloud-1",
-         "connection_label": "Hermes Cloud", "online": False},
+         "connection_label": "Cybr Agent Cloud", "online": False},
     ])
     monkeypatch.setattr(
         "tools.bot_mode_dm._spawn_delivery",

@@ -99,7 +99,7 @@ class FakeBot:
         self.intents = intents
         self.allowed_mentions = allowed_mentions
         self.application_id = 999
-        self.user = SimpleNamespace(id=999, name="Hermes")
+        self.user = SimpleNamespace(id=999, name="Cybr Agent")
         self._events = {}
         self.tree = FakeTree()
         self.http = SimpleNamespace(
@@ -202,7 +202,7 @@ async def test_reconnect_closes_previous_client_to_prevent_zombie_websocket(monk
     adapter = DiscordAdapter(PlatformConfig(enabled=True, token="test-token"))
 
     monkeypatch.setattr("gateway.status.acquire_scoped_lock", lambda scope, identity, metadata=None: (True, None))
-    monkeypatch.setattr("gateway.status.release_scoped_lock", lambda scope, identity: None)
+    monkeypatch.setattr("gateway.status_scoped_locks.release_scoped_lock", lambda scope, identity: None)
 
     intents = SimpleNamespace(
         message_content=False, dm_messages=False, guild_messages=False,
@@ -271,7 +271,7 @@ async def test_connect_clears_previous_fatal_error(monkeypatch):
     adapter = DiscordAdapter(PlatformConfig(enabled=True, token="test-token"))
 
     monkeypatch.setattr("gateway.status.acquire_scoped_lock", lambda scope, identity, metadata=None: (True, None))
-    monkeypatch.setattr("gateway.status.release_scoped_lock", lambda scope, identity: None)
+    monkeypatch.setattr("gateway.status_scoped_locks.release_scoped_lock", lambda scope, identity: None)
 
     intents = SimpleNamespace(
         message_content=False, dm_messages=False, guild_messages=False,
@@ -311,7 +311,7 @@ async def test_connect_timeout_cancels_bot_task(monkeypatch):
     adapter = DiscordAdapter(PlatformConfig(enabled=True, token="test-token"))
 
     monkeypatch.setattr("gateway.status.acquire_scoped_lock", lambda scope, identity, metadata=None: (True, None))
-    monkeypatch.setattr("gateway.status.release_scoped_lock", lambda scope, identity: None)
+    monkeypatch.setattr("gateway.status_scoped_locks.release_scoped_lock", lambda scope, identity: None)
 
     intents = SimpleNamespace(
         message_content=False, dm_messages=False, guild_messages=False,
@@ -359,7 +359,7 @@ async def test_disconnect_cancels_running_bot_task(monkeypatch):
     adapter = DiscordAdapter(PlatformConfig(enabled=True, token="test-token"))
 
     monkeypatch.setattr("gateway.status.acquire_scoped_lock", lambda scope, identity, metadata=None: (True, None))
-    monkeypatch.setattr("gateway.status.release_scoped_lock", lambda scope, identity: None)
+    monkeypatch.setattr("gateway.status_scoped_locks.release_scoped_lock", lambda scope, identity: None)
 
     # Simulate a zombie bot_task that never finishes (as if discord.py is mid-handshake)
     async def _forever():
@@ -411,7 +411,7 @@ async def test_safe_sync_slash_commands_only_mutates_diffs():
 
     desired_same = {
         "name": "status",
-        "description": "Show Hermes session status",
+        "description": "Show Cybr Agent session status",
         "type": 1,
         "options": [],
         "nsfw": False,
@@ -874,7 +874,7 @@ class TestPrivilegedIntentsRequiredFatal:
             lambda scope, identity, metadata=None: (True, None),
         )
         monkeypatch.setattr(
-            "gateway.status.release_scoped_lock",
+            "gateway.status_scoped_locks.release_scoped_lock",
             lambda scope, identity: None,
         )
 
@@ -919,7 +919,7 @@ async def test_skill_catalog_scan_runs_off_the_event_loop(monkeypatch):
 
     adapter = DiscordAdapter(PlatformConfig(enabled=True, token="test-token"))
     monkeypatch.setattr("gateway.status.acquire_scoped_lock", lambda scope, identity, metadata=None: (True, None))
-    monkeypatch.setattr("gateway.status.release_scoped_lock", lambda scope, identity: None)
+    monkeypatch.setattr("gateway.status_scoped_locks.release_scoped_lock", lambda scope, identity: None)
     monkeypatch.setattr(discord_platform.Intents, "default", lambda: SimpleNamespace(
         message_content=False, dm_messages=False, guild_messages=False, members=False, voice_states=False))
     monkeypatch.setattr(discord_platform.commands, "Bot", lambda **kw: FakeBot(intents=kw["intents"]))

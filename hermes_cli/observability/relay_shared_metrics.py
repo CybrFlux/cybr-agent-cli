@@ -1,4 +1,4 @@
-"""Direct NeMo Relay integration for Hermes shared client metrics."""
+"""Direct NeMo Relay integration for Cybr Agent shared client metrics."""
 
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ from hermes_cli.version_info import get_version_info
 
 from .shared_metrics import SharedMetricsStore
 from . import shared_metrics_contract as contract
+from . import shared_metrics_connectors as connectors_
 from . import shared_metrics_efficiency as eff
 from . import shared_metrics_engagement as engagement_
 from . import shared_metrics_fields as fields_
@@ -48,7 +49,7 @@ def _session_pair(event: dict[str, Any], key: str) -> tuple[str, str] | None:
 
 
 def _retry_ordinal(event: dict[str, Any]) -> int:
-    """Hermes's provider-local retry ordinal; 0 when absent or malformed."""
+    """Cybr Agent's provider-local retry ordinal; 0 when absent or malformed."""
     value = event.get("retry_count")
     return value if isinstance(value, int) and not isinstance(value, bool) and value > 0 else 0
 
@@ -72,7 +73,7 @@ def _task_parent_handle(session: _MetricsSession, task_id: str) -> Any:
     return session.relay_session.handle
 
 
-# Session sources a Hermes dispatcher stamps on the finite CLI child it spawns: a kanban worker
+# Session sources a Cybr Agent dispatcher stamps on the finite CLI child it spawns: a kanban worker
 # (``kanban_db_dispatch``) and an A2A forward (``--source a2a``). Nobody is at either keyboard.
 _DISPATCHED_SOURCES = frozenset({"a2a", "kanban"})
 
@@ -189,6 +190,7 @@ class _MetricsSession:
     # Compression rotated this id away: close once its in-flight turn ends.
     retiring: bool = False
     efficiency: eff.SessionEfficiency = field(default_factory=eff.SessionEfficiency)
+    connectors: connectors_.ConnectorSessionState = field(default_factory=connectors_.ConnectorSessionState)
     route_run: engagement_.RouteRun = field(default_factory=engagement_.RouteRun)
     api_calls: int = 0
     tool_call_total: int = 0
@@ -206,6 +208,7 @@ class _PeakLineage:
     tally: engagement_.SessionTally = field(default_factory=engagement_.SessionTally)
     run: engagement_.RouteRun = field(default_factory=engagement_.RouteRun)
     spent: deque | None = None
+    connectors: connectors_.ConnectorSessionState | None = None
 
 
 # Backstop: conversations whose rotated-to segment a surface never closed are flushed past this many.
@@ -225,12 +228,12 @@ def _absorb_peak(into: model_.ModelSessionState, segment: model_.ModelSessionSta
 
 
 class _Runtime:
-    """Own shared-metrics state layered on the Hermes core Relay host."""
+    """Own shared-metrics state layered on the Cybr Agent core Relay host."""
 
     def __init__(self, host: relay_runtime.RelayRuntime | None = None) -> None:
         resolved_host = host or relay_runtime.get_runtime()
         if resolved_host is None:
-            raise RuntimeError("Hermes core Relay runtime is unavailable")
+            raise RuntimeError("Cybr Agent core Relay runtime is unavailable")
         self.host: relay_runtime.RelayRuntime = resolved_host
         self.relay = self.host.relay
         self._active = True
@@ -243,7 +246,7 @@ class _Runtime:
         self._lineages: dict[str, _PeakLineage] = {}
         self._lineage_of: dict[str, str] = {}
         self._lineage_lock = threading.Lock()
-        # Leaf lock: conversations whose next cold cache read Hermes already announced.
+        # Leaf lock: conversations whose next cold cache read Cybr Agent already announced.
         self._cold_expected: OrderedDict[str, None] = OrderedDict()
         self._cold_lock = threading.Lock()
         self._task_creation_lock = threading.RLock()
@@ -318,7 +321,7 @@ class _Runtime:
         )
 
     def start_task(self, event: dict[str, Any]) -> _TaskRun | None:
-        """Open one Relay function scope for a Hermes task run."""
+        """Open one Relay function scope for a Cybr Agent task run."""
         task_key = _session_pair(event, "task_id")
         if task_key is None:
             return None
@@ -369,7 +372,7 @@ class _Runtime:
                 return task
 
     def start_user_turn(self, event: dict[str, Any]) -> None:
-        """pre_llm_call: a user message started this task (Hermes-owned forks never fire it)."""
+        """pre_llm_call: a user message started this task (Cybr Agent-owned forks never fire it)."""
         task = self.start_task(event)
         if task is not None:
             task.cost.user_turn = True
@@ -406,7 +409,7 @@ class _Runtime:
                 existing.fields = fields
                 if task is not None:
                     # Every repeated start for one logical request is another physical
-                    # attempt. Provider fallback resets Hermes's provider-local retry
+                    # attempt. Provider fallback resets Cybr Agent's provider-local retry
                     # ordinal, so ordinal deltas are not a reliable task-level counter.
                     task.retry_count += 1
                 return
@@ -415,7 +418,7 @@ class _Runtime:
                 task.selected_route = task.selected_route or fields
                 task.model_call_ids.add(request_id)
                 if _retry_ordinal(event) > 0:
-                    # A real Hermes retry can advance api_request_id while carrying the
+                    # A real Cybr Agent retry can advance api_request_id while carrying the
                     # retry ordinal. Count that physical attempt.
                     task.retry_count += 1
             handle = self._run_scoped(
@@ -454,7 +457,7 @@ class _Runtime:
                 )
                 if tokens is not None:
                     self._guarded(
-                        "Hermes shared-metrics token mark failed", self._mark,
+                        "Cybr Agent shared-metrics token mark failed", self._mark,
                         session, session.tasks.get(model_call.task_id), contract.MODEL_TOKENS_MARK, tokens,
                     )
             else:
@@ -467,6 +470,8 @@ class _Runtime:
         session, task = self._task_pair(event, start=True, allow_task_id_fallback=True)
         if session is None or task is None or not _text(event, "tool_call_id"):
             return
+        if connectors_.is_connector_batch(event):
+            return  # each entry opens its own lifecycle; the wrapper counts only if no entry ran
         identity = self._tool_call_identity(event)
         with session.lock:
             if not self._admits(session, task, event):
@@ -513,6 +518,8 @@ class _Runtime:
             tool_call = None
             if _text(event, "tool_call_id"):
                 observed_identity = self._tool_call_identity(event)
+                if self._settle_connector_batch(session, task, observed_identity, event):
+                    return
                 if observed_identity in task.completed_tool_call_ids:
                     return
                 identity = observed_identity
@@ -540,6 +547,27 @@ class _Runtime:
             if task.cost.user_turn:
                 session.efficiency.tools.used.add(eff.toolset_metric_name(event.get("toolset")))
             self._finish_tool_call(task, tool_call, event)
+            chain = session.connectors.observe(event)
+            if chain is not None:
+                self._mark(session, task, contract.CONNECTOR_CHAIN_MARK, chain)
+
+    def _settle_connector_batch(
+        self, session: _MetricsSession, task: _TaskRun, wrapper: tuple[str, str, str], event: dict[str, Any],
+    ) -> bool:
+        """A connector batch wrapper's post is not a call of its own once an entry started: entries
+        still open (the executor timed out or abandoned the batch) end with the wrapper's outcome.
+        True when the wrapper was settled this way; a batch refused before any entry counts as itself."""
+        if not connectors_.is_connector_batch(event):
+            return False
+        started = [key for key in session.tool_calls
+                   if key[0] == task.task_id and connectors_.is_batch_entry(key[1:], wrapper)]
+        if not started and not connectors_.batch_entry_ran(task.completed_tool_call_ids, wrapper):
+            return False
+        for key in started:
+            task.completed_tool_call_ids.add(key[1:])
+            self._finish_tool_call(task, session.tool_calls.pop(key), event)
+        task.completed_tool_call_ids.add(wrapper)
+        return True
 
     def record_skill_lifecycle(self, event: dict[str, Any]) -> None:
         """Emit one allowlisted skill fact without its local identity."""
@@ -582,7 +610,7 @@ class _Runtime:
         if retired:
             self.close_session({"session_id": session.session_id})
         elif finished:
-            self._schedule_flush_and_export("Hermes shared-metrics task flush failed")
+            self._schedule_flush_and_export("Cybr Agent shared-metrics task flush failed")
 
     def close_session(self, event: dict[str, Any]) -> None:
         session = self._session(event)
@@ -595,7 +623,7 @@ class _Runtime:
             return
         self._emit_session_summary(session)
         self._schedule_flush_and_export(
-            f"Hermes shared-metrics session {session.session_id} flush failed"
+            f"Cybr Agent shared-metrics session {session.session_id} flush failed"
         )
         with self._sessions_lock:
             _forget(self._sessions, session.session_id, session)
@@ -612,7 +640,7 @@ class _Runtime:
             self._safe(self._close_unseen_segment, session_id)
         if not self._registered:
             return
-        self._flush_and_export("Hermes shared-metrics shutdown flush failed")
+        self._flush_and_export("Cybr Agent shared-metrics shutdown flush failed")
         self._deregister()
         self._release()
 
@@ -853,7 +881,7 @@ class _Runtime:
             fallback_duration_ms=_elapsed_ms(tool_call.started_ns), tool_name=tool_call.tool_name,
         )
         self._guarded(
-            "Hermes shared-metrics tool call close failed",
+            "Cybr Agent shared-metrics tool call close failed",
             lambda: self._run_in_task(
                 task, self.relay.tools.call_end, tool_call.handle,
                 self.relay.ToolExecutionResult(fields),
@@ -883,7 +911,7 @@ class _Runtime:
             ttft_bucket=model_call.ttft_bucket,
         )
         self._guarded(
-            "Hermes shared-metrics model call close failed",
+            "Cybr Agent shared-metrics model call close failed",
             self._run_scoped, session, session.tasks.get(model_call.task_id),
             self.relay.llm.call_end, model_call.handle, fields,
             metadata=self._event_metadata(),
@@ -930,7 +958,7 @@ class _Runtime:
             self._observe_model_turn(session, task, fields)
         try:
             popped = self._guarded(
-                "Hermes shared-metrics task close failed",
+                "Cybr Agent shared-metrics task close failed",
                 self._run_in_task, task, relay_runtime.pop_relay_scope_if_top, self.relay, task.handle,
                 output=fields, metadata=self._event_metadata(),
             )
@@ -965,12 +993,12 @@ class _Runtime:
             self._with_route_run(session.session_id, session.route_run, lambda run: run.observe(task.selected_route))
         if task.model_route is not None and engagement_.engaged_turn(task.start_fields, task.cost.user_turn):
             self._guarded(
-                "Hermes shared-metrics engagement mark failed", self._mark,
+                "Cybr Agent shared-metrics engagement mark failed", self._mark,
                 session, None, contract.ENGAGEMENT_TURN_MARK, dict(task.model_route),
             )
         if fields["end_reason"] == "user_cancelled" and route is not None and model_.attended(task.start_fields):
             self._guarded(
-                "Hermes shared-metrics friction mark failed", self._mark,
+                "Cybr Agent shared-metrics friction mark failed", self._mark,
                 session, None, contract.MODEL_FRICTION_MARK, model_.friction_fields("interrupt", route),
             )
         if task.cost.user_turn and model_.attended(task.start_fields):
@@ -983,9 +1011,9 @@ class _Runtime:
     def _emit_rows(self, session: _MetricsSession | None, rows: list[tuple[str, dict[str, str]]]) -> None:
         for mark, data in rows:
             if session is None:
-                self._guarded("Hermes shared-metrics efficiency mark failed", self.record_process_mark, mark, data)
+                self._guarded("Cybr Agent shared-metrics efficiency mark failed", self.record_process_mark, mark, data)
             else:
-                self._guarded("Hermes shared-metrics efficiency mark failed", self._mark, session, None, mark, data)
+                self._guarded("Cybr Agent shared-metrics efficiency mark failed", self._mark, session, None, mark, data)
 
     def _observe_turn_call(
         self, session: _MetricsSession, task: _TaskRun | None, model_call: _ModelCall, event: dict[str, Any]
@@ -1020,7 +1048,7 @@ class _Runtime:
             return self._cold_expected.pop(key, False) is None
 
     def record_known_cache_break(self, cause: str, route: dict[str, str], session_id: str) -> None:
-        """Hermes invalidated the prefix itself: count it, and don't recount the cold read it causes.
+        """Cybr Agent invalidated the prefix itself: count it, and don't recount the cold read it causes.
         Several causes before one cold read are one break (the first cause names it)."""
         if self._announce_cold(self._cold_key(session_id)):
             self._emit_rows(None, [eff.cache_break_row(cause, route)])
@@ -1054,7 +1082,8 @@ class _Runtime:
                 if old is None:
                     return  # a segment this process never served: the new id is its own conversation
                 key = old_id
-                self._lineages[key] = _PeakLineage(open={old_id}, run=old.route_run, spent=old.efficiency.spent)
+                self._lineages[key] = _PeakLineage(
+                    open={old_id}, run=old.route_run, spent=old.efficiency.spent, connectors=old.connectors)
                 self._lineage_of[old_id] = key
             self._lineages[key].open.add(new_id)
             self._lineage_of[new_id] = key
@@ -1077,10 +1106,15 @@ class _Runtime:
             return lineage.spent if lineage is not None else None
 
     def _share_spent(self, session: _MetricsSession) -> None:
-        """A rotated-to segment's /undo and /retry reach the turns the earlier segments spent."""
+        """A rotated-to segment's /undo and /retry reach the turns the earlier segments spent, and its
+        connector chain continues the earlier segments' searches and descriptions."""
         spent = self._lineage_spent(session.session_id)
         if spent is not None:
             session.efficiency.spent = spent
+        with self._lineage_lock:
+            lineage = self._lineages.get(self._lineage_of.get(session.session_id, ""))
+            if lineage is not None and lineage.connectors is not None:
+                session.connectors = lineage.connectors
 
     def _with_route_run(
         self, session_id: str, own: engagement_.RouteRun | None, update: Callable[[engagement_.RouteRun], Any],
@@ -1273,7 +1307,7 @@ class _Runtime:
 
     @classmethod
     def _safe(cls, callback: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
-        return cls._guarded("Hermes shared metrics operation failed", callback, *args, **kwargs)
+        return cls._guarded("Cybr Agent shared metrics operation failed", callback, *args, **kwargs)
 
 
 def _raw_config() -> dict[str, Any]:
@@ -1305,12 +1339,12 @@ def _reconcile_store_consent(store: SharedMetricsStore, send_enabled: bool) -> N
 
 
 def enabled() -> bool:
-    """Return the shared-metrics policy for the active Hermes profile."""
+    """Return the shared-metrics policy for the active Cybr Agent profile."""
     profile_key = relay_runtime.current_profile_key()
     try:
         config: Any = _raw_config()
     except Exception:
-        logger.debug("Unable to read Hermes shared-metrics policy", exc_info=True)
+        logger.debug("Unable to read Cybr Agent shared-metrics policy", exc_info=True)
         config = None
     for key in ("telemetry", "shared_metrics"):
         config = config.get(key) if isinstance(config, dict) else None
@@ -1361,7 +1395,7 @@ def _reconcile_send_consent_once() -> None:
 
 
 def observe_lifecycle(hook_name: str, **kwargs: Any) -> None:
-    """Project one Hermes lifecycle event into the core Relay integration."""
+    """Project one Cybr Agent lifecycle event into the core Relay integration."""
     _reconcile_send_consent_once()
     if not handles_hook(hook_name) or not relay_runtime.relay_instrumentation_enabled():
         return
@@ -1371,11 +1405,11 @@ def observe_lifecycle(hook_name: str, **kwargs: Any) -> None:
     try:
         _HOOK_HANDLERS[hook_name](runtime, kwargs)
     except Exception:
-        logger.warning("Hermes shared metrics hook failed: %s", hook_name, exc_info=True)
+        logger.warning("Cybr Agent shared metrics hook failed: %s", hook_name, exc_info=True)
 
 
 def _with_runtime_toolset(event: dict[str, Any]) -> dict[str, Any]:
-    """Attach the toolset already declared by Hermes's runtime registry."""
+    """Attach the toolset already declared by Cybr Agent's runtime registry."""
     tool_name = _text(event, "tool_name")
     if event.get("toolset") or not tool_name:
         return event
@@ -1423,7 +1457,7 @@ def _prepare_core_session(host: relay_runtime.RelayRuntime, context: dict[str, A
 def start_task_run(
     *, session_id: str, task_id: str, platform: str, parent_session_id: str = ""
 ) -> None:
-    """Start task metrics at the outer Hermes execution boundary."""
+    """Start task metrics at the outer Cybr Agent execution boundary."""
     _run_task_hook(
         "start_task", retry_failed=True, session_id=session_id, task_id=task_id,
         platform=platform, parent_session_id=parent_session_id,
@@ -1507,7 +1541,7 @@ def record_session_tools(session_id: str, agent: Any, tools_for_api: list) -> No
 
 
 def record_known_cache_break(cause: str, route: dict[str, str], session_id: str) -> None:
-    """A prompt-cache break Hermes caused (caller checked enabled())."""
+    """A prompt-cache break Cybr Agent caused (caller checked enabled())."""
     if not relay_runtime.relay_instrumentation_enabled():
         return
     runtime = _get_runtime(retry_failed=True)
@@ -1576,7 +1610,7 @@ def _get_runtime(
         try:
             _RUNTIMES[profile_key] = runtime = _Runtime(host=host)
         except Exception:
-            logger.warning("Hermes shared metrics initialization failed", exc_info=True)
+            logger.warning("Cybr Agent shared metrics initialization failed", exc_info=True)
             _RUNTIMES[profile_key] = _RUNTIME_FAILED
             return None
         return runtime

@@ -712,12 +712,8 @@ def test_default_spawn_does_not_auto_load_any_skill(kanban_home, monkeypatch):
     assert "--skills" not in cmd, (
         f"spawn argv should not auto-load any skill: {cmd}"
     )
-    assert "--accept-hooks" in cmd, f"spawn argv missing --accept-hooks: {cmd}"
-    assert cmd.index("--accept-hooks") < cmd.index("chat"), (
-        f"--accept-hooks must come before 'chat' in argv: {cmd}"
-    )
-    # Assignee + task env are still present
-    assert "some-profile" in cmd
+    assert cmd[-2:] == ["-m", "hermes_cli.kanban_worker_client"]
+    # Assignee + task identity reaches the owner client; policy is read from the board.
     env = captured["env"]
     assert env.get("HERMES_KANBAN_TASK") == tid
     assert env.get("HERMES_PROFILE") == "some-profile"
@@ -1328,7 +1324,7 @@ def test_notify_sub_starts_caught_up_on_active_task(kanban_home):
 
 _WORKER_LOG_TAIL = (
     "Query: work kanban task\n"
-    "╭─ ☤ Hermes ───────────────────╮\n"
+    "╭─ ∿ Cybr ───────────────────╮\n"
     "│ the board protocol requires reassigning this card to orchestrator, but the │\n"
     "│ native kanban_* tools available here have no reassignment operation.       │\n"
     "╰──────────────────────────────╯\n"

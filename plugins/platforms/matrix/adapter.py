@@ -1,3 +1,4 @@
+# health: allow FILE_LINES -- platform-tables refactor: core's PLATFORM_HINTS/_PLATFORM_DEFAULTS rows for this platform moved onto its register() call (hint text lives in adapter_hint.py); the growth is only those kwargs
 """Matrix gateway adapter (any homeserver, via mautrix; optional E2EE with ``mautrix[encryption]``).
 
 Env vars (config.yaml ``matrix:`` keys alias several — env wins):
@@ -73,7 +74,7 @@ except ImportError:
 from gateway.config import Platform, PlatformConfig
 from gateway.platforms.base import (
     gateway_trust_env, BasePlatformAdapter, ExecApprovalPrompt,
-    SendResult, resolve_proxy_url, proxy_kwargs_for_aiohttp, _ssrf_redirect_guard,
+    SendResult, resolve_proxy_url, proxy_kwargs_for_aiohttp, ssrf_redirect_guard,
 )
 from gateway.platforms.base import transcode_to_ogg_opus
 from gateway.platforms.event import MessageEvent, MessageType, ProcessingOutcome
@@ -157,7 +158,7 @@ def _resolve_matrix_bang_command(name: str) -> str | None:
 
 
 def _normalize_matrix_bang_command(text: str) -> str:
-    """Convert Matrix ``!command`` aliases to normal Hermes ``/command`` text."""
+    """Convert Matrix ``!command`` aliases to normal Cybr Agent ``/command`` text."""
     if not text or not text.startswith("!"):
         return text
     match = _MATRIX_BANG_COMMAND_RE.match(text)
@@ -775,7 +776,7 @@ def ensure_matrix_deps() -> bool:
     if extras.missing("matrix") and not extras.ensure_and_bind("matrix", _import, globals()):
         logger.warning(
             "Matrix: required packages not installed or need a restart. "
-            "Run `hermes pm install`, then restart Hermes."
+            "Run `hermes pm install`, then restart Cybr Agent."
         )
         return False
     e2ee_mode = _resolve_e2ee_mode()
@@ -792,10 +793,10 @@ def ensure_matrix_deps() -> bool:
 
 class MatrixAdapter(BasePlatformAdapter):
     """Gateway adapter for Matrix (any homeserver)."""
-
+    serial_receive_loop = True  # _sync_loop reads the next sync only after this sync's handlers return
     supports_code_blocks = True  # Matrix renders fenced code blocks (HTML/markdown)
     splits_long_messages = True  # send() chunks via truncate_message(max_message_length)
-    typed_command_prefix = "!"  # clients reserve typed "/" for local commands; "!command" always reaches Hermes
+    typed_command_prefix = "!"  # clients reserve typed "/" for local commands; "!command" always reaches Cybr Agent
     # Class-level defaults keep object.__new__-built test instances working.
     max_message_length = DEFAULT_MAX_MESSAGE_LENGTH
     _SPLIT_THRESHOLD = DEFAULT_MAX_MESSAGE_LENGTH - 100
@@ -1159,7 +1160,7 @@ class MatrixAdapter(BasePlatformAdapter):
         elif self._password and self._user_id:
             try:
                 resp = await client.login(
-                    identifier=self._user_id, password=self._password, device_name="Hermes Agent",
+                    identifier=self._user_id, password=self._password, device_name="Cybr Agent",
                     device_id=self._device_id or None)
                 if resp and hasattr(resp, "device_id"):
                     client.device_id = resp.device_id
@@ -1565,7 +1566,7 @@ class MatrixAdapter(BasePlatformAdapter):
         except ImportError:
             from tools.url_safety import create_ssrf_safe_async_client
             _httpx_kw: dict = {"proxy": self._proxy_url} if self._proxy_url else {}
-            _httpx_kw["event_hooks"] = {"response": [_ssrf_redirect_guard]}
+            _httpx_kw["event_hooks"] = {"response": [ssrf_redirect_guard]}
             async with create_ssrf_safe_async_client(**_httpx_kw) as http:
                 async with http.stream("GET", url, follow_redirects=True, timeout=30) as resp:
                     resp.raise_for_status()
@@ -2976,7 +2977,7 @@ class MatrixAdapter(BasePlatformAdapter):
 
     def _strip_mention(self, body: str) -> str:
         """Strip explicit ``@user:server`` / ``@localpart`` tokens only — never bare localpart
-        words, or "Hermes Agent" would become "Agent"."""
+        words, or "Cybr Agent" would become "Agent"."""
         if not body:
             return ""
         if self._user_id:
@@ -3203,10 +3204,10 @@ def interactive_setup() -> None:
 
             print_info("Preparing Matrix dependencies...")
             sync_venv(["matrix"], explicit=True)
-            print_success("Matrix dependencies prepared. Restart Hermes to use them.")
+            print_success("Matrix dependencies prepared. Restart Cybr Agent to use them.")
         except Exception as exc:
             print_warning(f"Matrix dependencies could not be prepared: {exc}")
-            print_info("Run `hermes pm install`, then restart Hermes.")
+            print_info("Run `hermes pm install`, then restart Cybr Agent.")
         print_info("🔒 Security: Restrict who can use your bot")
         print_info("   Matrix user IDs look like @username:server")
         allowed_users = prompt("Allowed user IDs (comma-separated, leave empty for open access)")
@@ -3215,7 +3216,7 @@ def interactive_setup() -> None:
             print_success("Matrix allowlist configured")
         else:
             print_info("⚠️  No allowlist set - anyone who can message the bot can use it!")
-        for line in ("📬 Home Room: where Hermes delivers cron job results and notifications.",
+        for line in ("📬 Home Room: where Cybr Agent delivers cron job results and notifications.",
                      "   Room IDs look like !abc123:server (shown in Element room settings)",
                      "   You can also set this later by typing /set-home in a Matrix room.",
                      "Leave blank to clear a previously saved home room (cron / notifications)."):
@@ -3243,7 +3244,6 @@ def _apply_yaml_config(yaml_cfg: dict, matrix_cfg: dict) -> dict | None:
     return _apply_yaml_bridge(matrix_cfg, _YAML_BRIDGE)
 
 
-
 def _is_connected(config) -> bool:
     """Connected = homeserver + token (or password). Reads via hermes_cli.gateway.get_env_value so
     setup-status callers that patch it see the same value; PlatformConfig extras are honored."""
@@ -3255,13 +3255,22 @@ def _is_connected(config) -> bool:
     return bool(str(homeserver).strip() and str(token).strip())
 
 
-
 def register(ctx) -> None:
+    from .adapter_hint import PLATFORM_HINT
+    from .send_targets import SEND_ENTRY_KWARGS
+    from .dashboard_card import DASHBOARD_CARD
+    from . import gateway_env  # env -> GatewayConfig bridge (gateway.config_env)
     ctx.register_platform(
+        **SEND_ENTRY_KWARGS,  # send_message target syntax + routing
         name="matrix", label="Matrix", adapter_factory=MatrixAdapter, check_fn=matrix_deps_present,
+        **DASHBOARD_CARD,
         ensure_deps_fn=ensure_matrix_deps, is_connected=_is_connected,
         required_env=["MATRIX_HOMESERVER", "MATRIX_ACCESS_TOKEN"], install_hint="pip install 'mautrix[encryption]'",
-        setup_fn=interactive_setup, apply_yaml_config_fn=_apply_yaml_config, allowed_users_env="MATRIX_ALLOWED_USERS",
-        allow_all_env="MATRIX_ALLOW_ALL_USERS", cron_deliver_env_var="MATRIX_HOME_ROOM",
+        setup_fn=interactive_setup, apply_yaml_config_fn=_apply_yaml_config, cron_deliver_env_var="MATRIX_HOME_ROOM",
         standalone_sender_fn=_standalone_send, max_message_length=DEFAULT_MAX_MESSAGE_LENGTH, emoji="🔐",
-        allow_update_command=True)
+        allow_update_command=True,
+        platform_hint=PLATFORM_HINT,
+        display_tier="medium",
+        env_overrides=gateway_env.ENV_OVERRIDES,
+        env_enable_credentials=gateway_env.ENV_ENABLE_CREDENTIALS, **gateway_env.AUTHZ,
+    )

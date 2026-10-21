@@ -32,6 +32,7 @@ export const ruProjects: NonNullable<TranslationOverrides['sidebar']>['projects'
   movedTo: name => `Перемещено в ${name}`,
   moveFailed: 'Не удалось переместить сеанс',
   moveNoFolder: 'У этого проекта нет папки для перемещения',
+  moveBusy: 'Остановите текущий ход, затем переместите чат',
   moveNoProjects: 'Нет других проектов',
   reveal: 'Показать в папке',
   copyPath: 'Копировать путь',
@@ -42,8 +43,8 @@ export const ruProjects: NonNullable<TranslationOverrides['sidebar']>['projects'
   undoHide: 'Отменить',
   createFailed: 'Не удалось создать проект',
   staleBackend:
-    'Обновите бэкенд Hermes, чтобы создавать проекты — ваш бэкенд старше этого desktop-приложения (Настройки → Обновления → Бэкенд).',
-  deleteConfirm: 'Это удалит сохранённый проект из Hermes. Файлы, git-репозитории и worktrees не пострадают.',
+    'Обновите бэкенд Cybr Agent, чтобы создавать проекты — ваш бэкенд старше этого desktop-приложения (Настройки → Обновления → Бэкенд).',
+  deleteConfirm: 'Это удалит сохранённый проект из Cybr Agent. Файлы, git-репозитории и worktrees не пострадают.',
   startWork: 'Новый worktree',
   newWorktreeTitle: 'Новый worktree',
   newWorktreeDesc: 'Назовите ветку для этого worktree.',
@@ -53,7 +54,7 @@ export const ruProjects: NonNullable<TranslationOverrides['sidebar']>['projects'
   baseBranchNone: 'Ветки не найдены',
   startWorkFailed: 'Не удалось создать worktree',
   worktreeStaleBackend:
-    'Обновите бэкенд Hermes, чтобы создавать worktrees по этому удалённому соединению — он старше git worktree API.',
+    'Обновите бэкенд Cybr Agent, чтобы создавать worktrees по этому удалённому соединению — он старше git worktree API.',
   worktreeProjectLabel: 'Проект',
   worktreeProjectPlaceholder: 'Поиск проектов…',
   worktreeProjectNone: 'Нет проектов с папкой',

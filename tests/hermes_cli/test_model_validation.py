@@ -231,6 +231,9 @@ class TestCopilotNormalization:
         assert opencode_model_api_mode("opencode-go", "opencode-go/minimax-m2.5") == "anthropic_messages"
         assert opencode_model_api_mode("opencode-go", "qwen3.7-max") == "anthropic_messages"
         assert opencode_model_api_mode("opencode-go", "opencode-go/qwen3.7-max") == "anthropic_messages"
+        # claude-haiku-5-5 400s ModelProtocolUnsupported on chat/completions and responses (#134844).
+        assert opencode_model_api_mode("opencode-go", "claude-haiku-5-5") == "anthropic_messages"
+        assert opencode_model_api_mode("opencode-go", "opencode-go/claude-haiku-5-5") == "anthropic_messages"
         # All Qwen models on Go route via /v1/messages (Go endpoint table).
         assert opencode_model_api_mode("opencode-go", "qwen3.7-plus") == "anthropic_messages"
         assert opencode_model_api_mode("opencode-go", "qwen3.6-plus") == "anthropic_messages"
@@ -506,7 +509,7 @@ class TestRequestedIdIsNeverRewritten:
 
 
 class TestValidateCodex900kVariants:
-    """`-900k` is a Hermes picker convention: valid variants come from the
+    """`-900k` is a Cybr Agent picker convention: valid variants come from the
     catalog; ineligible aliases are hard-rejected BEFORE the hidden-slug
     soft-accept (#92797 review)."""
 
@@ -537,7 +540,7 @@ class TestValidateCodex900kVariants:
 # -- probe_api_models — Cloudflare UA mitigation --------------------------------
 
 class TestProbeApiModelsUserAgent:
-    """Probing custom /v1/models must send a Hermes User-Agent.
+    """Probing custom /v1/models must send a Cybr Agent User-Agent.
 
     Some custom Claude proxies (e.g. ``packyapi.com``) sit behind Cloudflare with
     Browser Integrity Check enabled. The default ``Python-urllib/3.x`` signature

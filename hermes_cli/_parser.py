@@ -130,7 +130,7 @@ Examples:
     hermes logs errors            View errors.log
     hermes logs --since 1h        Lines from the last hour
     hermes debug share             Upload debug report for support
-    hermes console                Open the safe Hermes command console
+    hermes console                Open the safe Cybr Agent command console
     hermes update                 Update to latest version
     hermes dashboard              Start web UI dashboard (port 9119)
     hermes dashboard --stop       Stop running dashboard processes
@@ -197,6 +197,8 @@ def _add_top_level_flags(parser: argparse.ArgumentParser) -> None:
               help="Bypass all dangerous command approval prompts (use at your own risk)")
     inherited(parser, "--pass-session-id", action="store_true", default=False,
               help="Include the session ID in the agent's system prompt")
+    inherited(parser, "--checkpoints", action="store_true", default=False,
+              help="Enable filesystem checkpoints before destructive file operations (use /rollback to restore)")
     inherited(parser, "--ignore-user-config", action="store_true", default=False,
               help=f"Ignore {_cfg_path()} and fall back to built-in defaults (credentials in .env are still loaded)")
     inherited(parser, "--ignore-rules", action="store_true", default=False,
@@ -225,7 +227,7 @@ def _build_chat_parser(subparsers) -> argparse.ArgumentParser:
     """
     chat_parser = subparsers.add_parser(
         "chat", help="Interactive chat with the agent",
-        description="Start an interactive chat session with Hermes Agent")
+        description="Start an interactive chat session with Cybr Agent")
     add, inherited, SUPPRESS = chat_parser.add_argument, _inherited_flag, argparse.SUPPRESS
     _query_group = chat_parser.add_mutually_exclusive_group()
     _query_group.add_argument("-q", "--query", help=(
@@ -258,6 +260,12 @@ def _build_chat_parser(subparsers) -> argparse.ArgumentParser:
     # too; runtime resolution (resolve_runtime_provider) validates, same as the top-level flag.
     inherited(chat_parser, "--provider", default=SUPPRESS,
               help="Inference provider (default: auto). Built-in or a user-defined name from `providers:` in config.yaml.")
+    # Explicit endpoint launches (custom provider, --safe-mode isolation) are frozen into the
+    # session policy by the gateway; the key lives only in the authority's memory, never on disk.
+    add("--base-url", dest="base_url", default=SUPPRESS, metavar="URL",
+        help="OpenAI-compatible endpoint for --provider custom (e.g. http://127.0.0.1:8000/v1).")
+    add("--api-key", dest="api_key", default=SUPPRESS, metavar="KEY",
+        help="API key for this launch only; not persisted.")
     add("-v", "--verbose", action="store_true", default=SUPPRESS, help="Verbose output")
     add("-Q", "--quiet", action="store_true",
         help="Quiet mode for programmatic use: suppress banner, spinner, and tool previews. Only output the final response and session info.")
@@ -285,8 +293,8 @@ def _build_chat_parser(subparsers) -> argparse.ArgumentParser:
         "Auto-approve any unseen shell hooks declared in config.yaml "
         "without a TTY prompt (see also HERMES_ACCEPT_HOOKS env var and "
         "hooks_auto_accept: in config.yaml)."))
-    add("--checkpoints", action="store_true", default=False,
-        help="Enable filesystem checkpoints before destructive file operations (use /rollback to restore)")
+    inherited(chat_parser, "--checkpoints", action="store_true", default=SUPPRESS,
+              help="Enable filesystem checkpoints before destructive file operations (use /rollback to restore)")
     add("--max-turns", type=int, default=None, metavar="N",
         help="Maximum tool-calling iterations per conversation turn (default: 500, or agent.max_turns in config)")
     add("--run-budget", type=float, default=None, metavar="SECONDS", dest="run_budget", help=(
@@ -305,7 +313,7 @@ def _build_chat_parser(subparsers) -> argparse.ArgumentParser:
     inherited(chat_parser, "--ignore-rules", action="store_true", default=SUPPRESS,
               help="Skip auto-injection of AGENTS.md, SOUL.md, .cursorrules, memory, and preloaded skills. Combine with --ignore-user-config for a fully isolated run.")
     inherited(chat_parser, "--safe-mode", action="store_true", default=SUPPRESS,
-              help="Troubleshooting mode: disable ALL customizations — user config, AGENTS.md/memory injection, plugins, and MCP servers (implies --ignore-user-config and --ignore-rules). Use to isolate whether a problem comes from your setup or from Hermes itself.")
+              help="Troubleshooting mode: disable ALL customizations — user config, AGENTS.md/memory injection, plugins, and MCP servers (implies --ignore-user-config and --ignore-rules). Use to isolate whether a problem comes from your setup or from Cybr Agent itself.")
     add("--source", default=None,
         help="Session source tag for filtering (default: cli). Use 'tool' for third-party integrations that should not appear in user session lists.")
     inherited(chat_parser, "--tui", action="store_true", default=SUPPRESS,
@@ -377,7 +385,7 @@ def build_top_level_parser():
     ``subparsers.add_parser(...)``.
     """
     parser = HermesArgumentParser(
-        prog="hermes", description="Hermes Agent - AI assistant with tool-calling capabilities",
+        prog="hermes", description="Cybr Agent - AI assistant with tool-calling capabilities",
         formatter_class=argparse.RawDescriptionHelpFormatter, epilog=_EPILOGUE)
     _add_top_level_flags(parser)
     # metavar keeps the usage line to ``hermes [...] <command>`` instead of the brace list of

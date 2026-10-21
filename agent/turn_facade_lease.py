@@ -335,10 +335,10 @@ def admit_durable_turn_lease(
         nonlocal reload_needed, announced
         reload_needed = announced = True
         agent._emit_status(
-            "⏳ Another Hermes process is using this session; "
+            "⏳ Another Cybr Agent process is using this session; "
             "waiting for it to finish before starting your turn..."
             if elapsed < 1.0 else
-            f"⏳ Still waiting for the other Hermes process on this session ({int(elapsed)}s)..."
+            f"⏳ Still waiting for the other Cybr Agent process on this session ({int(elapsed)}s)..."
         )
 
     authority_floor = time.time()  # every acquisition attempt stamps its expiry after this instant
@@ -347,7 +347,8 @@ def admit_durable_turn_lease(
         on_wait=_on_wait, on_contended=_on_contended,
         should_abort=lambda: getattr(agent, "_interrupt_requested", False),
     ):
-        admission.early_result = _lease_not_acquired_result(agent, session_id, conversation_history)
+        admission.early_result = _lease_not_acquired_result(agent, session_id, conversation_history,
+                                                            waited=announced)
         return admission
 
     # Assign only after admission so the finally cannot release a holder that never owned the
@@ -437,7 +438,9 @@ def carry_unadmitted_user_message(
     append_message(early_result["messages"], deferred_user, timestamp=timestamp)
 
 
-def _lease_not_acquired_result(agent, session_id: str, conversation_history) -> dict[str, Any]:
+def _lease_not_acquired_result(agent, session_id: str, conversation_history, *, waited: bool) -> dict[str, Any]:
+    """``waited``: another holder was seen (the user was told so), not merely an interrupt that
+    landed before the first acquisition attempt, which no other process was involved in."""
     base = {"messages": list(conversation_history or []), "api_calls": 0, "completed": False}
     if getattr(agent, "_interrupt_requested", False):
         logger.info("session turn lease wait aborted by interrupt: %s", session_id)
@@ -447,8 +450,10 @@ def _lease_not_acquired_result(agent, session_id: str, conversation_history) -> 
         )
         result = {
             "final_response": (
-                "Stopped waiting for another Hermes process on this session. "
+                "Stopped waiting for another Cybr Agent process on this session. "
                 "Your message was not processed."
+                if waited else
+                "Stopped before this turn started. Your message was not processed."
             ),
             **base,
             "interrupted": True,
@@ -467,7 +472,7 @@ def _lease_not_acquired_result(agent, session_id: str, conversation_history) -> 
         return result
     # Fail closed like gateway TurnLeaseTimeoutError: surface a resend notice, not a bare TimeoutError.
     timeout_msg = (
-        "⏳ Another Hermes process kept this session busy too long. Your message was not "
+        "⏳ Another Cybr Agent process kept this session busy too long. Your message was not "
         "processed - wait for the other process to finish, then send it again."
     )
     logger.error("session turn lease wait timed out for %s", session_id)

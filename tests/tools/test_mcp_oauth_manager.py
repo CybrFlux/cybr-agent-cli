@@ -189,6 +189,8 @@ def _fake_response(status, url, body):
     resp = MagicMock()
     resp.status_code = status
     resp.request = SimpleNamespace(url=url)
+    # Not a redirect: mcp's RedirectAwareAuth follows any truthy next_request.
+    resp.next_request = None
 
     async def _aread():
         return body
@@ -470,7 +472,7 @@ async def test_refresh_response_with_new_refresh_token_rotates(tmp_path, monkeyp
 # ---------------------------------------------------------------------------
 # Cross-process refresh-token rotation (single-use refresh tokens)
 #
-# Two Hermes backends routinely share one HERMES_HOME (desktop `serve` +
+# Two Cybr Agent backends routinely share one HERMES_HOME (desktop `serve` +
 # `gateway run`). With a provider that rotates refresh tokens, the loser of the
 # race POSTs a token the winner already consumed and gets 400 — while a valid
 # replacement sits on disk. Clearing state there forces an interactive browser

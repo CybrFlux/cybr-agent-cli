@@ -88,7 +88,7 @@ def _s6_running() -> bool:
 
     The obvious probe — ``Path('/proc/1/exe').resolve()`` — only works as root: for any other UID, the
     symlink at ``/proc/1/exe`` is unreadable and ``resolve()`` silently returns the path unchanged, so the
-    resolved name is the literal ``"exe"`` and detection always fails. Since every Hermes runtime call
+    resolved name is the literal ``"exe"`` and detection always fails. Since every Cybr Agent runtime call
     inside the container drops to hermes via ``s6-setuidgid``, that silent failure made the entire
     service-manager runtime-registration path inert in production (PR #30136 review).
     """
@@ -513,7 +513,7 @@ class S6ServiceManager:
             f"# shellcheck shell=sh\n"
             f': "${{HERMES_HOME:=/opt/data}}"\n'
             f'log_dir="$HERMES_HOME/logs/gateways/{prof}"\n'
-            # Create the leaf and clear a stale s6-log lock AS HERMES when starting as root. Never
+            # Create the leaf and clear a stale s6-log lock AS CYBR when starting as root. Never
             # chown/unlink hermes-writable volume paths from this restartable root-context script:
             # an unprivileged user can race a pathname op through a symlink swap (CWE-59/CWE-367).
             # Parent logs/gateways is seeded hermes-owned at stage2 boot (test_log_dir_seed.py).

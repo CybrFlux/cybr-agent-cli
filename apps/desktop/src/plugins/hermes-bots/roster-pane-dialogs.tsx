@@ -67,9 +67,9 @@ export function renderRosterDialogs({
       />
       <CreateGroupChatDialog
         onClose={() => setGroupCreateOpen(false)}
-        onCreated={groupName => openGroupChat(groupName)}
-        open={groupCreateOpen} // Full multi-source roster: group chats can seat bots from other
-        // registered connections — their turns route to their own machines.
+        onCreated={(group, origin) => openGroupChat(group, origin)}
+        open={groupCreateOpen} // The dialog applies the active gateway mode to
+        // the full roster before allowing a group to be created.
         roster={roster}
       />
       <SectionNameDialog
@@ -110,7 +110,7 @@ export function renderRosterDialogs({
             <span>
               {'This will permanently delete the bot '}
               <span className="font-medium text-foreground">{deleting.name}</span>
-              {' and its associated Hermes profile at '}
+              {' and its associated Cybr Agent profile at '}
               <span className="font-mono text-xs">{deleting.path}</span>. This cannot be undone.
             </span>
           ) : null

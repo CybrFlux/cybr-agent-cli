@@ -71,9 +71,9 @@ class MCPServerHealthMixin:
         return task
 
     def _make_logging_callback(self):
-        """``logging_callback`` forwarding server ``notifications/message`` into Hermes logging (SDK default drops them).
+        """``logging_callback`` forwarding server ``notifications/message`` into Cybr Agent logging (SDK default drops them).
 
-        Routes MCP ``notifications/message`` log notifications from the server into Hermes' logging
+        Routes MCP ``notifications/message`` log notifications from the server into Cybr Agent' logging
         (agent.log via hermes_logging), tagged with the server name. Without this, the SDK's default
         callback silently discards them, so server-side warnings/errors during a tool call were invisible.
         Port of anomalyco/opencode#34529.
@@ -132,6 +132,8 @@ class MCPServerHealthMixin:
     async def _refresh_tools(self):
         """Re-fetch tools on ``tools/list_changed`` and update the registry. The lock serializes rapid-fire
         notifications; after the list_tools ``await`` all mutations are synchronous — atomic on the event loop."""
+        if getattr(self, '_editor_frozen_manifest', None) is not None:
+            return  # Editor tool policy changes apply only to a new canonical session.
         if not self._advertises_tools():
             return  # tools/list would raise MCPError(-32601)
         async with self._refresh_lock:

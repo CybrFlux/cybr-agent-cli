@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 # The Advanced modal's own keys (CATALOG-ROW-CONTRACT.md); every other answer key is a credential.
 _OPTION_KEYS = frozenset({"target_profile", "agent_half", "desktop_half", "enable", "force", "ref"})
 _COMMIT_SHA = re.compile(r"^[0-9a-fA-F]{40}$")
-_TIERS = frozenset({"official", "community"})
+_TIERS = frozenset({"official", "verified", "community"})
 
 
 def _flag(value: Optional[str], default: bool) -> bool:
@@ -179,7 +179,7 @@ class _Runner:
         if target.kind == "plugin":
             entry = self.installer.plugin_entry(target.name)
             if entry is None:
-                raise LookupError(f"'{target.name}' is not in the Hermes plugin catalog")
+                raise LookupError(f"'{target.name}' is not in the Cybr Agent plugin catalog")
             self.facts[target.name] = entry
             target.extra = _plugin_row(entry, self.label)
             target.required_env = [{"name": name, "required": False, "secret": True, "default": ""}

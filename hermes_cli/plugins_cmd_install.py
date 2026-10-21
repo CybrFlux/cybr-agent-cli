@@ -90,7 +90,7 @@ def _install_plugin_python_deps(
         deps = declaration.install_requirements
     except Exception as exc:
         return False, _ConsentRefusal(f"invalid Python dependency declaration: {exc}", "manifest_invalid")
-    has_python = declaration.is_member
+    has_python = declaration.installs_packages
     has_package_json = (target / "package.json").is_file()
     if not has_python and not has_package_json:
         return True, None  # no declared deps at all
@@ -148,7 +148,7 @@ def _consent_python_deps(
             "Run `hermes plugins enable` when ready to prepare them.[/dim]\n"
         )
         return False, _ConsentRefusal("dependency install skipped (non-interactive)", "non_interactive")
-    if not _ask_yes_no(("python", plugin_name, deps), "  Prepare these with Hermes through PM now? [y/N]: ", console):
+    if not _ask_yes_no(("python", plugin_name, deps), "  Prepare these with Cybr Agent through PM now? [y/N]: ", console):
         console.print(
             "[dim]Skipped — run `hermes plugins enable` when ready "
             "to prepare them.[/dim]\n"
@@ -227,7 +227,7 @@ def _check_manifest_version(manifest: dict, plugin_name: str) -> None:
     reason = manifest_version_error(manifest, plugin_name)
     if reason:
         from hermes_cli.config import recommended_update_command
-        raise _pc().PluginOperationError(f"{reason} Run {recommended_update_command()} to update Hermes.",
+        raise _pc().PluginOperationError(f"{reason} Run {recommended_update_command()} to update Cybr Agent.",
                                          failure_class="incompatible")
 
 
@@ -267,7 +267,7 @@ def _probe_readable(path: Path) -> None:
 
 
 def _ensure_tree_readable(root: Path, plugins_dir: Path) -> None:
-    """Refuse to ship a tree Hermes cannot read back. A clone can land unreadable (Windows ACL
+    """Refuse to ship a tree Cybr Agent cannot read back. A clone can land unreadable (Windows ACL
     inheritance -> WinError 5, a mode-000 file) and discovery would then skip the plugin forever
     (#111804); repair ``u+rX`` where the OS supports it, otherwise fail before anything moves."""
     paths = [root]
@@ -328,10 +328,36 @@ def _known_issue_warnings(entry) -> list[str]:
     return [f"Known issue: {issue}" for issue in entry.known_issues]
 
 
+def interactive_scan_decision(console, verb: str) -> Callable[[Any], bool]:
+    """The terminal ``[y/N]`` that accepts a caution verdict, shared by install and update (*verb*)."""
+    def decide(scan_result) -> bool:
+        from tools.plugin_guard import format_scan_report
+        console.print()
+        console.print("[yellow]⚠ Security scan flagged this plugin:[/yellow]")
+        console.print(format_scan_report(scan_result))
+        return _pc()._is_tty() and _pc()._ask_yes(f"  {verb} anyway? Only continue if you trust the source. [y/N]: ")
+    return decide
+
+
+def scan_blocked_result(exc) -> dict[str, Any]:
+    """The non-interactive surfaces' answer to a scan block: the verdict and findings, so the client can
+    show them and, for a caution verdict, retry with ``force``."""
+    fields = ("pattern_id", "severity", "category", "file", "line", "description")
+    return {
+        "ok": False, "error": str(exc), "scan_blocked": True,
+        "scan_verdict": getattr(exc.scan_result, "verdict", "dangerous"),
+        "scan_findings": [
+            {k: getattr(f, k) for k in fields}
+            for f in (exc.scan_result.findings if exc.scan_result is not None else ())
+        ],
+    }
+
+
 def _install_plugin_core(
     identifier: str,
     *,
     force: bool,
+    accept_caution: Optional[bool] = None,
     ref: Optional[str] = None,
     scan_decision_cb=None,
     reviewed_pin: Optional[str] = None,
@@ -356,7 +382,9 @@ def _install_plugin_core(
     *before_swap(manifest, tree)* runs on the manifest-checked clone BEFORE the security scan, so
     the single scan and portable-package check admit the merged tree (file-count/size limits
     included). It may return the relative paths it merged in, which a scan block then attributes,
-    and may raise :class:`PluginOperationError` to abort (re-pin consent)."""
+    and may raise :class:`PluginOperationError` to abort (re-pin consent). *accept_caution* decides a
+    caution scan verdict on its own when *force* only means "replace the existing tree" (an update's
+    re-clone); None lets *force* decide both, as ``install --force`` does."""
     requested_revision = _pc()._normalize_exact_revision(ref) if ref is not None else None
     try:
         git_url, subdir = _pc()._resolve_git_url(identifier)
@@ -415,8 +443,8 @@ def _install_plugin_core(
         # admits the final bytes.
         merged = before_swap(manifest, tmp_target) if before_swap is not None else None
         # Scan BEFORE anything is moved into place; raises PluginScanBlocked when blocked.
-        _pc()._scan_merged_tree(tmp_target, identifier, merged, force=force, scan_decision_cb=scan_decision_cb,
-                                reviewed_pin=at_reviewed_pin)
+        _pc()._scan_merged_tree(tmp_target, identifier, merged, force=force if accept_caution is None else accept_caution,
+                                scan_decision_cb=scan_decision_cb, reviewed_pin=at_reviewed_pin)
         if not python_deps:
             from pm.workspace import enabled_plugin_dirs
 
@@ -559,7 +587,7 @@ def cmd_install(
         console.print(f"[bold]{entry.name}[/bold] [cyan]\\[{entry.tier}][/cyan] [dim]pinned @ {entry.sha[:8]}[/dim]")
         console.print(catalog.entry_capability_summary(entry))
     else:
-        console.print("[yellow]Warning:[/yellow] custom (unreviewed) source — not from the Hermes catalog.")
+        console.print("[yellow]Warning:[/yellow] custom (unreviewed) source — not from the Cybr Agent catalog.")
     if allow_removed:
         console.print(
             "[bold red]WARNING:[/bold red] [red]--allow-removed set — skipping the catalog kill-list check. "
@@ -577,14 +605,7 @@ def cmd_install(
             "Consider using https:// or git@ for production installs.")
 
     console.print(f"[dim]Cloning {git_url}{f' (subdir: {_subdir})' if _subdir else ''}...[/dim]")
-
-    def _interactive_scan_decision(scan_result) -> bool:
-        """Prompt the user to accept a caution-verdict plugin."""
-        from tools.plugin_guard import format_scan_report
-        console.print()
-        console.print("[yellow]⚠ Security scan flagged this plugin:[/yellow]")
-        console.print(format_scan_report(scan_result))
-        return _pc()._is_tty() and _pc()._ask_yes("  Install anyway? Only continue if you trust the source. [y/N]: ")
+    _interactive_scan_decision = interactive_scan_decision(console, "Install")
 
     def _install() -> tuple:
         if entry is not None:
@@ -603,7 +624,7 @@ def cmd_install(
     if not _pc()._looks_like_plugin_dir(target):
         console.print(
             f"[yellow]Warning:[/yellow] {installed_name} doesn't contain plugin.yaml, "
-            f"plugin.json, or __init__.py. It may not be a valid Hermes plugin.")
+            f"plugin.json, or __init__.py. It may not be a valid Cybr Agent plugin.")
     _prompt_plugin_env_vars(installed_manifest, console)
 
     from pm.workspace import enabled_plugin_dirs
@@ -753,11 +774,11 @@ def _resolve_source(identifier: str, catalog_name: Optional[str]) -> tuple:
     if catalog_name:
         entry = catalog.get_live_catalog_entry(catalog_name)
         if entry is None:
-            return None, identifier, warnings, {"ok": False, "error": f"'{catalog_name}' is not in the Hermes plugin catalog."}
+            return None, identifier, warnings, {"ok": False, "error": f"'{catalog_name}' is not in the Cybr Agent plugin catalog."}
         warnings.extend(_known_issue_warnings(entry))
         identifier = entry.install_identifier
     else:
-        warnings.append("Custom (unreviewed) source — not from the Hermes catalog.")
+        warnings.append("Custom (unreviewed) source — not from the Cybr Agent catalog.")
     try:
         git_url = _pc()._resolve_git_url(identifier)[0]
         if git_url.startswith(("http://", "file://")):
@@ -792,15 +813,7 @@ def _place_tree(entry, identifier: str, *, force: bool, ref: Optional[str], assu
         return recorded_install(_install, catalog_name=entry.name if entry is not None else None,
                                 identifier=identifier)
     except _pc().PluginScanBlocked as exc:
-        fields = ("pattern_id", "severity", "category", "file", "line", "description")
-        return {
-            "ok": False, "error": str(exc), "scan_blocked": True,
-            "scan_verdict": getattr(exc.scan_result, "verdict", "dangerous"),
-            "scan_findings": [
-                {k: getattr(f, k) for k in fields}
-                for f in (exc.scan_result.findings if exc.scan_result is not None else ())
-            ],
-        }
+        return scan_blocked_result(exc)
     except _pc().PluginOperationError as exc:
         return {"ok": False, "error": str(exc)}
 

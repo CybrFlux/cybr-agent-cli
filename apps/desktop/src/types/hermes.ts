@@ -97,7 +97,7 @@ export interface OAuthProviderStatus {
 export interface OAuthProvider {
   cli_command: string
   /** Shell command that clears an external provider's credentials, run in the
-   *  embedded terminal. Null when Hermes doesn't know how to remove it. */
+   *  embedded terminal. Null when Cybr Agent doesn't know how to remove it. */
   disconnect_command?: null | string
   disconnect_hint?: null | string
   disconnectable?: boolean
@@ -486,9 +486,12 @@ export interface HermesConfig {
   }
   display?: {
     show_reasoning?: boolean | string
+    /** Per-platform overrides; a local session's `/reasoning show|hide` saves `platforms.cli`. */
+    platforms?: Record<string, { show_reasoning?: boolean | string } | undefined>
     personality?: string
     skin?: string
     interim_assistant_messages?: boolean
+    busy_input_mode?: string
     timestamps?: boolean
     tool_progress?: boolean | string
   }
@@ -838,12 +841,18 @@ export interface SessionResumeResult {
 }
 
 export interface SessionRuntimeInfo {
+  stored_session_id?: string
+  pending_submissions?: unknown
+  /** Canonical snapshot only: the session replay epoch and event sequence its pending set reflects. */
+  replay_epoch?: string
+  last_sequence?: number
   approval_mode?: 'manual' | 'off' | 'smart'
   branch?: string
   config_warning?: string
   credential_warning?: string
   cwd?: string
   desktop_contract?: number
+  desktop_protocol?: string
   fast?: boolean
   install_warning?: string
   model?: string
@@ -1108,6 +1117,7 @@ export interface AutomationBlueprint {
 }
 
 export interface ProfileCreatePayload {
+  soul?: string
   clone_all?: boolean
   clone_from?: null | string
   clone_from_default?: boolean
@@ -1136,7 +1146,7 @@ export interface ProfileSetupCommand {
 
 // The desktop appearance/interface overlay bundled into a profile export as
 // `desktop.json`. Everything optional — an archive exported by an older (or
-// non-desktop) Hermes simply carries none of it. See store/profile-share.ts.
+// non-desktop) Cybr Agent simply carries none of it. See store/profile-share.ts.
 export interface ProfileDesktopOverlay {
   /** Overlay schema version (1). */
   version?: number
@@ -1199,13 +1209,13 @@ export interface SkillInfo {
   name: string
   /** Total observed activity (use + view + patch). Absent on older backends. */
   usage?: number
-  /** 'agent' = learned/local (editable), 'bundled' = ships with Hermes, 'hub' = installed,
+  /** 'agent' = learned/local (editable), 'bundled' = ships with Cybr Agent, 'hub' = installed,
    * 'external' = mounted from skills.external_dirs (externally authored, still editable). */
   provenance?: 'agent' | 'bundled' | 'external' | 'hub'
 }
 
 /** One entry of the built-in optional-skills catalog (optional-skills/ in the
- *  repo) — official skills that ship with Hermes but install on demand. */
+ *  repo) — official skills that ship with Cybr Agent but install on demand. */
 export interface OfficialSkillInfo {
   category: string
   description: string
@@ -1335,7 +1345,7 @@ export interface ToolsetModelsResponse {
  *  cua-driver runs on macOS, Windows, and Linux. `ready` is the single OS-aware
  *  readiness signal: on macOS both TCC grants (Accessibility + Screen
  *  Recording, which attach to cua-driver's own `com.trycua.driver` identity,
- *  not Hermes); elsewhere, driver health from `cua-driver doctor`. `null`
+ *  not Cybr Agent); elsewhere, driver health from `cua-driver doctor`. `null`
  *  means unknown (binary missing / probe failed). */
 export interface ComputerUsePermissionSource {
   attribution?: string
@@ -1596,6 +1606,13 @@ export interface BackendUpdateCheckResponse {
   current_version: string
   behind: number | null
   update_available: boolean
+  /** A stable release this build already contains: applying it moves back. */
+  rollback_to?: null | string
+  /** Update-available only; absent on older backends. */
+  channel?: string
+  branch?: null | string
+  /** Stable: the release version the update installs, e.g. `0.22.0`. */
+  source_version?: null | string
   can_apply: boolean
   update_command: string | null
   message: string | null

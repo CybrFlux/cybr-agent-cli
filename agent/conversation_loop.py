@@ -431,7 +431,7 @@ def _ollama_context_limit_error(agent: Any, request_tokens: int) -> Optional[str
 
     model = getattr(agent, "model", "") or "the selected model"
     logger.warning(
-        "Ollama runtime context too small for Hermes tool use: model=%s provider=%s base_url=%s "
+        "Ollama runtime context too small for Cybr Agent tool use: model=%s provider=%s base_url=%s "
         "runtime_context=%d minimum_context=%d estimated_request_tokens=%d tool_count=%d session=%s",
         model, getattr(agent, "provider", "") or "unknown",
         getattr(agent, "base_url", "") or "unknown base URL", runtime_ctx, MINIMUM_CONTEXT_LENGTH,
@@ -439,10 +439,10 @@ def _ollama_context_limit_error(agent: Any, request_tokens: int) -> Optional[str
         getattr(agent, "session_id", None) or "none",
     )
     return (
-        f"Ollama loaded `{model}` with only {runtime_ctx:,} tokens of runtime context, but Hermes "
+        f"Ollama loaded `{model}` with only {runtime_ctx:,} tokens of runtime context, but Cybr Agent "
         f"needs at least {MINIMUM_CONTEXT_LENGTH:,} tokens for reliable tool use.\n\n"
         "Increase the Ollama context for this model and restart/reload the model before trying "
-        "again. A known-good starting point is 65,536 tokens. In Hermes config, set "
+        "again. A known-good starting point is 65,536 tokens. In Cybr Agent config, set "
         "`model.ollama_num_ctx: 65536` (and `model.context_length: 65536` if you also override the "
         "displayed model context). If you manage the model through an Ollama Modelfile, set "
         "`PARAMETER num_ctx 65536` there instead."
@@ -724,11 +724,19 @@ def _refresh_bot_chat_tools(agent) -> None:
     gateway keeps agents alive across turns; every other surface builds a fresh agent whose
     tools[] already reflects config. No prefix preservation: a disabled toolset must drop,
     and the prompt rebuild this rides on already breaks the cache."""
+    from gateway.session_policy import active_policy
+    policy = active_policy()
     platform = getattr(agent, "platform", None)
-    if platform not in ("desktop", "tui"):
+    if policy is None and platform not in ("desktop", "tui"):
         return
     try:
         from tools.mcp_tool_agent import refresh_agent_mcp_tools
+        if policy is not None:
+            # Gateway-owned session (managed worker / owner turn): toolsets are frozen in its
+            # launch policy, so live config edits never widen or narrow a running session.
+            refresh_agent_mcp_tools(agent, enabled_override=list(policy.toolsets),
+                                    quiet_mode=True, content_aware=True)
+            return
         from tui_gateway.server import _load_disabled_toolsets, _load_enabled_toolsets
         refresh_agent_mcp_tools(
             agent, enabled_override=_load_enabled_toolsets(platform),
@@ -1811,7 +1819,7 @@ def _redact_display_metadata(metadata: dict) -> dict:
 
 
 def _close_durable_failed_turn(agent, result: Any) -> None:
-    """Append a Hermes-authored assistant boundary when a failed turn left ``user`` as the
+    """Append a Cybr Agent-authored assistant boundary when a failed turn left ``user`` as the
     durable conversation tail (in place, on ``result["messages"]`` and in SessionDB).
 
     The terminal-failure paths (content-policy refusal, ``_Trunc.end_turn``, retry exhaustion,

@@ -65,6 +65,10 @@ MagicMock adapters in older tests auto-create truthy attributes.
 without spending an attempt. Long form: `website/docs/developer-guide/gateway-internals.md`
 § Background process notifications.
 
+Canonical local CLI/TUI/Desktop sessions admit completion and watch events into the same durable
+FIFO as human input (private launch policy, `internal_notification` display kind); observers never
+own or consume those turns, and an interrupted started turn stays unknown and pauses its followers.
+
 ## `/login` (off-turn, paired DM only)
 
 `GatewayLoginCommandsMixin` refuses outside a real paired DM (ntfy, raft and a2a report `dm` for
@@ -75,7 +79,7 @@ broadcast surfaces) and binds the WHOLE install's `providers.nous`, so shared ga
 
 ## Gateway lifecycle vs. the Desktop app
 
-`hermes serve` (control plane, desktop-spawned child) dies with the app — by design. The messaging
+`cybr serve` (control plane, desktop-spawned child) dies with the app — by design. The messaging
 gateway (`gateway run`) SURVIVES the app: the serve backend's `/api/gateway/*` endpoints spawn it
 detached (`_spawn_hermes_action` — `start_new_session` / `DETACHED_PROCESS`), so `before-quit`'s
 SIGTERM never reaches it and bots keep running. The known breach is the Windows shim-unlock
@@ -95,8 +99,14 @@ gateway under the backend, and do NOT "fix" update locks by widening the tree-ki
   (`run_adapters.py::_canonicalize` — the per-profile / default message, busy and platform-event
   handlers, the adapter auth-check callback, `run_inbound.py::_hm_admit_event`). No key derivation
   before it; an unresolved identity under multiplexing (route to an unserved profile) is dropped
-  with one WARNING at the first seam it reaches, never keyed into `agent:main`. `_transport_owner`,
-  `_authorization_home_for_source`, `_resolve_profile_home_for_source`, `_session_key_profile` and
+  with one WARNING at the first seam it reaches, never keyed into `agent:main`
+  (`parked_route_refusal.drop_rejected_route`; a route to a *parked* profile also tells the sender
+  in-channel to resend, since a direct bot's update is already confirmed and never redelivered; a
+  relay frame is ACKed and refused alike (`ParkedProfileRefusal`: a withheld one stalls the
+  ack-gated drain); a
+  dispatch its transport has not acknowledged yet, e.g. Google Chat HTTP events, runs in
+  `retryable_ingress()` and answers `ParkedRouteRefused` (503) instead, releasing its dedup claim).
+  `_transport_owner`, `_authorization_home_for_source`, `_resolve_profile_home_for_source`, `_session_key_profile` and
   `_resolve_profile_for_key` read the identity when present and fall back to their old chain only
   for sources nothing resolved (restored rows, hand-built sources). Never derive a second answer
   next to the identity; extend the object. `transport_profile` ≠ `runtime_profile` is normal
@@ -181,7 +191,9 @@ gateway under the backend, and do NOT "fix" update locks by widening the tree-ki
 - **Hooks and observers register per served profile.** `builtin_hooks/`, `agent/shell_hooks.py::
   register_from_config` and lifecycle observers are prepared under each profile's scope at startup
   and on profile add/remove; idempotence keys include the profile, and `hooks/` paths resolve at call
-  time (a module constant freezes to the first importer).
+  time (a module constant freezes to the first importer). Shell hooks are also re-synced (added AND
+  unregistered) on every local session create/resume via `session_policy.refresh_profile_hooks` ->
+  `shell_hooks.sync_from_config`, the only caller that removes.
 - **Adapter YAML never reaches `os.environ` under multiplex.** `platforms/_shared.py::
   apply_yaml_bridge` seeds `PlatformConfig.extra` and skips the environ write under a secondary
   profile's scope; gate/allowlist reads go through `platform_gate_env`. A `if not os.getenv(X):
@@ -198,7 +210,7 @@ gateway under the backend, and do NOT "fix" update locks by widening the tree-ki
   with `hermes_constants.get_routing_process_hermes_home()` (`agent/secret_scope.py::
   serves_routed_profile` and `_is_process_home`, `tools/environments/local.py::_is_routed_home`,
   `hermes_cli/env_loader.py::_process_hermes_home`), never with `os.environ["HERMES_HOME"]` read
-  live: an embedding host that mirrors the served profile into the env var per turn (Hermes
+  live: an embedding host that mirrors the served profile into the env var per turn (Cybr Agent
   WebUI) pins its own home with `pin_process_hermes_home()`, and without a pin the resolver is
   `get_process_hermes_home()` unchanged. Do not add another routing decision that compares
   against `get_process_hermes_home()` directly; that resolver is for process-level assets.

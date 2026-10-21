@@ -686,6 +686,18 @@ def _counts_as_holder(args: list[str], any_git: bool) -> bool:
     return sub not in _NEVER_LOCKS and (any_git or sub not in _READER_GIT)
 
 
+def _exited(pid_dir: Path) -> bool:
+    """The process has released its memory (exiting, or a zombie) or is gone.
+
+    The kernel drops its fds before its cwd, and refuses its cwd/environ once it is exiting, so an
+    unreadable cwd there is not a hidden git: counting it made any git exiting anywhere on a busy
+    machine postpone the repair. A live process keeps a non-empty argv."""
+    try:
+        return not (pid_dir / "cmdline").read_bytes()
+    except OSError:
+        return not pid_dir.exists()
+
+
 def _held_open_proc(path: Path, root: Path | None, any_git: bool) -> _Holder | bool | None:
     proc = Path("/proc")
     target = os.path.realpath(path)
@@ -734,6 +746,8 @@ def _held_open_proc(path: Path, root: Path | None, any_git: bool) -> _Holder | b
             env = dict(entry.decode("utf-8", "replace").partition("=")[::2]
                        for entry in (pid_dir / "environ").read_bytes().split(b"\0") if entry)
         except OSError:
+            if _exited(pid_dir):
+                continue  # exited since its argv was read: no cwd/environ left, and it holds nothing
             if git_works_in(args, None, None, places):
                 return _Holder(f"pid {pid_dir.name} ({name(args, pid_dir)})")
             if pid_dir.exists() and _could_write(uid, path.parent):
@@ -969,7 +983,7 @@ def restore_interrupted_pull(project_root: Path | None = None, *, after_failure:
                 # The tree is still torn (the marker is there): importing checkout code now would run
                 # the half-written files. Fail closed like unprovable custody does, as one line and
                 # exit 1 (SystemExit's message), never a traceback (F20).
-                raise SystemExit("hermes: another Hermes launch is finishing an interrupted `hermes update`; "
+                raise SystemExit("hermes: another Cybr Agent launch is finishing an interrupted `hermes update`; "
                                  "launch again in a moment.")
             if not marker.is_file():
                 return True  # another launch finished while this one started: rerun from its tree
@@ -1006,7 +1020,7 @@ def _checkout_custody(root: Path):
             "Cannot safely repair the interrupted update: checkout custody is unavailable "
             f"({type(exc).__name__}: {exc}). The recovery marker was kept. "
             "Wait for any running update to finish; if this persists, repair the checkout "
-            "before launching Hermes again."
+            "before launching Cybr Agent again."
         ) from exc
     holder = update_lock._acquire_checkout(Path(root))
     if holder is not None and not update_lock.checkout_lock_held(Path(root)):
@@ -1089,7 +1103,7 @@ def _custody_git(root: Path, recorded: str):
         raise RuntimeError(
             "Cannot safely repair the interrupted update: child custody is unavailable "
             f"({type(exc).__name__}: {exc}). The recovery marker was kept. "
-            "Repair the checkout before launching Hermes again."
+            "Repair the checkout before launching Cybr Agent again."
         ) from exc
 
     def git(*args: str, stdin: str | None = None, text: bool = True) -> subprocess.CompletedProcess:

@@ -4,16 +4,16 @@ With ``plugins.isolation: host`` the loader hands a general Python plugin to :cl
 instead of importing it. The host process imports it and runs ``register(ctx)``; every ``ctx`` call
 arrives here and is replayed on the plugin's real :class:`~hermes_cli.plugins.PluginContext`, with
 the plugin's callables and provider objects swapped for proxies that call back into the host. From
-then on the rest of Hermes sees ordinary registrations — the registry, hook dispatch, the ledger,
+then on the rest of Cybr Agent sees ordinary registrations — the registry, hook dispatch, the ledger,
 unload and ``hermes plugins list`` do not know the plugin lives elsewhere, and neither does the
 plugin: its code is unchanged and never learns which process or tenant it serves.
 
-Requests the host makes while Hermes is waiting on it (a tool handler calling ``ctx.dispatch_tool``)
+Requests the host makes while Cybr Agent is waiting on it (a tool handler calling ``ctx.dispatch_tool``)
 run in the caller's context — same profile home, secret scope and session — via the wire's
 ``origin`` field; spontaneous ones (a ``spawn_task`` loop) run bound to this profile's home.
 
 When the host dies every proxy raises :class:`PluginHostUnavailable`: tool calls return an error,
-hooks fail like any raising callback, and Hermes itself keeps running. A fresh host is then started
+hooks fail like any raising callback, and Cybr Agent itself keeps running. A fresh host is then started
 and its plugins reloaded (bounded restarts; a plugin that killed the host while loading stays out).
 """
 
@@ -77,6 +77,10 @@ class PluginHost:
     @property
     def pid(self) -> Optional[int]:
         return self._proc.pid if self._proc is not None else None
+
+    @property
+    def home(self) -> Path:
+        return self._home
 
     @property
     def alive(self) -> bool:
@@ -146,7 +150,7 @@ class PluginHost:
                 code = proc.wait(timeout=0.5)  # the pipe closes a moment before the exit status lands
             except subprocess.TimeoutExpired:
                 pass
-        return (f"the plugin host for this profile exited (code {code}); Hermes restarts it and reloads "
+        return (f"the plugin host for this profile exited (code {code}); Cybr Agent restarts it and reloads "
                 f"its plugins automatically" if code is not None else "the plugin host is not running")
 
     def _on_channel_close(self, generation: int, reason: str) -> None:
@@ -287,12 +291,16 @@ class PluginHost:
                                            "attr": attr, "args": encode(list(args)), "kwargs": encode(kwargs)})
 
     def asgi_request(self, plugin_name: str, dashboard_dir: str, api_file: str, method: str, path: str,
-                     query: str, headers: list, body: bytes) -> dict[str, Any]:
-        """One dashboard ``/api/plugins/<name>/`` request, served by the plugin's router in the host."""
+                     query: str, headers: list, body: bytes, *, timeout: Optional[float] = None,
+                     authenticated: bool = False) -> dict[str, Any]:
+        """One dashboard ``/api/plugins/<name>/`` request, served by the plugin's router in the host;
+        ``TimeoutError`` when no answer comes within ``timeout`` seconds (the host is left running)."""
         self.ensure_started()
         return self._call("asgi", {"plugin": plugin_name, "dashboard_dir": dashboard_dir, "api_file": api_file,
                                    "method": method, "path": path, "query": query,
-                                   "headers": [list(h) for h in headers], "body": encode(body)})
+                                   "authenticated": authenticated is True,
+                                   "headers": [list(h) for h in headers], "body": encode(body)},
+                          timeout=timeout)
 
     def _unload(self, plugin_key: str) -> None:
         self._contexts.pop(plugin_key, None)
@@ -304,7 +312,8 @@ class PluginHost:
             logger.warning("Plugin '%s' on_unload callback failed in the plugin host: %s", plugin_key, error)
 
     # -- parent -> host -----------------------------------------------------------------------------
-    def _call(self, method: str, params: dict[str, Any], *, generation: Optional[int] = None) -> Any:
+    def _call(self, method: str, params: dict[str, Any], *, generation: Optional[int] = None,
+              timeout: Optional[float] = None) -> Any:
         channel = self._channel
         try:
             if channel is None:
@@ -314,7 +323,7 @@ class PluginHost:
             if self._releases:
                 released, self._releases = self._releases, []
                 channel.call("release", {"refs": released})
-            return decode(channel.call(method, params), self._resolve_ref)
+            return decode(channel.call(method, params, timeout=timeout), self._resolve_ref)
         except PluginHostUnavailable as exc:
             raise PluginHostUnavailable(self._exit_reason()) from exc
 
@@ -447,7 +456,7 @@ class PluginHost:
     def _object_proxy(self, ref: dict[str, Any], base: type,
                       reload: Optional[Callable[[], dict[str, Any]]] = None) -> Any:
         """An instance of ``base`` whose methods and public attributes live in the host. Attributes
-        Hermes assigns go to the plugin's object when they can cross; live handles stay local."""
+        Cybr Agent assigns go to the plugin's object when they can cross; live handles stay local."""
         host = self
         slot = _ObjectSlot(self, ref, reload)
         live = set(ref.get("live") or ())
@@ -563,7 +572,7 @@ def _import_ref(ref: str) -> type:
 
 
 def _pump_stderr(proc: subprocess.Popen, label: str) -> None:
-    """Plugin output and host logs go to the Hermes log, tagged with the host's profile."""
+    """Plugin output and host logs go to the Cybr Agent log, tagged with the host's profile."""
     stream = proc.stderr
     if stream is None:
         return

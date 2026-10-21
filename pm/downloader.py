@@ -1,6 +1,6 @@
 """Resumable, hash-verified, multi-connection downloads.
 
-Every large fetch in Hermes goes through this one downloader: pm
+Every large fetch in Cybr Agent goes through this one downloader: pm
 packages (pinned sha256 from lock.json) and local models (deliberately
 unverified — catalog sizes may lag an upstream re-upload, so sha256 is
 optional per source).
@@ -39,7 +39,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Optional, Sequence
 
-from pm.network import is_transient, retry_network
+from pm.network import edge_block, is_transient, retry_network
 
 # GitHub's release-asset CDN (release-assets.githubusercontent.com, which
 # TUR's pool 302s to) 403s unknown tool UAs from CI runner IP ranges --
@@ -134,10 +134,14 @@ class DownloadTransportError(DownloadError):
         # A host that does not resolve is not worth a retry, but the pinned
         # mirror is a different host and the hash still guards the bytes.
         unresolved = isinstance(getattr(cause, "reason", cause), socket.gaierror)
+        # Any 5xx is the upstream host failing, not its bytes changing: a CDN's
+        # origin-down codes (520-527) are what a dead third-party host returns.
         self.fallback_allowed = (
-            self.status in (401, 403, 404, 410) or unresolved or is_transient(cause)
+            self.status in (401, 403, 404, 410) or (self.status or 0) >= 500
+            or unresolved or is_transient(cause)
         )
-        reason = f"{cause}; the host refused access" if self.status in (401, 403) else str(cause)
+        refused = edge_block(cause) or ("the host refused access" if self.status in (401, 403) else None)
+        reason = f"{cause}; {refused}" if refused else str(cause)
         super().__init__(f"download failed from {url}: {reason}")
 
 

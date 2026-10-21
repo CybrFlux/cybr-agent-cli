@@ -1,4 +1,4 @@
-"""Default configuration data for Hermes Agent: DEFAULT_CONFIG and OPTIONAL_ENV_VARS.
+"""Default configuration data for Cybr Agent: DEFAULT_CONFIG and OPTIONAL_ENV_VARS.
 
 Pure-data leaf module — must not import from hermes_cli.config. Comments are the user-facing
 docs of config.yaml.
@@ -40,7 +40,7 @@ DEFAULT_CONFIG = {
     "fallback": {"min_switch_reset_seconds": 0},
     "credential_pool_strategies": {},
     "toolsets": ["hermes-cli"],
-    # journal_mode: SQLite journal mode for every Hermes DB. "wal" default; use "delete" on
+    # journal_mode: SQLite journal mode for every Cybr Agent DB. "wal" default; use "delete" on
     # weak-fsync/shared filesystems where WAL is not crash-safe (macOS virtiofs, NFS, SMB).
     "database": {
         "journal_mode": "wal",
@@ -127,7 +127,7 @@ DEFAULT_CONFIG = {
         # many slow/unreachable MCP servers.
         # See #63078.
         "build_wait_timeout": 600,
-        # Hermes-level retry attempts for API errors (connection drops, timeouts, 5xx) wrapping the
+        # Cybr Agent-level retry attempts for API errors (connection drops, timeouts, 5xx) wrapping the
         # whole call; the OpenAI SDK also retries transient errors (max_retries=2). Set 1 for fast
         # failover to fallback providers; raise to tolerate longer provider hiccups.
         "api_max_retries": 3,
@@ -193,7 +193,7 @@ DEFAULT_CONFIG = {
         # Bot Mode teammate-messaging protocol section (silent unless desktop Bot Mode manages it).
         "bot_mode_protocol": True,
         # Embedder-supplied text appended to the system prompt's environment-hints block, so a host
-        # wrapping Hermes (sandbox runner, managed platform) can describe proxy/credential/ mount
+        # wrapping Cybr Agent (sandbox runner, managed platform) can describe proxy/credential/ mount
         # layout without editing SOUL.md. Env HERMES_ENVIRONMENT_HINT overrides it.
         "environment_hint": "",
         # Coding posture: on interactive coding surfaces (CLI, TUI, desktop, ACP) in a code
@@ -320,12 +320,11 @@ DEFAULT_CONFIG = {
         # immediately kills the delivery (e.g. Bot Mode handoff replies via message_agent /
         # bot_relay). Plain background processes without notify_on_complete are never waited on. 0
         # disables.
-        # Bounded linger (seconds) for one-shot CLI runs (-q/-Q/-z) that exit while background processes
-        # spawned with notify_on_complete=true are still running. See #90879.
         "oneshot_completion_wait_seconds": 600.0,
-        # Env vars passed into sandboxed terminal/execute_code (skill-declared
-        # required_environment_variables pass through automatically).
+        "process_wait_auto_notify": True,  # 2 unchanged wait/poll -> notify_on_complete + stop; False = old polling
+        # Env vars passed into sandboxed terminal/execute_code (plus skill-declared required_environment_variables).
         "env_passthrough": [],
+        "client_env_passthrough": [],  # Extra non-secret toolchain names a CLI/TUI client sends for its tools
         # Remote-backend sync-back refuses to extract a downloaded state archive larger than this
         # (bytes); raise it for a ~/.hermes tree that legitimately exceeds 2 GiB.
         "sync_back_max_bytes": 2 * 1024 * 1024 * 1024,
@@ -377,7 +376,7 @@ DEFAULT_CONFIG = {
         "docker_shm_size": "1g",
         # Run the container as the host uid:gid (`--user`) so files written to bind mounts
         # (docker_volumes, persistent workspace, mounted cwd) are owned by you, not root. Off by
-        # default for images whose entrypoints must start as root (e.g. the bundled Hermes image,
+        # default for images whose entrypoints must start as root (e.g. the bundled Cybr Agent image,
         # which drops to `hermes` via s6-setuidgid). When on, SETUID/SETGID caps are omitted.
         "docker_run_as_host_user": False,
         # Snap-packaged Docker under AppArmor (Ubuntu cloud images; LP#1908448) refuses to exec
@@ -386,8 +385,8 @@ DEFAULT_CONFIG = {
         "docker_snap_compat": False,
         # Trusted profiles sharing one Docker container identity; empty = per-profile boundary.
         "docker_shared_container_key": "",
-        # Keep a long-lived bash shell across execute() calls so cwd/env/shell variables survive.
-        # Applies to non-local backends (SSH); local is opt-in via TERMINAL_LOCAL_PERSISTENT env.
+        # SSH: carry exported env vars between commands (cwd always carries). false = every command
+        # starts from the login env, profile functions included. Local: TERMINAL_LOCAL_PERSISTENT.
         "persistent_shell": True,
     },
 
@@ -444,25 +443,25 @@ DEFAULT_CONFIG = {
         # With a cloud provider, auto-spawn local Chromium for LAN/localhost URLs instead
         "auto_local_for_private_urls": True,
         "cdp_url": "",  # persistent CDP endpoint for attaching to an existing Chromium/Chrome
-        # Consent to browse with the user's REAL logins locally: runs on a Hermes-managed SNAPSHOT
+        # Consent to browse with the user's REAL logins locally: runs on a Cybr Agent-managed SNAPSHOT
         # of the ACTIVE default-Chromium profile (Local State -> profile.last_used; cookies, logins,
-        # prefs copied and re-synced per fresh session) driven by Hermes' packaged Chromium. The
+        # prefs copied and re-synced per fresh session) driven by Cybr Agent' packaged Chromium. The
         # snapshot dir sidesteps Chrome 136+'s default-profile debugging block and never contends
         # with the running browser. Turning off deletes ~/.hermes/browser-profile/ so credentials
-        # don't outlive consent. Chromium-family only (Chrome, Edge, Brave, Brave Origin, Chromium);
-        # Firefox etc. fails closed. Also gates the browser_exec `local` argument (real-profile
-        # local session even under a cloud backend). Desktop Settings -> Browser.
+        # don't outlive consent. Chromium-family only; a profile that can't be copied (Firefox default,
+        # Windows browser holding its cookies) gives a fresh, signed-out browser plus a note saying why.
+        # Also gates the browser_exec `local` arg (real-profile session under a cloud backend). Desktop Settings -> Browser.
         "use_real_profile": False,
-        # Windows only: a running Chrome/Edge/Brave locks its cookie DB, so the profile can't be
-        # copied. When on, a locked profile still blocks and the agent ASKS first; on approval it
-        # runs `hermes browser close-profile` (kills that profile's browser tree, unsaved tabs lost)
-        # and retries once; still locked -> stays blocked, no auto-kill. No effect on macOS/Linux,
-        # where a running browser instead makes the Login Data / Web Data SQLite backups miss
-        # their deadline; quit the browser by hand there.
+        # Windows only: a running Chrome/Edge/Brave locks its cookie DB (the last snapshot is reused;
+        # with none yet, a fresh browser runs). When on, the agent ASKS first; on approval it runs
+        # `hermes browser close-profile` (kills that profile's browser tree, unsaved tabs lost) so a
+        # new session can copy it; no auto-kill. No effect on macOS/Linux, where a running
+        # browser only locks the password/autofill DBs, which are skipped (cookies still copy).
         "real_profile_autoclose": False,
         # Pin WHICH source profile directory is snapshotted for real-profile browsing (e.g. "Profile
         # 2"). Empty = browser's last-used profile, which on multi-profile machines can hand the
-        # agent the wrong identity. A pin naming a missing directory FAILS CLOSED.
+        # agent the wrong identity. A pin naming a missing directory never falls back to another
+        # profile: the session gets a fresh browser without the user's logins.
         "real_profile_pin": "",
         # restrict_evaluate: opt-in denylist blocking sensitive JS primitives (cookies/storage/
         # clipboard/network/form values) in browser_console(expression=...); allow_unsafe_evaluate
@@ -492,6 +491,22 @@ DEFAULT_CONFIG = {
         # registration also requires the API server bearer key. developer_mode gates the privileged
         # browser_cdp / browser_evaluate capabilities.
         "extension_control": {"enabled": False, "developer_mode": False},
+    },
+    # Stale git worktree lifecycle (`hermes -w`, `/worktree new`, subagent isolation, Desktop). The
+    # sweep runs at `hermes -w` startup and every 6h from the cron ticker over every repo Cybr Agent made
+    # a worktree in. Trees idle past their tier (hermes-*/subagent-* 24h, named 72h) that are clean
+    # and merged are removed; dirty or unpushed ones are archived to refs/hermes/archive/<tree>
+    # first (`hermes worktree restore <name>`). Live trees and Kanban t_<hex> trees are never touched.
+    "worktrees": {
+        # false = never remove a dirty/unpushed tree (the pre-archive behaviour, exactly).
+        "archive_dirty": True,
+        # Untracked files larger than this (MB) are not archived, so a tree holding one is kept.
+        "archive_max_file_mb": 50,
+        # The sweep deletes archive refs older than this many days. 0 keeps them forever.
+        "archive_retention_days": 30,
+        # Optional size budget (GB) for idle trees: past it the oldest idle trees are archived and
+        # removed first. Live, young and Kanban trees are never counted or touched. 0 = off.
+        "max_total_gb": 0,
     },
     # Filesystem checkpoints: snapshot the working directory once per turn (on the first
     # write_file/patch call); restore with /rollback. Opt-in via `hermes chat --checkpoints` or
@@ -669,7 +684,7 @@ DEFAULT_CONFIG = {
         # Show the one-time autoraise banner; False keeps the autoraise, hides the notice.
         "codex_gpt55_autoraise_notice": True,
         # Codex app-server thread compaction mode. The codex agent owns the thread context, so
-        # Hermes' summarizer cannot shrink it. native = codex decides; hermes = Hermes' threshold
+        # Cybr Agent' summarizer cannot shrink it. native = codex decides; hermes = Cybr Agent' threshold
         # triggers thread/compact/start; off = never auto-trigger.
         "codex_app_server_auto": "native",
         # Opt in to OpenAI server-side compaction on the Responses API. Only gpt-5.6-family on
@@ -835,9 +850,9 @@ DEFAULT_CONFIG = {
         # continues, Shift+Enter reported distinctly. False restores the c-j submit fallback for
         # POSIX PTYs whose plain Enter arrives as LF.
         "cli_multiline_shortcuts": True,
-        # Interface bare `hermes`/`hermes chat` launches: "cli" (prompt_toolkit REPL) | "tui" (Ink).
-        # Flags win: `--cli` forces the REPL, `--tui` / HERMES_TUI=1 forces the TUI.
-        "interface": "cli",
+        # `hermes`/`hermes chat` launches "cli" (prompt_toolkit REPL) | "tui" (Ink); --cli, --tui, HERMES_TUI=1 win.
+        # cli_layout = the REPL's look: "modern" (glyph rows, status under the composer) | "classic" (boxed panels).
+        "interface": "cli", "cli_layout": "modern",
         # Native TUI uses the terminal's primary buffer and scrollback instead of the custom
         # alternate-screen viewport. Flags win: `--native` / `--tui-native` and `--cli`.
         "tui_native": False,
@@ -968,7 +983,7 @@ DEFAULT_CONFIG = {
         "runtime_footer": {
             "enabled": False,
             # order shown; drop any to hide. Opt-in extras: latency, served_model (alias → the
-            # deployment a routing proxy reported / Hermes' fallback route).
+            # deployment a routing proxy reported / Cybr Agent' fallback route).
             "fields": ["model", "context_pct", "cwd"],
         },
         # CLI/TUI status bar fields. Non-empty = only listed fields show (built-in order kept,
@@ -1213,9 +1228,9 @@ DEFAULT_CONFIG = {
 
     "voice": {
         # How the Desktop voice conversation is wired:
-        #   chained  — STT → Hermes turn → TTS (the stt.* / tts.* providers below)
+        #   chained  — STT → Cybr Agent turn → TTS (the stt.* / tts.* providers below)
         #   gpt-live — one full-duplex voice model (OpenAI GPT-Live) owns the mic and speaker and
-        #              DELEGATES every real request to Hermes (any model / provider you have
+        #              DELEGATES every real request to Cybr Agent (any model / provider you have
         #              selected); needs an OpenAI API key. $0.05/min voice layer billing.
         "voice_chat_mode": "chained",
         "gpt_live": {
@@ -1246,8 +1261,7 @@ DEFAULT_CONFIG = {
         # instead of going to the agent. [] disables.
         "stop_phrases": ["stop"],
     },
-    # Native vision embeds (vision_analyze / browser screenshots on vision-capable main models) ride
-    # conversation history and are re-sent on every later API call.
+    # Native images (vision_analyze, browser screenshots, replayed user images) are re-sent on every later call.
     "vision": {
         # Byte budget for one embedded image (clamped 64 KiB..4 MiB). Raise it for dense phone
         # screenshots of tables the model calls "unreadable" at 256 KB.
@@ -1256,8 +1270,9 @@ DEFAULT_CONFIG = {
         # null = 3 inside delegated subagents (they run unattended), unlimited for the main agent;
         # an explicit number applies everywhere; 0 = unlimited.
         "max_calls_per_image": None,
+        "replay_recent_images": 3,  # newest user images re-sent on turns rebuilt from state.db; 0 = off
     },
-    # "Hey Hermes" hands-free wake word: always-on, on-device hotword detection that starts a fresh
+    # "Hey Cybr Agent" hands-free wake word: always-on, on-device hotword detection that starts a fresh
     # voice session. Off by default; toggle with /wake.
     "wake_word": {
         "enabled": False,
@@ -1620,7 +1635,7 @@ DEFAULT_CONFIG = {
     },
 
     "whatsapp": {
-        # reply_prefix: None = built-in "☤ *Hermes Agent*" header; "" disables; \n allowed.
+        # reply_prefix: None = built-in "∿ *Cybr Agent*" header; "" disables; \n allowed.
     },
 
     "telegram": {
@@ -1632,12 +1647,12 @@ DEFAULT_CONFIG = {
             # Bot API 10.1 native rich messages (tables/task lists/math). Off = legacy MarkdownV2,
             # since rich messages are hard to copy as plain text.
             "rich_messages": False,
-            # Experimental rich draft previews while streaming DMs; off because Telegram
-            # Desktop/macOS can overlay draft frames until the chat redraws.
+            # Experimental rich DM stream previews; off: Telegram Desktop/macOS overlays draft frames.
             "rich_drafts": False,
             # CJK stays on legacy MarkdownV2 (Telegram Desktop/macOS garbles rich CJK, #47653);
             # set True on an unaffected client to get native rich tables for CJK.
             "allow_cjk_rich_messages": False,
+            "dm_topic_auto_transfer": False,  # /topic mode: root-DM message opens a fresh topic
         },
     },
 
@@ -1728,9 +1743,9 @@ DEFAULT_CONFIG = {
         # Opt-in unattended apply for the cadence check. Git-row plugins ONLY; every apply runs the
         # same security scan / consent pipeline as the manual update command.
         "auto_apply": False,
-        # Where third-party Python plugins run. in_process: imported into Hermes (default).
-        # host: one plugin-host process per profile runs them and they reach Hermes only through
-        # ctx (a crashing or hanging plugin takes down its host, which restarts; Hermes keeps
+        # Where third-party Python plugins run. in_process: imported into Cybr Agent (default).
+        # host: one plugin-host process per profile runs them and they reach Cybr Agent only through
+        # ctx (a crashing or hanging plugin takes down its host, which restarts; Cybr Agent keeps
         # running). Bundled plugins stay in-process; `hermes plugins validate` says whether a
         # plugin can run in the host.
         "isolation": "in_process",
@@ -1753,8 +1768,8 @@ DEFAULT_CONFIG = {
     "personalities": {},
     "auth": {  # Login policy (credentials themselves live in auth.json / .env).
         # Borrow and refresh the Codex CLI (~/.codex/auth.json) and Claude Code (~/.claude/.credentials.json)
-        # logins automatically when Hermes has no usable login of its own. Their refresh tokens are single-use
-        # and rotate, so two programs on one login can log each other out; set false to make Hermes use only
+        # logins automatically when Cybr Agent has no usable login of its own. Their refresh tokens are single-use
+        # and rotate, so two programs on one login can log each other out; set false to make Cybr Agent use only
         # its own logins (`hermes auth add <provider>`). `hermes auth add openai-codex` still offers the import
         # interactively.
         "adopt_external_logins": True,
@@ -1930,7 +1945,7 @@ DEFAULT_CONFIG = {
         # fan-out workflows that would otherwise saturate one profile's local model / API quota / browser
         # pool while leaving other profiles idle. See #21582.
         "max_in_progress_per_profile": None,
-        # Per-home claim allowlist for boards shared across Hermes homes (#110995): profile names
+        # Per-home claim allowlist for boards shared across Cybr Agent homes (#110995): profile names
         # this home's dispatcher may claim (list or comma-separated string). None = any existing
         # profile is claimable. Set = fail-closed (an empty list claims nothing). Every home has a
         # root profile named "default", so on a shared kanban.db every home can otherwise claim
@@ -2017,11 +2032,11 @@ DEFAULT_CONFIG = {
             # tool eager. The runtime fallback in tools/tool_search.py derives from this value.
             "defer": [
                 "computer_use", "session_search", "image_generate",
-                "todo_list", "process_manage", "cronjob_manage",
+                "todo_list", "process_manage", "cronjob_manage", "browser_vault",
                 # Desktop GUI surface (desktop_ui, project and catalog toolsets)
                 "drive_preview", "gui_tour", "desktop_preview", "annotate_preview", "manage_catalog",
                 "show_tip", "desktop_project", "close_terminal",
-                "apply_layout", "read_terminal", "read_window_below", "focus_pane",
+                "set_theme", "read_terminal", "read_window_below", "focus_pane",
             ],
         },
         # Remote connector discovery/lifecycle through the Nous tool gateway.
@@ -2055,7 +2070,7 @@ DEFAULT_CONFIG = {
     # the catalog does not know, so they never clamp known models. Unknown ids start from safe
     # defaults (200K context, tools on) and get patched; supports_vision / supports_reasoning stay
     # UNKNOWN (fail-open) unless the override sets them — a context_window-only entry must not turn
-    # into "text-only" and hide vision_analyze / reasoning controls (#112649). Provider keys: Hermes
+    # into "text-only" and hide vision_analyze / reasoning controls (#112649). Provider keys: Cybr Agent
     # or models.dev id; model ids match case-insensitively. Example: {"custom:my-local-vllm":
     # {"my-llava-model": {"context_window": 8192}}}
     # Semantics: 1. NOTE: an explicit model.context_length (global) and a custom_providers per-model
@@ -2098,10 +2113,10 @@ DEFAULT_CONFIG = {
         "export": {"otlp": {"enabled": False, "endpoint": "", "headers_env": {}}},
     },
     "gateway": {  # Gateway settings (messaging platforms: Telegram, Discord, Slack, ...).
-
-        # Seconds to let a SIGTERM-interrupted gateway agent unwind before adapter/database
-        # teardown. Keep short so service-manager shutdowns don't exhaust their stop budget.
+        "unmanaged_idle_exit_seconds": 600,  # client-auto-started gateway only; 0 disables
+        # Seconds a SIGTERM-interrupted agent unwinds before teardown (short: service stop budgets).
         "signal_interrupt_grace_timeout": 1,
+        "service_install_choice": None,  # null | install | decline; never authorizes ordinary launch installation.
         # Durable delivery-obligation ledger: final responses are recorded in state.db around the
         # platform send; a gateway that died between finalize and platform ACK redelivers on next
         # boot (ambiguous cases carry a "recovered reply — may be a duplicate" marker;
@@ -2212,12 +2227,12 @@ DEFAULT_CONFIG = {
         "trust_env": True,
         # Media delivery. False: any emitted file path is delivered natively unless under the
         # credential/system denylist (/etc, /proc, ~/.ssh, ~/.aws, ~/.hermes/.env, auth.json). True:
-        # files must be under the Hermes cache, media_delivery_allow_dirs, or fresher than
+        # files must be under the Cybr Agent cache, media_delivery_allow_dirs, or fresher than
         # trust_recent_files_seconds — recommended for public-facing gateways so prompt injection
         # can't exfiltrate host secrets. Bridged to HERMES_MEDIA_DELIVERY_STRICT.
         "strict": False,
         # Extra roots (project/scratch dirs, mounted shares) from which bare file paths may be
-        # uploaded; the Hermes cache is always trusted. List of absolute paths or one
+        # uploaded; the Cybr Agent cache is always trusted. List of absolute paths or one
         # os.pathsep-separated string; tildes expanded. Bridged to HERMES_MEDIA_ALLOW_DIRS. Honored
         # in both modes.
         "media_delivery_allow_dirs": [],
@@ -2263,18 +2278,14 @@ DEFAULT_CONFIG = {
     # inserts, /resume listing, and insights queries.
     "sessions": {
         # Prune ENDED sessions inactive for retention_days (activity = freshest of live activity /
-        # latest message / creation) about once per min_interval_hours at startup. Open, pinned, or mid-turn sessions
-        # are never deleted; stale automation sessions whose process died are *closed*, then get a
-        # full retention window before removal.
-        "auto_prune": True,
+        # latest message / creation) about once per min_interval_hours at CLI/gateway/cron startup.
+        # Open, pinned, or mid-turn sessions are never deleted; stale automation sessions whose
+        # process died are *closed*, then get a full retention window before removal.
+        # Off by default (deleting history is opt-in). While the user's config.yaml has no
+        # auto_prune key, every surface asks once the disk holding state.db runs low
+        # (hermes_cli/prune_advisor.py); either answer writes the key and ends the question.
+        "auto_prune": False,
         # Inactive days of ended-session history to keep (= `hermes sessions prune`).
-        # When true, prune ENDED sessions inactive for retention_days once per (roughly) min_interval_hours
-        # at CLI/gateway/cron startup. Activity is the freshest of live activity (last_activity_at) / latest
-        # message timestamp / creation time. Sessions that are still open, pinned, or mid-turn are never deleted — the
-        # only open rows the sweep touches are stale automation sessions (cron/kanban/subagent/one-shot CLI)
-        # whose process died without closing them; those are *closed*, not deleted, and get a further full
-        # retention window before removal. Default true since #54189: without it state.db grows without
-        # bound (multi-GB installs reported within weeks).
         "retention_days": 90,
         # Auto-archive (soft-hide, never delete) sessions with no activity for auto_archive_days,
         # once per min_interval_hours. Pinned sessions are exempt.
@@ -2299,8 +2310,8 @@ DEFAULT_CONFIG = {
         # Notice about the compact FTS layout (reclaims ~60%+ of state.db). OPT-IN: legacy indexes
         # stay until `hermes sessions optimize-storage` runs, since the rebuild is disk-heavy on
         # large DBs. advise = `hermes update` prints a one-line notice with reclaimable size when a
-        # legacy index is detected; require = shown as a REQUIRED upgrade (tooling may gate on it);
-        # off = none.
+        # legacy index is detected (a later layout change gets a rebuild notice without a size estimate);
+        # require = the same notices worded as REQUIRED (tooling may gate on it); off = none.
         "fts_optimize_notice": "advise",
         # CJK-bigram search index (messages_fts_cjk). When the extension is built
         # (native/fts5_cjk/build.sh → ~/.hermes/lib/libfts5_cjk.so), 1-2 char CJK terms get exact
@@ -2319,15 +2330,15 @@ DEFAULT_CONFIG = {
         # per session, so full-DB backups of small sessions work.
         "max_export_messages": 20000,
     },
-    # First-touch onboarding hints (agent/onboarding.py). Each hint shows once and is latched under
-    # `seen`; wipe the section to re-see all hints.
+    # First-touch onboarding hints (agent/onboarding.py), each latched under `seen` once shown.
     "onboarding": {
         "seen": {},
-        # First-ever message: ask = offer; off = plain intro only.
-        "profile_build": "ask",
+        "profile_build": "ask",  # first-ever message: ask = offer; off = plain intro only
+        # Desktop first run, root profile only (onboarding_run.py): None = fresh install; true = next launch; false = done
+        "run": None,
     },
     # Privacy-safe aggregate metrics in this profile's local telemetry dir. Collection (`enabled`)
-    # and transmission to Nous (`send`) are SEPARATE opt-ins; see
+    # and upload to Nous (`send`) are separate keys that every consent surface sets together; see
     # website/docs/developer-guide/relay-shared-metrics.md Appendix A for consent/retention.
     "telemetry": {
         "shared_metrics": {
@@ -2408,7 +2419,7 @@ DEFAULT_CONFIG = {
         # TypeScript SDK, svelte.config.js, build files (cargo, Gradle, mix, ...). The worktree of
         # the launch dir or the session's workspace (hermes -w, a Desktop project, terminal.cwd) is
         # always trusted; in any other checkout (a clone the agent made) only servers that run no
-        # project code start, pinned to Hermes-side tools, and the npx tsc / rustfmt lint fallbacks
+        # project code start, pinned to Cybr Agent-side tools, and the npx tsc / rustfmt lint fallbacks
         # are skipped.
         "trusted_workspaces": [],
         # Missing server binaries: auto = install via npm/go/pip into <HERMES_HOME>/lsp/bin/ on
@@ -2445,7 +2456,7 @@ DEFAULT_CONFIG = {
     },
     # External secret sources — pull credentials from secret managers at startup instead of storing
     # them in ~/.hermes/.env.
-    # Browser credential vault: which login sources browser_vault_list/fill may draw from. The local
+    # Browser credential vault: which login sources browser_vault may draw from. The local
     # encrypted vault (`hermes vault add`, Desktop → Settings → Credential Vault) is always on.
     # External password managers are unlocked per session with a masked master-password prompt;
     # headless sessions (cron, webhook, API) never prompt and see them as locked.
@@ -2512,13 +2523,13 @@ DEFAULT_CONFIG = {
     "paste_collapse_threshold_fallback": 5,
     "paste_collapse_char_threshold": 2000,
 
-    # Bot Desktop: a headless Xfce screen per profile on the gateway host (Linux), streamed to Hermes
+    # Bot Desktop: a headless Xfce screen per profile on the gateway host (Linux), streamed to Cybr Agent
     # Desktop where a human can watch, take over (logins, 2FA, CAPTCHAs) and hand back. `hermes computer-use screen`.
     "bot_desktop": {
         "geometry": "1440x900",
         # Opt-in: start the screen automatically the first time computer_use needs a display on a headless
         # host. Off by default so installing TigerVNC for other reasons never yields a screen nobody asked
-        # for; Hermes Desktop's Screen pane offers Start and this toggle.
+        # for; Cybr Agent Desktop's Screen pane offers Start and this toggle.
         "auto_start": False,
         # Refuse to start below this much free memory (MB), measured on the host or its container cgroup,
         # whichever is tighter. Xvnc + Xfce idle at ~220 MB and a takeover's browser adds 0.5-1 GB, so a
@@ -2542,7 +2553,7 @@ DEFAULT_CONFIG = {
         "placement": "auto",
     },
     "computer_use": {
-        # cua-driver's upstream PostHog telemetry defaults ON; Hermes sets
+        # cua-driver's upstream PostHog telemetry defaults ON; Cybr Agent sets
         # CUA_DRIVER_RS_TELEMETRY_ENABLED=0 in every child env unless this is true.
         "cua_telemetry": False,
         # Windows only: opt IN to the per-boot cua-driver-serve logon task. False (default)
@@ -2573,7 +2584,7 @@ DEFAULT_CONFIG = {
         # Linux/WSL2 idle spin). None = auto (off on macOS + headless/ WSL2 Linux, on elsewhere);
         # True = always disable; False = always enable.
         # The overlay shows where agent actions land but can peg a core when idle (macOS vImage redraw loop
-        # #47032; Linux/WSL2 idle spin #28152). cua-driver ≥ 0.6.x supports --no-overlay; Hermes also calls
+        # #47032; Linux/WSL2 idle spin #28152). cua-driver ≥ 0.6.x supports --no-overlay; Cybr Agent also calls
         # set_agent_cursor_enabled(false) after start_session when this is on.
         "no_overlay": None,
         # standard = cua-driver's own approval boundary; bounded = no runtime prompts, anything
@@ -2615,7 +2626,7 @@ DEFAULT_CONFIG = {
         # (`*.foo.com`) supported.
         "extra_allowed_hosts": [],
     },
-    "desktop": {  # Hermes Desktop (Electron) launch options; only affect `hermes desktop`.
+    "desktop": {  # Cybr Agent Desktop (Electron) launch options; only affect `hermes desktop`.
         # CSS font-family for the app's chat and UI text (e.g. "OpenDyslexic"). Layered in front
         # of the active theme's own sans stack so missing glyphs still fall through. Empty = the
         # theme's face. The terminal pane is terminal.font_family.
@@ -2688,7 +2699,7 @@ DEFAULT_CONFIG = {
         # 14-20% of consecutive calls in concurrent tool loops (measured 2026-09-06;
         # NousResearch/api#227), so chat is the default until that is fixed.
         "anthropic_wire": "chat",
-        # Nous free tier: with no other provider configured, Hermes sets up a free Nous identity on
+        # Nous free tier: with no other provider configured, Cybr Agent sets up a free Nous identity on
         # first use (inference on nous/welcome + connectors) and offers `/login` (terminal:
         # `hermes auth upgrade`) to sign in. false turns the free tier off entirely: nothing is set
         # up and nothing is used.
@@ -2707,7 +2718,7 @@ DEFAULT_CONFIG = {
     # Managed llama.cpp runtime (docs: user-guide/local-models): official binaries, one supervised
     # llama-server in router mode. No context/VRAM knobs by design.
     "local_runtime": {
-        # Off = detection-only (Hermes still finds an external llama-server you run).
+        # Off = detection-only (Cybr Agent still finds an external llama-server you run).
         "enabled": False,
         # Engine versions and every dependent library are pinned by pm/lock.json.
         # auto = CUDA on NVIDIA, Metal on macOS, Vulkan on other GPUs, else CPU. Explicit:
@@ -2718,48 +2729,11 @@ DEFAULT_CONFIG = {
         # Extra ports detection probes for an external llama-server (besides 8080).
         "detect_ports": [],
     },
-    "_config_version": 50,  # Config schema version - bump this when adding new required fields
+    "_config_version": 51,  # Config schema version - bump this when adding new required fields
 }
 
 
-def _env(description, prompt, **keys):
-    """One OPTIONAL_ENV_VARS entry; keyword order is preserved as dict key order."""
-    return {"description": description, "prompt": prompt, **keys}
-
-
-_OMIT = object()
-
-
-def _category(category, password, advanced):
-    """Entry factory for one category with its usual password/advanced defaults.
-
-    ``url``/``help``/``tools`` are only written when passed; ``password=None`` omits the key;
-    ``advanced`` is only written when true. Key order matches the plain ``_env`` entries.
-    """
-    def make(description, prompt, url=_OMIT, *, help=_OMIT, tools=_OMIT, password=password,
-             advanced=advanced):
-        d = {"description": description, "prompt": prompt}
-        d.update((k, v) for k, v in (("help", help), ("url", url), ("tools", tools)) if v is not _OMIT)
-        if password is not None:
-            d["password"] = password
-        d["category"] = category
-        if advanced:
-            d["advanced"] = True
-        return d
-    return make
-
-
-_prov = _category("provider", password=True, advanced=True)
-_tool = _category("tool", password=True, advanced=False)
-_msg = _category("messaging", password=False, advanced=False)
-_skill = _category("skill", password=True, advanced=True)
-_setting = _category("setting", password=False, advanced=False)
-
-
-def _base_url(name, prompt_name=None):
-    """Provider ``*_BASE_URL`` override entry (advanced, not a secret)."""
-    prompt = f"{prompt_name or name} base URL (leave empty for default)"
-    return _prov(f"{name} base URL override", prompt, None, password=False)
+from hermes_cli.config_defaults_env import _base_url, _env, _msg, _prov, _setting, _skill, _tool
 
 
 # Optional environment variables that enhance functionality. Feeds the dashboard keys page and setup
@@ -2783,7 +2757,7 @@ OPTIONAL_ENV_VARS = {
     "GEMINI_BASE_URL": _base_url("Google AI Studio", "Gemini"),
     "VERTEX_CREDENTIALS_PATH": _prov(
         "Path to a Google Cloud service account JSON for Vertex AI (Gemini). Vertex uses "
-        "OAuth2, not a static API key — this points at the credentials Hermes mints short-lived "
+        "OAuth2, not a static API key — this points at the credentials Cybr Agent mints short-lived "
         "tokens from. Falls back to GOOGLE_APPLICATION_CREDENTIALS, then to ADC (gcloud auth "
         "application-default login). Set project/region under vertex: in config.yaml.",
         "Vertex service account JSON path (leave empty to use ADC / "
@@ -2907,7 +2881,7 @@ OPTIONAL_ENV_VARS = {
         None, password=False, advanced=True),
     "TOOL_GATEWAY_USER_TOKEN": _tool(
         "Explicit Nous Subscriber access token for tool-gateway requests (optional; otherwise "
-        "read from the Hermes auth store)", "Tool-gateway user token", None, advanced=True),
+        "read from the Cybr Agent auth store)", "Tool-gateway user token", None, advanced=True),
     "TAVILY_API_KEY": _tool(
         "Tavily API key for AI-native web search and extract (optional — keyless works when "
         "Tavily is selected)", "Tavily API key", "https://app.tavily.com/home",
@@ -2958,7 +2932,7 @@ OPTIONAL_ENV_VARS = {
         tools=["browser_navigate", "browser_click"], advanced=True),
     "FAL_KEY": _tool("FAL API key for image and video generation", "FAL API key", "https://fal.ai/",
         tools=["image_generate", "video_generate"]),
-    "KREA_API_KEY": _tool("Krea API key for Krea 2 image generation (Medium + Large)",
+    "KREA_API_KEY": _tool("Krea API key for Krea 3 and Krea 2 image generation",
         "Krea API key", "https://www.krea.ai/settings/api-tokens", tools=["image_generate"]),
     "VOICE_TOOLS_OPENAI_KEY": _tool(
         "OpenAI API key for voice transcription (Whisper) and OpenAI TTS",
@@ -2971,7 +2945,7 @@ OPTIONAL_ENV_VARS = {
     "MISTRAL_API_KEY": _tool("Mistral API key for Voxtral TTS and transcription (STT)",
         "Mistral API key", "https://console.mistral.ai/"),
     "PORCUPINE_ACCESS_KEY": _tool(
-        "Picovoice access key for the Porcupine 'Hey Hermes' wake word engine (optional; "
+        "Picovoice access key for the Porcupine 'Hey Cybr Agent' wake word engine (optional; "
         "openWakeWord is the free default)", "Picovoice access key",
         "https://console.picovoice.ai/"),
     "GITHUB_TOKEN": _tool("GitHub token for Skills Hub (higher API rate limits, skill publish)",
@@ -3018,14 +2992,6 @@ OPTIONAL_ENV_VARS = {
         "OpenViking API key", tools=["viking_search"]),
     "OPENVIKING_ENDPOINT": _tool("OpenViking server URL (default: http://127.0.0.1:1933)",
         "OpenViking endpoint", password=None, advanced=True),
-    # ── Langfuse observability ──
-    "HERMES_LANGFUSE_PUBLIC_KEY": _tool("Langfuse project public key (pk-lf-...)",
-        "Langfuse public key", "https://cloud.langfuse.com", password=False),
-    "HERMES_LANGFUSE_SECRET_KEY": _tool("Langfuse project secret key (sk-lf-...)",
-        "Langfuse secret key", "https://cloud.langfuse.com"),
-    "HERMES_LANGFUSE_BASE_URL": _tool("Langfuse server URL (default: https://cloud.langfuse.com)",
-        "Langfuse server URL (leave empty for cloud.langfuse.com)", None, password=False,
-        advanced=True),
     # ── Messaging platforms ──
     "TELEGRAM_BOT_TOKEN": _msg(
         "Complete Telegram bot token created by @BotFather (numeric bot ID followed by a colon "
@@ -3060,7 +3026,7 @@ OPTIONAL_ENV_VARS = {
         help=("In your Slack app, enable Socket Mode, then create Basic Information > App-Level "
         "Tokens with the connections:write scope."), password=True),
     "SLACK_ALLOWED_USERS": _msg(
-        "Comma-separated Slack member IDs allowed to use Hermes, e.g. U01ABC2DEF3. Without "
+        "Comma-separated Slack member IDs allowed to use Cybr Agent, e.g. U01ABC2DEF3. Without "
         "this, Slack may connect but deny messages by default.", "Allowed Slack member IDs",
         "https://api.slack.com/apps",
         help=("In Slack, open your profile, choose More or the three-dot menu, then Copy member "
@@ -3157,13 +3123,13 @@ OPTIONAL_ENV_VARS = {
         "for the default profile). Useful for multi-user setups with OpenWebUI.",
         "API server model name", None, advanced=True),
     "GATEWAY_PROXY_URL": _msg(
-        "URL of a remote Hermes API server to forward messages to (proxy mode). When set, the "
+        "URL of a remote Cybr Agent API server to forward messages to (proxy mode). When set, the "
         "gateway handles platform I/O only — all agent work is delegated to the remote server. "
         "Use for Docker E2EE containers that relay to a host agent. Also configurable via "
         "gateway.proxy_url in config.yaml.",
-        "Remote Hermes API server URL (e.g. http://192.168.1.100:8642)", None, advanced=True),
+        "Remote Cybr Agent API server URL (e.g. http://192.168.1.100:8642)", None, advanced=True),
     "GATEWAY_PROXY_KEY": _msg(
-        "Bearer token for authenticating with the remote Hermes API server (proxy mode). Must "
+        "Bearer token for authenticating with the remote Cybr Agent API server (proxy mode). Must "
         "match the API_SERVER_KEY on the remote host.", "Remote API server auth key", None,
         password=True, advanced=True),
     "WEBHOOK_ENABLED": _msg(

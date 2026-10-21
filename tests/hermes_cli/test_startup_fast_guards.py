@@ -66,7 +66,7 @@ def test_cli_starts_from_a_deleted_cwd(tmp_path):
     finally:
         os.close(fd)
     assert result.returncode == 0, result.stderr
-    assert "Hermes Agent v" in result.stdout
+    assert "Cybr Agent v" in result.stdout
     assert "FileNotFoundError" not in result.stderr
 
 
@@ -94,8 +94,16 @@ def test_startup_fast_import_weight():
     )
 
 
+# A dead local proxy: every HTTP(S) call (GitHub's API, a git https fetch) fails at once.
+_OFFLINE = {"HTTPS_PROXY": "http://127.0.0.1:9", "HTTP_PROXY": "http://127.0.0.1:9",
+            "https_proxy": "http://127.0.0.1:9", "http_proxy": "http://127.0.0.1:9",
+            "NO_PROXY": "", "no_proxy": ""}
+
+
 def _run_version(env_overrides: dict) -> subprocess.CompletedProcess:
-    env = {**os.environ, **env_overrides}
+    # --version's update check is not under test; offline it answers at once instead of
+    # waiting out GitHub's 30 s API and 60 s ls-remote timeouts (the test's own budget).
+    env = {**os.environ, **_OFFLINE, **env_overrides}
     env.pop("HERMES_DEV", None)
     return subprocess.run(
         [sys.executable, "-m", "hermes_cli.main", "--version"],
@@ -118,7 +126,7 @@ def test_fast_version_parity_on_termux(tmp_path):
         {"HERMES_HOME": str(home), "TERMUX_VERSION": "0.118"}
     )
     assert result.returncode == 0, result.stderr
-    assert "Hermes Agent v" in result.stdout
+    assert "Cybr Agent v" in result.stdout
     assert "Traceback" not in result.stderr
 
 
@@ -217,7 +225,7 @@ def test_fast_version_parity(tmp_path):
     result = _run_version({"HERMES_HOME": str(home)})
     assert result.returncode == 0, result.stderr
     out = result.stdout
-    for field in ("Hermes Agent v", "Install directory:", "Python:", "OpenAI SDK:"):
+    for field in ("Cybr Agent v", "Install directory:", "Python:", "OpenAI SDK:"):
         assert field in out, f"fast --version output missing {field!r}:\n{out}"
     assert "Traceback" not in result.stderr
 

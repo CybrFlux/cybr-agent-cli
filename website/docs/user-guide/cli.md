@@ -1,19 +1,19 @@
 ---
 sidebar_position: 1
 title: "CLI Interface"
-description: "Master the Hermes Agent terminal interface — commands, keybindings, personalities, and more"
+description: "Master the Cybr Agent terminal interface — commands, keybindings, personalities, and more"
 ---
 
 # CLI Interface
 
-Hermes Agent's CLI is a full terminal user interface (TUI) — not a web UI. It features multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output. Built for people who live in the terminal.
+Cybr Agent's CLI is a full terminal user interface (TUI) — not a web UI. It features multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output. Built for people who live in the terminal.
 
 :::tip First-time setup
-One command — `hermes setup --portal` — and you're ready to `hermes chat`. See [Nous Portal](../integrations/nous-portal.md).
+One command — `cybr setup --portal` — and you're ready to `cybr chat`. See [Nous Portal](../integrations/nous-portal.md).
 :::
 
 :::tip
-Hermes also ships a modern TUI with modal overlays, mouse selection, and non-blocking input. Launch it with `hermes --tui` — see the [TUI](tui.md) guide.
+Cybr Agent also ships a modern TUI with modal overlays, mouse selection, and non-blocking input. Launch it with `cybr --tui` — see the [TUI](tui.md) guide.
 :::
 
 ## Running the CLI
@@ -23,73 +23,94 @@ Hermes also ships a modern TUI with modal overlays, mouse selection, and non-blo
 hermes
 
 # Single query mode (non-interactive)
-hermes chat -q "Hello"
+cybr chat -q "Hello"
 
 # Single query from a file or stdin — nothing is shell-interpreted, so
 # arbitrary text (quotes, $(...), backticks) arrives verbatim
-hermes chat --query-file prompt.txt
-hermes chat --query-file - < prompt.txt
+cybr chat --query-file prompt.txt
+cybr chat --query-file - < prompt.txt
 
 # With a specific model
-hermes chat --model "anthropic/claude-sonnet-4"
+cybr chat --model "anthropic/claude-sonnet-4"
 
 # With a specific provider
-hermes chat --provider nous        # Use Nous Portal
-hermes chat --provider openrouter  # Force OpenRouter
+cybr chat --provider nous        # Use Nous Portal
+cybr chat --provider openrouter  # Force OpenRouter
 
 # With specific toolsets
-hermes chat --toolsets "web,terminal,skills"
+cybr chat --toolsets "web,terminal,skills"
 
-# Start with one or more skills preloaded
-hermes -s hermes-agent-dev,github-auth
-hermes chat -s github-pr-workflow -q "open a draft PR"
+# Start with one or more skills preloaded (rendered once into the session's prompt)
+cybr chat -s hermes-agent-dev,github-auth
 
 # Resume previous sessions
-hermes --continue             # Resume the most recent CLI session (-c)
-hermes --resume <session_id>  # Resume a specific session by ID (-r)
-hermes --resume latest        # Resume the most recent session (same as -c)
-hermes --resume latest --in ./dir  # Resume ./dir's latest session, staying in ./dir
+cybr --resume <session_id>  # Resume a specific session by ID (-r)
+cybr --resume "my thread"   # Resume by title (latest "#N" continuation in the lineage)
+cybr -c "my thread" --create-if-missing  # Resume that titled session, creating it if absent
+cybr --continue             # Resume the most recent session (bare -c)
+cybr --resume latest        # Same as bare -c
+cybr --resume latest --in ./dir  # Resume ./dir's latest session, staying in ./dir
 
 # Verbose mode (debug output)
-hermes chat --verbose
+cybr chat --verbose
 
 # Isolated git worktree (for running multiple agents in parallel)
-hermes -w                         # Interactive mode in worktree
-hermes -w -z "Fix issue #123"     # Single query in worktree
+cybr -w                         # Interactive mode in worktree
+cybr -w -z "Fix issue #123"     # Single query in worktree
 ```
 
 ### Worktree cleanup
 
-`hermes -w` sessions create disposable worktrees under `<repo>/.worktrees/`.
-A conservative pruner runs automatically at startup (it only removes clean,
-fully-merged scratch trees past an age threshold), but preserved trees and
-merged local branches still accumulate on busy machines. Reclaim them
-explicitly:
+`cybr -w` sessions create disposable worktrees under `<repo>/.worktrees/`.
+With `cybr --tui -w`, closing the terminal detaches from the gateway-owned
+session. A clean worktree is removed with its branch on quit unless something
+still needs it. It is retained when it has uncommitted changes or unpushed
+commits, when the gateway still has a turn queued or running there, when a
+session in it has an active `/loop`, `/heartbeat` or `/goal`, when an enabled
+cron job runs in it or is bound to such a session, or when another viewer (a
+Desktop window, say) still holds that session. Resuming a session uses its
+working directory: if quit removed the worktree, `cybr --tui --resume <id>`,
+`cybr --tui -c` and the classic `cybr --resume`/`-c` recreate it at the same
+path before attaching (on its branch if that still exists, else on a new branch
+of the same name from the repo's current `HEAD`). Only worktrees that
+`cybr --tui -w` itself created are recreated. The quit-time check reads the
+session store and then removes the tree; a viewer that attaches and submits in
+the moment between the two is not seen, so that turn can find its directory
+gone.
+A sweep runs automatically at `cybr -w` startup and every 6 hours from the
+cron ticker: idle clean+merged trees are removed, and idle trees with
+uncommitted changes or unpushed commits are **archived, then removed**
+(restorable with `cybr worktree restore <name>`; see
+[Stale worktree sweep](./git-worktrees.md#stale-worktree-sweep-and-restore)).
+Reclaim or inspect explicitly:
 
 ```bash
-hermes worktree list              # audit: age, size, verdict, reason per tree
-hermes worktree list --json       # machine-readable audit (trees, external trees, branches)
-hermes worktree prune             # remove safe trees + delete merged branches
-hermes worktree prune --dry-run   # show the plan without changing anything
-hermes worktree prune --older-than 7   # only reap trees idle for 7+ days
-hermes worktree prune --trees-only     # leave local branches alone
-hermes worktree prune --branches-only  # leave worktrees alone
+cybr worktree list              # audit: age, size, verdict, reason per tree + archives
+cybr worktree list --json       # machine-readable audit (trees, external trees, branches, archives)
+cybr worktree prune             # run the sweep now + delete merged branches
+cybr worktree prune --dry-run   # print every archive/remove/skip decision and why; changes nothing
+cybr worktree restore <name>    # recreate an archived tree (add --path DIR to put it elsewhere)
+cybr worktree prune --older-than 7   # only reap trees idle for 7+ days
+cybr worktree prune --trees-only     # leave local branches alone
+cybr worktree prune --branches-only  # leave worktrees alone
 ```
 
 Worktrees registered **outside** `.worktrees/` (created by hand or by another
 tool) are reported read-only in `list` output and are never removed. The one
 exception is metadata: registrations whose directory no longer exists are
 dropped via `git worktree prune` (no files are touched). `--older-than DAYS`
-only ever narrows what gets reaped — a tree carrying real work is kept at any
-age regardless of the flag.
+only ever narrows what gets reaped, including what the stale-worktree sweep
+archives and removes during that run: a tree idle for less than DAYS is
+never touched.
 
 Inside a session, `/worktree prune [--dry-run]` does the same (and never
 touches the tree the session is running in).
 
 Safety guarantees (all modes, any age):
 
-- Uncommitted **tracked** changes are never deleted.
-- **Unique unpushed commits** are never deleted — commits that were
+- Uncommitted changes and **unique unpushed commits** are never deleted
+  without a restorable archive (`refs/hermes/archive/<tree>`); with
+  `worktrees.archive_dirty: false` they are never deleted at all — commits that were
   rebase/squash-merged upstream are detected via `git cherry`
   patch-equivalence and count as merged, which is what lets the dominant
   "merged PR, tree preserved forever" leak finally reclaim.
@@ -104,54 +125,103 @@ Safety guarantees (all modes, any age):
   removed but its **branch ref is kept**, so the lane is one
   `git worktree add .worktrees/<name> <branch>` away from restored. If the
   remote can't be reached, the tree is preserved.
-- Trees **in use by a running hermes session** are never touched.
+- Trees **in use** are never touched: a running hermes session's lock, or any
+  live process whose working directory (or, on Linux, an open file) is inside
+  the tree. Each tree is checked again right before it is archived or removed,
+  and again after its archive is built; a tree that changed meanwhile is kept.
 - **Untracked-only scratch** (PR body drafts, notes) is archived to
   `~/.hermes/archive/worktree-prune/` before its tree is removed — never
   destroyed.
+- **Nothing irreproducible is deleted unarchived**: a tree is kept when it holds
+  an embedded repository (even a gitignored one), a commit only a per-worktree
+  ref (`refs/worktree/*`, `refs/bisect/*`) reaches, an untracked file over the
+  archive size cap. Ignored files (`.env` copies, caches, build output) are not
+  archived and are deleted with the tree; a nested git repository inside an
+  ignored folder keeps it. See
+  [ignored files](./git-worktrees.md#stale-worktree-sweep-and-restore).
 - Branch deletion is content-gated, not name-gated: any local branch whose
   commits are all on upstream is safe to delete; branches with unique work,
   checked-out branches, and `main`/`master`/`develop` are always kept.
 
-The same conservative pruner also runs from the cron scheduler (at most once
-every 6 hours, in the background), so gateway-only machines — where nobody
-launches `hermes -w` for days — no longer accumulate merged scratch trees
-between CLI sessions.
+The same sweep also runs from the cron scheduler (at most once every 6 hours
+per profile, in the background) over every repository the profile created a
+worktree in, so gateway-only machines — where nobody launches `cybr -w` for
+days — no longer accumulate scratch trees between CLI sessions.
 
 When `.worktrees/` grows past 10 trees or 5 GB, startup prints a one-line
 notice pointing at these commands.
 
 ### Plugin management
 
-The `hermes plugins` commands manage native Hermes plugins and portable Agent
+The `cybr plugins` commands manage native Cybr Agent plugins and portable Agent
 Plugins v1 packages through the same opt-in workflow:
 
 ```bash
-hermes plugins install owner/repository --no-enable
-hermes plugins list
-hermes plugins enable <plugin-name>
-hermes plugins disable <plugin-name>
-hermes plugins update <plugin-name>
-hermes plugins remove <plugin-name>
+cybr plugins install owner/repository --no-enable
+cybr plugins list
+cybr plugins enable <plugin-name>
+cybr plugins disable <plugin-name>
+cybr plugins update <plugin-name>
+cybr plugins remove <plugin-name>
 ```
 
-Portable packages remain disabled until explicitly enabled. Hermes currently
+Portable packages remain disabled until explicitly enabled. Cybr Agent currently
 loads portable Agent Skills and stdio MCP entries. See the
 [plugin developer guide](../developer-guide/plugins/index.md#portable-agent-plugins-v1-packages)
 for the exact supported subset and trust boundary.
 
 ## Interface Layout
 
-<img className="docs-terminal-figure" src="/docs/img/docs/cli-layout.svg" alt="Stylized preview of the Hermes CLI layout showing the banner, conversation area, and fixed input prompt." />
-<p className="docs-figure-caption">The Hermes CLI banner, conversation stream, and fixed input prompt rendered as a stable docs figure instead of fragile text art.</p>
+:::info The classic CLI is a gateway client
+`cybr chat` (and the bare `cybr` prompt when `display.interface` is `cli`) no longer runs the agent inside your terminal process. It discovers or starts the profile's gateway (`cybr gateway ensure`), creates or resumes the session there, and attaches over the gateway's local WebSocket — the same session a Desktop window, the TUI, or a Telegram topic can open at the same time. Closing the terminal detaches (`Detached; accepted work continues at the gateway.`); it does not cancel the turn. Your working directory, `--model`, `--provider`, `--reasoning`, `--toolsets`, `--max-turns`, `--skills`, `--checkpoints`, `--yolo`, `--accept-hooks`, `--pass-session-id`, `--ignore-rules`, `--base-url`/`--api-key`, and `--safe-mode`/`--ignore-user-config` are frozen into the session at creation; `--resume` may repeat the same values but cannot change them. `--resume <id-or-title>` and `-c <title>` name the session; the gateway resolves the title (exact id first, then the latest `"<title> #N"` continuation, followed to its live tip) among the sessions you may read, and reports `No session found matching '…'` (exit 1) otherwise. Bare `-c` and `--resume latest` resume this workspace's most recent CLI session through the gateway. `-c <title> --create-if-missing` creates a session with that title when none exists and resumes it when one does, so programmatic callers (Bot Mode's `Bot Chat` turns) get a deterministic thread. Options that only make sense for an in-process agent — `--image`, `--worktree`/`-w`, `--no-restore-cwd`, `--run-budget`, `--verbose`/`-v`, `--compact`, and `--create-if-missing` without `-c <name>` — are refused up front (`Unsupported gateway CLI options: …`, exit 2); the refusal lists, per flag, where that capability lives now (the TUI flag, the `config.yaml` key, or the `cybr` subcommand), and nothing falls back to a local agent. A `--safe-mode` / `--ignore-user-config` launch reads no profile default model, so it must name one; the refusal prints a complete example such as `cybr chat --safe-mode --provider openrouter --model anthropic/claude-sonnet-4 -q "hello"`. In this mode the slash surface is `/stop`, `/approve <id> <choice>`, `/answer <id> <text>`, `/discard <admission_id>`, `/branch [title]`, `/model <model> [--provider name]`, `/compress [here [N] | <focus>] [--preview]`, `/yolo [on|off]`, `/help` and `/quit`; other slash commands print `Unsupported gateway CLI command; use /help.` Use the TUI (`cybr --tui`) for the full slash registry.
+:::
+
+If a running turn loses its owner while your finite CLI query is queued, the CLI
+exits with code `3`. Your accepted input stays queued. Resume the printed session
+interactively, inspect the unknown turn, and use `/discard <admission_id>` to
+acknowledge it before continuing. Do not resend the queued input.
+
+<img className="docs-terminal-figure" src="/docs/img/docs/cli-layout.svg" alt="Stylized preview of the Cybr Agent CLI layout showing the banner, conversation area, and fixed input prompt." />
+<p className="docs-figure-caption">The Cybr Agent CLI banner, conversation stream, and fixed input prompt rendered as a stable docs figure instead of fragile text art.</p>
+
+### Layout styles
+
+`display.cli_layout` picks how the classic CLI draws. The default, `modern`, prints everything in the scrollback as plain rows that start with one glyph and never depend on the terminal width, so resizing the window can't garble earlier output:
+
+```
+❯ add a multiply function and run the tests
+∴ Thought for 3s · Planning the change
+📖 Read calc.py
+🔧 Patch  0.2s
+│ calc.py
+│ @@ -1,2 +1,6 @@
+│ +def multiply(a, b):
+│ +    return a * b
+✗ $ pytest -q  0.4s [exit 1]
+∿ Cybr
+Added multiply; pytest isn't installed here, so I ran the tests directly: 2 passed.
+─ 15.0s · edited 1 file +4 -0 · read 2 files · 8:27 AM
+── ⠹ Running tests · 14s ─────────────────────────── Add multiply to calc.py ─
+❯ type to redirect this turn · Tab queues it for after
+──────────────────────────────────────────────────────────────────────────────
+ gpt-5-mini · ctx [░░░░░░░░] 4% · ~/project (main)     enter interrupt · tab queue · ctrl+c stop
+```
+
+- A 40-column bar opens each user message and answer (accent) and each reasoning block (dim); reasoning streams live as in classic and ends with a `∴ Thought for 3s · <title>` line. `❯` your message, a finished tool call led by its emoji (`📖 Read`, `💻 $`; `✗` in red when it failed, with its exit code; a refused `skill_manage` write keeps its emoji and shows the reason dim, since the agent retries it itself), `│` an edit's diff under its row, `∿` the answer, and `─` the turn's summary line.
+- The composer's top rule carries the live activity (spinner, what's running, elapsed time, streamed tokens) on the left and the session title on the right; no spinner row is printed into the scrollback.
+- The status line sits under the composer: the same fields as the classic status bar (model, context, cache hit, latency, tokens/s, background work, goal, duration, YOLO…) plus the working directory (with git branch) on the left; the keys that do something right now on the right.
+- The welcome banner is the same in both layouts.
+
+Set `display.cli_layout: classic` to keep the boxed reasoning and answer panels and the status bar above the input.
 
 The welcome banner shows your model, terminal backend, working directory, available tools, and installed skills at a glance.
 
 ### Status Bar
 
-A persistent status bar sits above the input area, updating in real time:
+In the `classic` layout a persistent status bar sits above the input area, updating in real time (the `modern` layout's status line under the composer reads the same data; an explicit `display.status_bar.fields` list chooses its left side too):
 
 ```
- ☤ claude-sonnet-4-20250514 │ 12.4K/200K │ [██████░░░░] 6% │ $0.06 │ 15m
+ ∿ claude-sonnet-4-20250514 │ 12.4K/200K │ [██████░░░░] 6% │ $0.06 │ 15m
 ```
 
 | Element | Description |
@@ -159,12 +229,12 @@ A persistent status bar sits above the input area, updating in real time:
 | Model name | Current model (truncated if longer than 26 chars) |
 | Token count | Context tokens used / max context window; `~` marks an estimate |
 | Context bar | Visual fill indicator with color-coded thresholds |
-| Cost | Estimated session cost (or `n/a` for unknown/zero-priced models). Rates come from Hermes' bundled official price table, then the provider's `/models` listing; on a direct first-party API (OpenAI, xAI, Anthropic, Google, DeepSeek, Xiaomi) a model missing from both is priced at the vendor's list price from models.dev. Proxies, relays and custom endpoints serving the same model id stay `n/a` rather than inherit that price. |
+| Cost | Estimated session cost (or `n/a` for unknown/zero-priced models). Rates come from Cybr Agent' bundled official price table, then the provider's `/models` listing; on a direct first-party API (OpenAI, xAI, Anthropic, Google, DeepSeek, Xiaomi) a model missing from both is priced at the vendor's list price from models.dev. Proxies, relays and custom endpoints serving the same model id stay `n/a` rather than inherit that price. |
 | 🗜️ N | **Context compression count** — how many times the running session has been auto-compressed. Appears once the first compression fires. |
 | ▶ N | **Active background tasks** — how many `/bg` prompts are still running in the current session. Appears whenever at least one task is in flight. |
 | Duration | Elapsed session time |
 | Session title | Once the session has a title, it appears as a gold badge pinned to the far-right edge. Long titles truncate before displacing the essential model and context fields. |
-| ⚠ YOLO | **YOLO mode warning** — shown whenever `HERMES_YOLO_MODE` is on (either `hermes --yolo` at launch or `/yolo` toggled mid-session). Mirrors the banner-line warning so you can't forget you're in auto-approve mode. |
+| ⚠ YOLO | **YOLO mode warning** — shown whenever `HERMES_YOLO_MODE` is on (either `cybr --yolo` at launch or `/yolo` toggled mid-session). Mirrors the banner-line warning so you can't forget you're in auto-approve mode. |
 
 A `~` before a context count or percentage means it includes a local estimate. This also applies to gateway `/status` and `/context`, the TUI, and the Desktop context gauge. An unchanged provider-usage reading has no `~`; a provider anchor plus unpriced new messages does. `/context` reports the selected source. Category, free-space, skill, and toolset breakdowns are always local estimates, even when the overall occupancy comes from provider usage. These display labels do not change compaction decisions or make extra provider requests.
 
@@ -181,11 +251,11 @@ The bar adapts to terminal width — full layout at ≥ 76 columns, compact at 5
 
 Use `/usage` for a detailed breakdown including per-category costs (input vs output tokens).
 
-On the `openai-codex` provider, `/usage` also shows any banked usage-limit resets on your ChatGPT account ("You have N resets banked - use /usage reset to activate"). `/usage reset` redeems one banked reset, fully restoring your 5-hour and weekly limits. Hermes refuses to redeem while your limits aren't exhausted (a banked reset restores the full allowance, so spending it early wastes it) — pass `/usage reset --force` to redeem anyway.
+On the `openai-codex` provider, `/usage` also shows any banked usage-limit resets on your ChatGPT account ("You have N resets banked - use /usage reset to activate"). `/usage reset` redeems one banked reset, fully restoring your 5-hour and weekly limits. Cybr Agent refuses to redeem while your limits aren't exhausted (a banked reset restores the full allowance, so spending it early wastes it) — pass `/usage reset --force` to redeem anyway.
 
 ### Session Resume Display
 
-When resuming a previous session (`hermes -c` or `hermes --resume <id>`), a "Previous Conversation" panel appears between the banner and the input prompt, showing a compact recap of the conversation history. See [Sessions — Conversation Recap on Resume](sessions.md#conversation-recap-on-resume) for details and configuration.
+When resuming a previous session (`cybr -c` or `cybr --resume <id>`), a "Previous Conversation" panel appears between the banner and the input prompt, showing a compact recap of the conversation history. See [Sessions — Conversation Recap on Resume](sessions.md#conversation-recap-on-resume) for details and configuration.
 
 ## Keybindings
 
@@ -201,12 +271,12 @@ On macOS, `F6`/`F7` mean the physical function keys, not the media/system contro
 | `Ctrl+G` | Open the current input buffer in `$EDITOR` (vim/nvim/nano/VS Code/etc.). Save and quit to send the edited text as the next prompt — ideal for long, multi-paragraph prompts. |
 | `Ctrl+X Ctrl+E` | Emacs-style alternate binding for the external editor (same behavior as `Ctrl+G`). |
 | `Ctrl+S` | **Stash the prompt.** Parks the current draft and clears the composer so you can send something else first. Press `Ctrl+S` again on an empty composer to bring the draft back (cursor at the end, attached images restored). Repeated presses build a stack rather than overwriting, so an earlier draft is never silently lost — with two or more stashed, `Ctrl+S` opens a browse panel (`↑`/`↓` to navigate, `Enter` to restore, `D` to discard, `Esc` or `Ctrl+S` to close). A `📌 N` badge in the status bar shows how many drafts are parked. Multi-line drafts round-trip exactly, including blank lines. The stash lives in memory for the session only — nothing is written to disk, since drafts often contain secrets. |
-| `Ctrl+C` | Interrupt agent (double-press within 2s to force exit) |
+| `Ctrl+C` | Clear a typed draft first (even while the agent works); with an empty prompt, interrupt the agent (double-press within 2s to force exit) |
 | `Ctrl+T` / `F6` | Open the full-screen live work monitor (subagents and background processes) without losing the composer draft. The live dock appears automatically above the status bar; arrows select a worker or process, `Enter` shows its recent log, `s` steers a worker, and `x` requests stop with confirmation. See [Monitoring subagents](./features/delegation.md#monitoring-running-subagents-agents). |
 | `Ctrl+R` / `F7` | Toggle the live work dock between its multi-row preview and a single summary line without moving composer focus. `Ctrl+R` is the reliable fallback when macOS reserves the function-key row. Besides subagents and background processes, the dock shows a standing `/goal` (active, parked or paused, with turns used) on its top row and the prompts waiting in `/queue` on its bottom rows. |
-| `Ctrl+D` | Exit |
-| `Ctrl+Z` | Suspend Hermes to background (Unix only). Run `fg` in the shell to resume. |
-| `Tab` | Accept auto-suggestion (ghost text) or autocomplete slash commands |
+| `Ctrl+D` | Exit (on an empty prompt; with text it deletes under the cursor). While the gateway runs a turn, it exits and leaves the turn running: the gateway finishes it, ends the session afterwards, and `cybr --resume` shows the reply. A turn that asks a question (approval or clarify) meanwhile waits for its timeout or for you to resume. Use `Ctrl+C` to stop the turn instead. |
+| `Ctrl+Z` | Suspend Cybr Agent to background (Unix only). Run `fg` in the shell to resume. |
+| `Tab` | Accept auto-suggestion (ghost text) or autocomplete slash commands. While the agent is working in the `modern` layout, `Tab` on a typed message queues it for the next turn |
 | `!<command>` | **Shell mode** — run a shell command yourself without spending a model turn (e.g. `!git status`, `!pytest -x`). See below. |
 
 **Multiline paste preview.** When you paste a multi-line block, the CLI echoes a compact single-line preview (`[pasted: 47 lines, 1,842 chars — press Enter to send]`) instead of dumping the whole payload into the scrollback. The full content is still what gets sent; this is just display polish.
@@ -223,7 +293,7 @@ Start a line with `!` to run it as a shell command instead of sending it to the 
 
 - **Zero cost.** The model is never invoked — no API call, no tokens, no latency.
 - **Nothing enters the conversation.** The command and its output are not added to history, so your context stays clean and the prompt cache is untouched.
-- **Runs on your machine, in the session working directory.** With the default local terminal backend `!pwd` matches what the agent would see. A remote or sandboxed `terminal.backend` (`ssh`, `docker`, …) is **not** used for `!` commands — they always run on the host where Hermes itself runs, so `!hostname` names your machine while the agent's `terminal` tool names the backend. Ask the agent (or open a shell on the target) to run something *inside* the backend. Path completion in the composer, by contrast, does follow the configured backend and lists the target's filesystem.
+- **Runs on your machine, in the session working directory.** With the default local terminal backend `!pwd` matches what the agent would see. A remote or sandboxed `terminal.backend` (`ssh`, `docker`, …) is **not** used for `!` commands — they always run on the host where Cybr Agent itself runs, so `!hostname` names your machine while the agent's `terminal` tool names the backend. Ask the agent (or open a shell on the target) to run something *inside* the backend. Path completion in the composer, by contrast, does follow the configured backend and lists the target's filesystem.
 - **Approvals still apply.** A dangerous command (`rm -rf`, writes to `~/.hermes/config.yaml`, etc.) goes through the same approval prompt the agent's `terminal` tool uses. `!` is a cost/latency shortcut, not a security bypass.
 - **Non-zero exits are shown.** A failing command prints `! exited <code>` after its output.
 - `!` on its own prints a one-line usage reminder.
@@ -234,7 +304,7 @@ Shell mode is CLI-only. Gateway platforms (Discord, Telegram, Slack) and cron ru
 
 ## Slash Commands
 
-Type `/` to see the autocomplete dropdown. Hermes supports a large set of CLI slash commands, dynamic skill commands, and user-defined quick commands.
+Type `/` to see the autocomplete dropdown. Cybr Agent supports a large set of CLI slash commands, dynamic skill commands, and user-defined quick commands.
 
 Common examples:
 
@@ -248,7 +318,7 @@ Common examples:
 | `/btw <question>` | Ask a side question about the current conversation without interrupting it |
 | `/skin` | Show or switch the active CLI skin |
 | `/voice on` | Enable CLI voice mode (press `Ctrl+B` to record) |
-| `/voice tts` | Toggle spoken playback for Hermes replies |
+| `/voice tts` | Toggle spoken playback for Cybr Agent replies |
 | `/reasoning high` | Increase reasoning effort |
 | `/title My Session` | Name the current session |
 | `/status` | Show session info — model/profile/tokens/duration — followed by a local **Session recap** block (recent turn counts, top tools used, files touched, latest user prompt + assistant reply). Pure local compute; no LLM call. |
@@ -288,11 +358,11 @@ Then type `/status`, `/gpu`, or `/restart` in any chat. See the [Configuration g
 If you already know which skills you want active for the session, pass them at launch time:
 
 ```bash
-hermes -s hermes-agent-dev,github-auth
-hermes chat -s github-pr-workflow -s github-auth
+cybr -s hermes-agent-dev,github-auth
+cybr chat -s github-pr-workflow -s github-auth
 ```
 
-Hermes loads each named skill into the session prompt before the first turn. The same flag works in interactive mode and single-query mode.
+Cybr Agent loads each named skill into the session prompt before the first turn. The same flag works in interactive mode and single-query mode.
 
 ### Persistent auto-load via config
 
@@ -342,7 +412,7 @@ You can also define custom personalities in `~/.hermes/config.yaml`:
 personalities:
   helpful: "You are a helpful, friendly AI assistant."
   kawaii: "You are a kawaii assistant! Use cute expressions..."
-  pirate: "Arrr! Ye be talkin' to Captain Hermes..."
+  pirate: "Arrr! Ye be talkin' to Captain Cybr Agent..."
   # Add your own!
 ```
 
@@ -359,7 +429,7 @@ There are two ways to enter multi-line messages:
   2. Returns the sum
 ```
 
-`Ctrl+J` and backslash continuation are enabled by default, matching Claude Code / Codex / OpenCode multiline shortcuts. On supported terminals such as iTerm2, Hermes also requests extended key reporting so `Shift+Enter` arrives as a distinct newline key. If your terminal sends LF for plain `Enter` and you need the legacy `Ctrl+J`-as-submit fallback, opt out:
+`Ctrl+J` and backslash continuation are enabled by default, matching Claude Code / Codex / OpenCode multiline shortcuts. On supported terminals such as iTerm2, Cybr Agent also requests extended key reporting so `Shift+Enter` arrives as a distinct newline key. If your terminal sends LF for plain `Enter` and you need the legacy `Ctrl+J`-as-submit fallback, opt out:
 
 ```yaml
 # ~/.hermes/config.yaml
@@ -375,7 +445,7 @@ In terminals using the Kitty keyboard protocol, `Alt+Enter` on the numeric keypa
 
 ### Shift+Enter compatibility
 
-Most terminals send the same byte sequence for `Enter` and `Shift+Enter` by default, so applications cannot distinguish them. Hermes recognises `Shift+Enter` only when the terminal sends a distinct sequence via the [Kitty keyboard protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) or xterm's `modifyOtherKeys` mode.
+Most terminals send the same byte sequence for `Enter` and `Shift+Enter` by default, so applications cannot distinguish them. Cybr Agent recognises `Shift+Enter` only when the terminal sends a distinct sequence via the [Kitty keyboard protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) or xterm's `modifyOtherKeys` mode.
 
 | Terminal | Status |
 |---|---|
@@ -384,14 +454,14 @@ Most terminals send the same byte sequence for `Enter` and `Shift+Enter` by defa
 | Windows Terminal Preview 1.25+ | Supported once the Kitty protocol is enabled in settings |
 | macOS Terminal.app, stock Windows Terminal (stable) | Not supported — `Shift+Enter` is indistinguishable from `Enter` |
 
-Where the terminal cannot distinguish them, `Alt+Enter` and `Ctrl+J` continue to work by default. **On Windows Terminal specifically, `Alt+Enter` is captured by the terminal (toggles fullscreen) and never reaches Hermes — use `Ctrl+Enter` (delivered as `Ctrl+J`) or `Ctrl+J` directly for a newline.**
+Where the terminal cannot distinguish them, `Alt+Enter` and `Ctrl+J` continue to work by default. **On Windows Terminal specifically, `Alt+Enter` is captured by the terminal (toggles fullscreen) and never reaches Cybr Agent — use `Ctrl+Enter` (delivered as `Ctrl+J`) or `Ctrl+J` directly for a newline.**
 
 ## Redirecting the Agent Mid-Turn
 
 While the agent is working, you can send a correction without starting a new turn:
 
 - **Type a new message + Enter** — redirects the active turn using your correction
-- **`Ctrl+C`** — interrupt the current operation (press twice within 2s to force exit)
+- **`Ctrl+C`** — interrupt the current operation (press twice within 2s to force exit); if the prompt holds a draft, the first press clears it and the turn keeps running
 - Completed tool work and reasoning already shown stay in context
 - A running tool reaches its safe boundary before the correction is applied
 
@@ -402,7 +472,7 @@ The `display.busy_input_mode` config key controls what happens when you press En
 | Mode | Behavior |
 |------|----------|
 | `"interrupt"` (default) | Your message redirects the active turn. Model generation restarts with displayed reasoning and completed work preserved. A running foreground terminal command is moved to the background (not killed — you get a completion notification) so your message is read immediately; other running tools finish first |
-| `"queue"` | Your message is silently queued and sent as the next turn after the agent finishes |
+| `"queue"` | Your message is queued as the next turn after the agent finishes. The queue lives on the gateway (crash-durable, visible to every attached client). |
 | `"steer"` | Your message is injected into the current run via `/steer`, arriving at the agent after the next tool call — no interrupt, no new turn |
 
 ```yaml
@@ -417,6 +487,8 @@ display:
 
 Whatever the mode, `/queue <prompt>` queues a follow-up turn explicitly, and `/queue list`, `/queue rm N`, `/queue edit N …` and `/queue move A B` act on the pending queue immediately, even mid-run. The live work dock lists what is waiting.
 
+When the CLI runs on the gateway's session (the default local setup), a prompt queued while a turn runs, by `/queue` or by queue-mode Enter, goes into the gateway's own queue for the session. It survives a gateway restart and runs once, in the order you entered it. Image follow-ups still wait in the CLI. That queue is shared: `/queue list`, `rm`, `edit` and `clear` show and change every prompt queued on the session, including ones another window or an automation queued. The gateway runs its queue in order and cannot reorder it, so `/queue move` refuses to move a prompt the gateway holds. A slash command typed while busy after your own `/queue` prompt runs after that prompt's turn starts; it waits at most a couple of seconds, so a paused queue never blocks typing.
+
 You can also change it inside the CLI:
 
 ```text
@@ -427,15 +499,15 @@ You can also change it inside the CLI:
 ```
 
 :::tip First-touch hint
-The first time you press Enter while Hermes is working, Hermes prints a one-line reminder explaining the `/busy` knob. It only fires once per install; `onboarding.seen.busy_input_prompt` in `config.yaml` records that it was shown. Delete that key to see the tip again.
+The first time you press Enter while Cybr Agent is working, Cybr Agent prints a one-line reminder explaining the `/busy` knob. It only fires once per install; `onboarding.seen.busy_input_prompt` in `config.yaml` records that it was shown. Delete that key to see the tip again.
 :::
 
 ### Suspending to Background
 
-On Unix systems, press **`Ctrl+Z`** to suspend Hermes to the background — just like any terminal process. The shell prints a confirmation:
+On Unix systems, press **`Ctrl+Z`** to suspend Cybr Agent to the background — just like any terminal process. The shell prints a confirmation:
 
 ```
-Hermes Agent has been suspended. Run `fg` to bring Hermes Agent back.
+Cybr Agent has been suspended. Run `fg` to bring Cybr Agent back.
 ```
 
 Type `fg` in your shell to resume the session exactly where you left off. This is not supported on Windows.
@@ -480,7 +552,7 @@ When you exit a CLI session, a resume command is printed:
 
 ```
 Resume this session with:
-  hermes --resume 20260225_143052_a1b2c3
+  cybr --resume 20260225_143052_a1b2c3
 
 Session:        20260225_143052_a1b2c3
 Duration:       12m 34s
@@ -490,23 +562,24 @@ Messages:       28 (5 user, 18 tool calls)
 Resume options:
 
 ```bash
-hermes --continue                          # Resume the most recent CLI session
-hermes -c                                  # Short form
-hermes -c "my project"                     # Resume a named session (latest in lineage)
-hermes --resume 20260225_143052_a1b2c3     # Resume a specific session by ID
-hermes --resume "refactoring auth"         # Resume by title
-hermes --resume latest                     # Resume the most recent session (same as -c)
-hermes --resume latest --in ./my-project   # Latest session for ./my-project's workspace
-hermes -r 20260225_143052_a1b2c3           # Short form
+cybr --continue                          # Resume the most recent CLI session
+cybr -c                                  # Short form
+cybr -c "my project"                     # Resume a named session (latest in lineage)
+cybr -c "my project" --create-if-missing # Same, creating the titled session if none exists
+cybr --resume 20260225_143052_a1b2c3     # Resume a specific session by ID
+cybr --resume "refactoring auth"         # Resume by title
+cybr --resume latest                     # Resume the most recent session (same as -c)
+cybr --resume latest --in ./my-project   # Latest session for ./my-project's workspace
+cybr -r 20260225_143052_a1b2c3           # Short form
 ```
 
 Resuming restores the full conversation history from SQLite. The agent sees all previous messages, tool calls, and responses — just as if you never left.
 
-Use `/title My Session Name` inside a chat to name the current session, or `hermes sessions rename <id> <title>` from the command line. Use `hermes sessions list` to browse past sessions.
+Use `/title My Session Name` inside a chat to name the current session, or `cybr sessions rename <id> <title>` from the command line. Use `cybr sessions list` to browse past sessions.
 
 ### Session Storage
 
-CLI sessions are stored in Hermes's SQLite state database under `~/.hermes/state.db`. The database keeps:
+CLI sessions are stored in Cybr Agent's SQLite state database under `~/.hermes/state.db`. The database keeps:
 
 - session metadata (ID, title, timestamps, token counters)
 - message history
@@ -541,7 +614,7 @@ Run a prompt in a separate background session while continuing to use the CLI fo
 /bg Analyze the logs in /var/log and summarize any errors from today
 ```
 
-Hermes immediately confirms the task and gives you back the prompt:
+Cybr Agent immediately confirms the task and gives you back the prompt:
 
 ```
 🔄 Background task #1 started: "Analyze the logs in /var/log and summarize..."
@@ -562,7 +635,7 @@ Each `/bg` prompt spawns a **completely separate agent session** in a daemon thr
 When a background task finishes, the result appears as a panel in your terminal:
 
 ```
-╭─ ☤ Hermes (background #1) ──────────────────────────────────╮
+╭─ ∿ Cybr (background #1) ──────────────────────────────────╮
 │ Found 3 errors in syslog from today:                         │
 │ 1. OOM killer invoked at 03:22 — killed process nginx        │
 │ 2. Disk I/O error on /dev/sda1 at 07:15                      │
@@ -591,5 +664,5 @@ By default, the CLI runs in quiet mode which:
 
 For debug output:
 ```bash
-hermes chat --verbose
+cybr chat --verbose
 ```

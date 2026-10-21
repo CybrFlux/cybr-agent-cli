@@ -269,7 +269,7 @@ class MCPServerRunMixin:
         self._sampling = (_sampling.SamplingHandler(self.name, sampling_config)
                           if sampling_config.get("enabled", True) and _core._MCP_SAMPLING_TYPES else None)
         # elicitation/create lets a server ask for structured input mid-call; the handler
-        # routes it through Hermes' approval system.
+        # routes it through Cybr Agent' approval system.
         elicitation_config = config.get("elicitation", {})
         self._elicitation = (_sampling.ElicitationHandler(self.name, elicitation_config,
                                                        call_context=lambda: self._pending_call_context)
@@ -352,6 +352,7 @@ class MCPServerRunMixin:
                             from agent.secret_scope import reset_secret_scope
                             reset_secret_scope(scope_token)
                 rebuild = True
+                self._auth_park = None
                 run_transport = self._run_http if self._is_http() else self._run_stdio
                 self._resolved_identity = None  # the transport publishes the inputs it connects with
                 if not await self._on_clean_return(await run_transport(config), budget):
@@ -361,7 +362,7 @@ class MCPServerRunMixin:
                 # Task was cancelled (shutdown, gateway restart, explicit task.cancel()). Don't treat this
                 # as a connection failure — CancelledError inherits from BaseException (not Exception) in
                 # Python 3.11+, so the broad ``except Exception`` below would NOT catch it; we'd silently
-                # exit the reconnect loop and the MCP server would stay dead until Hermes is fully
+                # exit the reconnect loop and the MCP server would stay dead until Cybr Agent is fully
                 # restarted. See #9930.
                 self.session = None
                 raise
@@ -486,6 +487,7 @@ class MCPServerRunMixin:
                       else "connection with a permanent error, parking without retries")
             self._log_park("MCP server '%s' failed initial %s (state: connecting → parked): %s: %s",
                            self.name, detail, type(root).__name__, root)
+            self._arm_auth_park(root)
             return await self._park_initial_failure(exc, "after permanent initial failure", budget)
         budget.initial_retries += 1
         if budget.initial_retries > _core._MAX_INITIAL_CONNECT_RETRIES:
@@ -520,7 +522,19 @@ class MCPServerRunMixin:
         self._log_park(
             "MCP server '%s' hit a permanent error, parking without retries; will self-probe every %ds "
             "(state: connected → parked): %s: %s", self.name, _core._PARKED_RETRY_INTERVAL, type(root).__name__, root)
+        self._arm_auth_park(root)
         return await self._park_and_rearm("from parked state (permanent error)", budget)
+
+    def _arm_auth_park(self, root: BaseException) -> None:
+        """Record the OAuth credentials an auth-failure park failed with. Until a re-authorization
+        rewrites them, a discovery pass has nothing new to try: every nudge replayed the same rejected
+        refresh token, so a backend building agents (each one re-runs discovery while no server is
+        connected) hit the authorization server once per session, enough for a rate-limit ban."""
+        if self._auth_type == "oauth" and _errors._is_auth_error(root):
+            from hermes_constants import get_hermes_home
+            from tools.mcp_oauth import HermesTokenStorage
+            storage = HermesTokenStorage(self.name, hermes_home=get_hermes_home())
+            self._auth_park = (storage, storage.credential_stamp())
 
     async def start(self, config: dict):
         """Create the background Task and wait until ready (or failed)."""

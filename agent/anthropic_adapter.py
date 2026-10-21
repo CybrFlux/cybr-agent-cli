@@ -1,8 +1,8 @@
-"""Anthropic Messages API adapter: client construction + the Messages call for Hermes's
-OpenAI-style internals. Auth: API keys (``sk-ant-api*``) -> x-api-key; OAuth setup-tokens
-(``sk-ant-oat*``) and Claude Code credentials -> Bearer + beta header. Endpoint predicates,
-payload conversion and credentials live in ``agent/anthropic_{endpoints,message_convert,
-credentials}.py``; import them from there."""
+"""Anthropic Messages API adapter: client construction + the Messages call for Cybr Agent's
+OpenAI-style internals. Auth: Console API keys (``sk-ant-api*``/``-usr*``/``-svc*``/``-admin*``) ->
+x-api-key; OAuth setup-tokens (``sk-ant-oat*``) and Claude Code credentials -> Bearer + beta header.
+Endpoint predicates, payload conversion and credentials live in ``agent/anthropic_{endpoints,
+message_convert,credentials}.py``; import them from there."""
 
 from pm import install_hint
 import logging
@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional
 
 from utils import normalize_proxy_env_vars
 
-from agent.anthropic_credentials import _is_oauth_token
+from agent.anthropic_credentials import _is_oauth_token, anthropic_route_is_oauth, is_native_anthropic_host
 from agent.anthropic_endpoints import (
     _base_url_needs_context_1m_beta, _is_azure_anthropic_endpoint, _is_kimi_coding_endpoint,
     _is_minimax_anthropic_endpoint, _is_nous_portal_endpoint, _is_opencode_endpoint,
@@ -71,7 +71,7 @@ def _require_sdk(purpose: str, verb: str = "Install it with"):
 logger = logging.getLogger(__name__)
 
 THINKING_BUDGET = {"xhigh": 32000, "high": 16000, "medium": 8000, "low": 4000}
-# Hermes effort -> Anthropic adaptive-thinking effort (output_config.effort). 4.7+ exposes
+# Cybr Agent effort -> Anthropic adaptive-thinking effort (output_config.effort). 4.7+ exposes
 # low/medium/high/xhigh/max; Opus/Sonnet 4.6 have no xhigh, so callers downgrade xhigh->max
 # there (see _supports_xhigh_effort). "minimal" is a legacy alias for low on every model.
 ADAPTIVE_EFFORT_MAP = {
@@ -318,7 +318,7 @@ def _get_claude_code_version() -> str:
 _CLAUDE_CODE_SYSTEM_PREFIX = "You are Claude Code, Anthropic's official CLI for Claude."
 _MCP_TOOL_PREFIX = "mcp__"
 
-# Anthropic's OAuth billing classifier fingerprints certain Hermes tool schemas/prose as a
+# Anthropic's OAuth billing classifier fingerprints certain Cybr Agent tool schemas/prose as a
 # third-party app and reroutes to the metered extra-usage lane (HTTP 400 "You're out of extra
 # usage" on a valid subscription). Live A/B repros isolated two independent triggers — the
 # ``session_search`` tool (schema/name/prose) and the ``memory`` tool (schema/name) — so both are
@@ -370,7 +370,7 @@ def _beta_header(betas: list) -> dict[str, str]:
 def _attribution_headers() -> dict[str, str]:
     """Same client-attribution set sent to OpenRouter / Vercel AI Gateway / Fireworks."""
     return {
-        "HTTP-Referer": "https://hermes-agent.nousresearch.com", "X-Title": "Hermes Agent",
+        "HTTP-Referer": "https://hermes-agent.nousresearch.com", "X-Title": "Cybr Agent",
         "User-Agent": f"HermesAgent/{get_version_info().base_version}",
     }
 
@@ -409,10 +409,16 @@ def _build_anthropic_client_with_bearer_hook(
     normalize_proxy_env_vars()
     from agent.azure_identity_adapter import build_bearer_http_client
     normalized_base_url, kwargs = _base_client_kwargs(base_url, timeout)
-    kwargs["http_client"] = build_bearer_http_client(token_provider, timeout=kwargs["timeout"])
+    # A key_cmd on the native host can print a Console API key, which (as in the static path's
+    # _auth_style) belongs in x-api-key; OAuth tokens and Azure/third-party routes keep Bearer. The
+    # auth header follows each mint, the OAuth identity below the first one: a key_cmd switching
+    # between OAuth and a Console key mid-session needs a client rebuild.
+    kwargs["http_client"] = build_bearer_http_client(
+        token_provider, timeout=kwargs["timeout"],
+        sends_as_api_key=(lambda token: not _is_oauth_token(token)) if is_native_anthropic_host(base_url) else None,
+    )
     kwargs["auth_token"] = "entra-id-bearer-via-http-hook"
     betas = _common_betas_for_base_url(normalized_base_url, drop_context_1m_beta=drop_context_1m_beta)
-    from agent.anthropic_credentials import anthropic_route_is_oauth
     if anthropic_route_is_oauth(base_url, token_provider):
         # key_cmd-sourced Claude Code OAuth on the native host: a bare bearer without the Claude Code
         # identity is answered with 429 rate_limit_error "Error" (#114967) — same headers as the
@@ -541,7 +547,7 @@ def _normalize_to_mcp_wire(name: str) -> str:
     """OAuth wire form of a tool name (no aliasing): ``mcp__<...>``. Anthropic's OAuth billing
     classifier treats a single-underscore ``mcp_`` tool name as a third-party-app fingerprint
     (HTTP 400 "Third-party apps now draw from extra usage"); ``mcp__foo`` is accepted. Both bare
-    Hermes tools (``read_file``) and native MCP tools registered as ``mcp_<server>_<tool>`` must
+    Cybr Agent tools (``read_file``) and native MCP tools registered as ``mcp_<server>_<tool>`` must
     land on the double-underscore form. normalize_response reverses both via registry lookup."""
     if name.startswith("mcp__"):
         return name  # already correct, don't double-prefix
@@ -569,7 +575,7 @@ def _oauth_wire_namer(anthropic_tools: list[dict[str, Any]]):
 
 
 _OAUTH_SYSTEM_REPLACEMENTS = (
-    ("Hermes Agent", "Claude Code"), ("Hermes agent", "Claude Code"), ("Nous Research", "Anthropic"),
+    ("Cybr Agent", "Claude Code"), ("Cybr Agent", "Claude Code"), ("Nous Research", "Anthropic"),
 )
 # The slug is rewritten only as a standalone prose word. Joined to a host, path, repo, mailbox
 # or quoted as an identifier (``hermes-agent.nousresearch.com``, ``~/.hermes/hermes-agent/venv``,
@@ -611,7 +617,7 @@ def _thinking_kwargs(reasoning_config: dict[str, Any], model: str, effective_max
     """Map ``reasoning_config`` to Anthropic thinking kwargs. Adaptive models (Claude 4.6+,
     Kimi/Moonshot) get ``thinking.type=adaptive`` + ``output_config.effort``; older models and
     manual-only compat endpoints (MiniMax) get budget_tokens. Haiku through 4.5 gets none. On
-    4.7+ ``thinking.display`` defaults to "omitted", hiding the reasoning Hermes shows in its CLI,
+    4.7+ ``thinking.display`` defaults to "omitted", hiding the reasoning Cybr Agent shows in its CLI,
     so "summarized" is requested to keep the activity feed populated."""
     if reasoning_config.get("enabled") is False:
         # Adaptive models think by DEFAULT, so omitting the parameter is not a disable — the user
@@ -688,7 +694,7 @@ def build_anthropic_kwargs(
     # ``output_config.effort``, and the replay-validation 400s that originally motivated dropping the
     # parameter (#13848) no longer occur. (Kimi on chat_completions enables thinking via extra_body in the
     # ChatCompletionsTransport — see #13503.) On 4.7+ the `thinking.display` field defaults to "omitted",
-    # which silently hides reasoning text that Hermes surfaces in its CLI. We request "summarized" so the
+    # which silently hides reasoning text that Cybr Agent surfaces in its CLI. We request "summarized" so the
     # reasoning blocks stay populated — matching 4.6 behavior and preserving the activity-feed UX during
     # long tool runs.
     if reasoning_config and isinstance(reasoning_config, dict):

@@ -10,7 +10,7 @@ from typing import Any, List, Mapping, MutableMapping, Optional, TypeVar
 from agent.conversation_compression_archive import MERGED_DURABLE_ROWS, RETIRED_DURABLE_ROWS, UNNAMED_DURABLE_ROWS
 
 
-# These fields describe Hermes' durable record and timeline display, not
+# These fields describe Cybr Agent' durable record and timeline display, not
 # provider-visible message content. The request builder strips them from every
 # outgoing copy and the token estimator ignores them: one set, so an estimate
 # never prices bytes the provider never receives (an edit's inline_diff in
@@ -33,7 +33,7 @@ MESSAGE_UID = "message_uid"
 # absorption order (the uid sibling of ``_absorbed_row_ids``; persisted as ``messages.absorbed_message_uids``).
 # The survivor keeps the FIRST constituent's uid.
 ABSORBED_MESSAGE_UIDS = "_absorbed_message_uids"
-# Per-occurrence tool-call identity. Provider tool-call ids repeat (Hermes mints deterministic ``call_<12hex>``
+# Per-occurrence tool-call identity. Provider tool-call ids repeat (Cybr Agent mints deterministic ``call_<12hex>``
 # ids for identical calls, and models reuse ids), so an assistant row carries ``{provider id: uid}`` for its
 # ``tool_calls`` (``messages.tool_call_uids``) and its tool-result rows carry the matching uid
 # (``messages.tool_call_uid``). The provider-facing ``id`` is untouched; these never reach the wire.
@@ -50,10 +50,36 @@ PERSISTENCE_ONLY_MESSAGE_FIELDS = frozenset(
 ) | REPAIR_BOOKKEEPING_FIELDS
 
 
+# Connector data-use requirement on a tool message; persisted inside ``display_metadata``, never sent to a model.
+DATA_USE = "data_use"
+
+
+def data_use_requirement(messages: Any) -> frozenset[str]:
+    """The union of ``data_use`` over *messages*: what the model receiving them must guarantee."""
+    return frozenset(r for m in messages or () if isinstance(m, Mapping) for r in m.get(DATA_USE) or ())
+
+
+def stamp_data_use(message: MutableMapping[str, Any], requires: list[str]) -> None:
+    """Mark a tool message with its requirement. The ``display_metadata`` copy is the durable one: that
+    column already rides every writer, branch and compaction copy, and replay lifts it back (SessionDB)."""
+    if not requires:
+        return
+    message[DATA_USE] = list(requires)
+    metadata = message.get("display_metadata")
+    message["display_metadata"] = {**(metadata if isinstance(metadata, dict) else {}), DATA_USE: list(requires)}
+
+
+def lift_data_use(message: MutableMapping[str, Any]) -> None:
+    """Restore a replayed row's ``data_use`` key from its durable ``display_metadata`` copy."""
+    metadata = message.get("display_metadata")
+    if isinstance(metadata, dict) and metadata.get(DATA_USE):
+        message[DATA_USE] = list(metadata[DATA_USE])
+
+
 # Replay carriers the preflight estimate prices at 0, exactly as the compaction tail walk does (opaque signatures,
 # duplicate reasoning copies, ordered sidecars); a mismatch between the two estimates loops compaction.
 UNPRICED_REPLAY_FIELDS = frozenset({"_anthropic_content_blocks", "reasoning_details", "extra_content",
-                                    "reasoning_opaque", "reasoning_text", "bedrock_content_blocks"})
+                                    "reasoning_opaque", "reasoning_text", "bedrock_content_blocks", DATA_USE})
 
 
 def without_persistence_fields(msg: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -91,6 +117,32 @@ def stamp_message_uid(msg: MutableMapping[str, Any]) -> str:
     if uid is None:
         uid = msg[MESSAGE_UID] = mint_uid()
     return uid
+
+
+# Producer-owned provenance for the compressor's standalone in-flight-task restatement. It rides in
+# display_metadata (persisted by SessionDB, popped from every wire copy) so gateway replay can send the
+# row unstamped, as the compaction turn did; a human pasting the header text carries no flag.
+INFLIGHT_TASK_RESTATEMENT = "compaction_inflight_task_restatement"
+
+
+def mark_inflight_restatement(msg: MutableMapping[str, Any]) -> None:
+    metadata = msg.get("display_metadata")
+    msg["display_metadata"] = {**(metadata if isinstance(metadata, dict) else {}), INFLIGHT_TASK_RESTATEMENT: True}
+
+
+def scaffolding_replay_fields(msg: Mapping[str, Any]) -> dict:
+    """The compaction-provenance fields replay keeps (summary flag, restatement flag), else ``{}``. A proactive
+    prune re-persists the replayed view, so a dropped flag would get the row stamped on the next replay."""
+    metadata = msg.get("display_metadata")
+    fields: dict = {"_compressed_summary": True} if msg.get("_compressed_summary") else {}
+    if isinstance(metadata, dict) and metadata.get(INFLIGHT_TASK_RESTATEMENT):
+        fields["display_metadata"] = {INFLIGHT_TASK_RESTATEMENT: True}
+    return fields
+
+
+def is_compaction_scaffolding(msg: Mapping[str, Any]) -> bool:
+    """Compaction sent its summary and restatement rows unstamped; a replay stamp would break the cached prefix."""
+    return bool(scaffolding_replay_fields(msg))
 
 
 _IDENTITY_FIELD_TYPES = ((MESSAGE_UID, str), (ABSORBED_MESSAGE_UIDS, list), (TOOL_CALL_UIDS, dict), (TOOL_CALL_UID, str))

@@ -2,12 +2,17 @@ import React, { useState, useMemo, useCallback, useRef, useEffect } from "react"
 import Layout from "@theme/Layout";
 import Link from "@docusaurus/Link";
 import styles from "./styles.module.css";
+import CatalogFeatured from "../../components/CatalogFeatured";
+import { isOfficialSkillSource, pickFeatured } from "../../../../apps/shared/src/catalog-featured";
 import { skillCatalogInstallIdentifier, skillCatalogInstallUrl } from "../../../../apps/shared/src/catalog-install";
 
 interface Skill {
   name: string;
   description: string;
   overview?: string;
+  image?: string;
+  /** 1-based curated hero rank from catalog-curation.json; absent when uncurated. */
+  featured?: number;
   category: string;
   categoryLabel: string;
   source: string;
@@ -310,6 +315,7 @@ function SkillCard({
       onClick={onToggle}
       style={style}
     >
+      {skill.image && <img src={skill.image} alt="" loading="lazy" decoding="async" style={{ width: "100%", aspectRatio: "2 / 1", objectFit: "cover", display: "block" }} />}
       <div className={styles.cardAccent} style={{ background: src.color }} />
 
       <div className={styles.cardInner}>
@@ -360,7 +366,7 @@ function SkillCard({
             href={installUrl}
             onClick={(e) => e.stopPropagation()}
           >
-            Install in Hermes
+            Install in Cybr Agent
           </a>
         )}
 
@@ -520,7 +526,7 @@ function buildSearchHaystack(s: Skill): string {
 
 export default function SkillsDashboard() {
   // Picker embed mode (?embed=picker): the page is being iframed by a host
-  // app (Hermes desktop's Bot Mode agent editor) as a skill PICKER. Site
+  // app (Cybr Agent desktop's Bot Mode agent editor) as a skill PICKER. Site
   // chrome is hidden via a CSS class and every card gains an
   // "+ Add to this Agent" button that posts
   //   { type: 'hermes-skill-pick', name, identifier, installCmd, source }
@@ -789,6 +795,19 @@ export default function SkillsDashboard() {
   const visible = filtered.slice(0, visibleCount);
   const hasMore = visibleCount < filtered.length;
 
+  // Same pick as the desktop app (apps/shared pickFeatured): curated ranks from
+  // catalog-curation.json, rotated weekly, shown only while browsing everything.
+  const featured = useMemo(
+    () =>
+      pickFeatured(allSkillsLocal, (s) => ({
+        featured: s.featured,
+        official: isOfficialSkillSource(s.source),
+        pictured: Boolean(s.image),
+      })),
+    [allSkillsLocal],
+  );
+  const browsing = !search && sourceFilter === "all" && categoryFilter === "all" && !pickerMode;
+
   const handleSourceChange = useCallback(
     (src: string) => {
       setSourceFilter(src);
@@ -817,13 +836,13 @@ export default function SkillsDashboard() {
   return (
     <Layout
       title="Skills Hub"
-      description="Browse all skills and plugins available for Hermes Agent"
+      description="Browse all skills and plugins available for Cybr Agent"
     >
       <div className={`${styles.page} ${pickerMode ? styles.pickerMode : ""}`}>
         <header className={styles.hero}>
           <div className={styles.heroGlow} />
           <div className={styles.heroContent}>
-            <p className={styles.heroEyebrow}>Hermes Agent</p>
+            <p className={styles.heroEyebrow}>Cybr Agent</p>
             <h1 className={styles.heroTitle}>Skills Hub</h1>
             <nav className={styles.crossNav} aria-label="Catalog pages">
               <span className={`${styles.crossNavLink} ${styles.crossNavActive}`}>
@@ -1104,6 +1123,21 @@ export default function SkillsDashboard() {
               </div>
             ) : visible.length > 0 ? (
               <>
+                {featured && browsing && (
+                  <CatalogFeatured
+                    author={featured.author}
+                    cta="View skill"
+                    description={featured.description}
+                    href={featured.docsPath ? `/user-guide/skills/${featured.docsPath}` : featured.sourceUrl || "#"}
+                    label="Featured skill"
+                    tags={[
+                      SOURCE_CONFIG[featured.source]?.label || featured.source,
+                      featured.categoryLabel,
+                      featured.version && `v${featured.version}`,
+                    ]}
+                    title={featured.name}
+                  />
+                )}
                 <div className={styles.grid}>
                   {visible.map((skill, i) => {
                     const key = `${skill.source}-${skill.name}-${i}`;

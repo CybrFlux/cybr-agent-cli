@@ -139,7 +139,7 @@ class GatewayTopicThreadsMixin:
     # ── Telegram topic bindings ─────────────────────────────────────────────────────────────
 
     def _record_telegram_topic_binding(self, source: SessionSource, session_entry) -> None:
-        """Persist the Telegram topic -> Hermes session binding for topic lanes (off-loop)."""
+        """Persist the Telegram topic -> Cybr Agent session binding for topic lanes (off-loop)."""
         session_db = self._sync_session_db()
         if session_db is None or not source.chat_id or not source.thread_id:
             return
@@ -154,7 +154,7 @@ class GatewayTopicThreadsMixin:
         compression rotation reloads the oversized parent next message, retriggering compression.
 
         Telegram topic lanes persist a (chat_id, thread_id) -> session_id row so reopening a topic in a
-        fresh process resumes the right Hermes session. See #20470, #29712, #33414.
+        fresh process resumes the right Cybr Agent session. See #20470, #29712, #33414.
         """
         if not self._is_telegram_topic_lane(source):
             return
@@ -164,6 +164,14 @@ class GatewayTopicThreadsMixin:
             logger.debug("telegram topic binding refresh failed (%s)", reason, exc_info=True)
 
     def _recover_telegram_topic_thread_id(self, source: SessionSource) -> Optional[str]:
+        """Adapter-ingress recovery hook (sync, called off-loop before session keying): lobby recovery,
+        except when ``dm_topic_auto_transfer`` is on — then the root-DM source is left alone so
+        ``_transfer_telegram_root_dm`` can open a fresh topic (and fall back to this recovery itself)."""
+        if self._telegram_topic_auto_transfer_enabled(source):
+            return None
+        return self._recover_telegram_lobby_thread_id(source)
+
+    def _recover_telegram_lobby_thread_id(self, source: SessionSource) -> Optional[str]:
         """Pin lobby-shaped topic-mode DM replies (missing ``message_thread_id`` or General) to the
         user's most-recent bound topic. Never rewrite a non-lobby, unbound thread id: a brand-new DM
         topic is also "unknown" until its first message is recorded. None = leave the source alone."""
@@ -190,6 +198,42 @@ class GatewayTopicThreadsMixin:
                 recovered = str(b.get("thread_id") or "")
                 return recovered if recovered and recovered != inbound else None
         return None
+
+    def _telegram_dm_topic_auto_transfer_configured(self, source: SessionSource) -> bool:
+        """The RECEIVING bot's ``extra.dm_topic_auto_transfer`` (default False): under multiplexing each
+        bot owns its opt-in. Off keeps the v0.22 lobby recovery (#136567). No state.db read."""
+        adapter = self._delivery_adapter_for(source)
+        platform_cfg = getattr(adapter, "config", None) if adapter is not None else None
+        return is_truthy_value((getattr(platform_cfg, "extra", None) or {}).get("dm_topic_auto_transfer"))
+
+    def _telegram_topic_auto_transfer_enabled(self, source: SessionSource) -> bool:
+        """The key is on and ``source`` is a ``/topic``-mode root DM (reads state.db: call off-loop)."""
+        return self._telegram_dm_topic_auto_transfer_configured(source) and self._is_telegram_topic_root_lobby(source)
+
+    async def _transfer_telegram_root_dm(self, source: SessionSource) -> Optional[tuple[str, bool]]:
+        """Adapter-ingress transfer hook for an opted-in root-DM message (#139136).
+
+        ``(thread_id, True)``: a fresh topic was created and the turn runs there. ``(thread_id, False)``:
+        creating it failed, so the message falls back to lobby recovery (the last bound topic).
+        ``None``: not applicable (key off, not a topic-mode root DM) or nothing to recover to.
+        """
+        if (not source.chat_id or not self._telegram_dm_topic_auto_transfer_configured(source)
+                or not await asyncio.to_thread(self._is_telegram_topic_root_lobby, source)):
+            return None
+        adapter = self._delivery_adapter_for(source)
+        create_topic = getattr(adapter, "_create_dm_topic", None) if adapter is not None else None
+        thread_id = None
+        if callable(create_topic):
+            try:
+                thread_id = await create_topic(int(source.chat_id), t("gateway.topic.default_title"))
+            except Exception:
+                logger.debug("Failed to auto-transfer Telegram root DM into a new topic", exc_info=True)
+        if thread_id:
+            logger.info("telegram topic auto-transfer: chat=%s user=%s root -> new topic %s",
+                        source.chat_id, source.user_id, thread_id)
+            return str(thread_id), True
+        recovered = await asyncio.to_thread(self._recover_telegram_lobby_thread_id, source)
+        return (recovered, False) if recovered else None
 
     # ── Telegram topic mode: /topic activation helpers ──────────────────────────────────────
 
@@ -273,7 +317,7 @@ class GatewayTopicThreadsMixin:
     # ── Discord auto-thread lanes ───────────────────────────────────────────────────────────
 
     def _is_discord_auto_thread_lane(self, source: SessionSource) -> bool:
-        """Return True only for Discord threads Hermes just auto-created."""
+        """Return True only for Discord threads Cybr Agent just auto-created."""
         return (
             source.platform == Platform.DISCORD and source.chat_type == "thread"
             and bool(getattr(source, "auto_thread_created", False)) and bool(source.thread_id)
@@ -493,7 +537,7 @@ class GatewayTopicThreadsMixin:
         return is_truthy_value((getattr(platform_cfg, "extra", None) or {}).get("disable_topic_auto_rename"))
 
     async def _rename_telegram_topic_for_session_title(self, source: SessionSource, session_id: str, title: str) -> None:
-        """Best-effort rename of a Telegram DM topic when Hermes auto-titles a session."""
+        """Best-effort rename of a Telegram DM topic when Cybr Agent auto-titles a session."""
         if not await asyncio.to_thread(self._is_telegram_topic_lane, source) or not source.chat_id or not source.thread_id:
             return
         # Operator kill-switch, e.g. user-managed topics (ad-hoc Threaded Mode) that auto-rename
@@ -601,7 +645,7 @@ class GatewayTopicThreadsMixin:
         return "\n".join(lines)
 
     async def _restore_telegram_topic_session(self, event: MessageEvent, raw_session_id: str) -> str:
-        """Restore an existing Telegram-owned Hermes session into this topic."""
+        """Restore an existing Telegram-owned Cybr Agent session into this topic."""
         source = event.source
         db = self._session_db
         session_id = await db.resolve_session_id(raw_session_id.strip())

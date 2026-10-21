@@ -32,7 +32,7 @@ def _whatsapp_choose_mode(get_env_value, save_env_value):
         mode_label = "separate bot number" if current_mode == "bot" else "personal number (self-chat)"
         print(f"\n✓ Mode: {mode_label}")
         return current_mode
-    _say("", "How will you use WhatsApp with Hermes?", "",
+    _say("", "How will you use WhatsApp with Cybr Agent?", "",
          "  1. Separate bot number (recommended)",
          "     People message the bot's number directly — cleanest experience.",
          "     Requires a second phone number with WhatsApp installed on a device.", "",
@@ -136,7 +136,7 @@ def cmd_whatsapp(args):
     _require_tty("whatsapp")
     from hermes_cli.config import get_env_value, save_env_value
     from hermes_constants import find_node_executable, with_hermes_node_path
-    _say("", "☤ WhatsApp Setup", "=" * 50)
+    _say("", "∿ WhatsApp Setup", "=" * 50)
 
     wa_mode = _whatsapp_choose_mode(get_env_value, save_env_value)
     if wa_mode is None:
@@ -213,22 +213,22 @@ def cmd_whatsapp(args):
         _say("  Next steps:", "    1. Start the gateway:  hermes gateway",
              "    2. Send a message to the bot's WhatsApp number",
              "    3. The agent will reply automatically", "",
-             "  Tip: Agent responses are prefixed with '☤ Hermes Agent'")
+             "  Tip: Agent responses are prefixed with '∿ Cybr Agent'")
     else:
         _say("  Next steps:", "    1. Start the gateway:  hermes gateway",
              "    2. Open WhatsApp → Message Yourself",
              "    3. Type a message — the agent will reply", "",
-             "  Tip: Agent responses are prefixed with '☤ Hermes Agent'",
+             "  Tip: Agent responses are prefixed with '∿ Cybr Agent'",
              "  so you can tell them apart from your own messages.")
     _say("", "  Or install as a service: hermes gateway install")
 
 
 def cmd_whatsapp_cloud(args):
     """Set up WhatsApp Business Cloud API (official Meta integration) — complementary to the
-    ``hermes whatsapp`` Baileys bridge wizard. See ``hermes_cli/setup_whatsapp_cloud.py``."""
+    ``hermes whatsapp`` Baileys bridge wizard. See ``plugins/platforms/whatsapp_cloud/setup_wizard.py``."""
     from hermes_cli.main import _require_tty
     _require_tty("whatsapp-cloud")
-    from hermes_cli.setup_whatsapp_cloud import run_whatsapp_cloud_setup
+    from plugins.platforms.whatsapp_cloud.setup_wizard import run_whatsapp_cloud_setup
     return run_whatsapp_cloud_setup()
 
 

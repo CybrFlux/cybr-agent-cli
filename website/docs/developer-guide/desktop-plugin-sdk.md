@@ -1,12 +1,12 @@
 ---
 sidebar_label: "Desktop Plugin SDK"
 title: "Desktop Plugin SDK (@hermes/plugin-sdk)"
-description: "Extend the native Hermes Desktop app — panes, pages, sidebar nav, status bar, palette commands, keybinds, themes, and a scoped backend namespace, with one import and no build step."
+description: "Extend the native Cybr Agent Desktop app — panes, pages, sidebar nav, status bar, palette commands, keybinds, themes, and a scoped backend namespace, with one import and no build step."
 ---
 
 # Desktop Plugin SDK
 
-The native [Hermes Desktop](../user-guide/desktop.md) app is contribution-driven: every
+The native [Cybr Agent Desktop](../user-guide/desktop.md) app is contribution-driven: every
 surface in the window — panes, routes, sidebar nav, status-bar items, palette
 entries, keybinds, themes — registers into one central registry. Core registers
 its surfaces exactly the way a plugin does, so the plugin story is the real one,
@@ -21,13 +21,13 @@ repo clone, no `npm run build`, no patching app source. Drop the file in
 and hot-reloads every save.
 
 :::warning This is not the web-dashboard plugin SDK
-"Plugin" means several unrelated things across Hermes. This page is the **native
-desktop app** (`hermes desktop`) SDK — the `@hermes/plugin-sdk` module and
-`$HERMES_HOME/desktop-plugins/`. The **web dashboard** (`hermes dashboard`) has
+"Plugin" means several unrelated things across Cybr Agent. This page is the **native
+desktop app** (`cybr desktop`) SDK — the `@hermes/plugin-sdk` module and
+`$HERMES_HOME/desktop-plugins/`. The **web dashboard** (`cybr dashboard`) has
 its own, unrelated plugin system on `window.__HERMES_PLUGIN_SDK__` with a
 `manifest.json` — documented at
 [Extending the Dashboard](../user-guide/features/extending-the-dashboard.md). Python
-CLI/gateway plugins are documented at [Build a Hermes Plugin](./plugins/index.md).
+CLI/gateway plugins are documented at [Build a Cybr Agent Plugin](./plugins/index.md).
 The three do not share code, APIs, or delivery. Only the backend `plugin_api.py`
 namespace (`/api/plugins/<id>`) is shared between the desktop and dashboard SDKs.
 :::
@@ -99,7 +99,7 @@ function HelloPane() {
   return jsxs('div', {
     className: 'flex h-full flex-col gap-2 p-3 text-sm',
     children: [
-      jsx('div', { className: 'font-medium', children: 'Hello, Hermes' }),
+      jsx('div', { className: 'font-medium', children: 'Hello, Cybr Agent' }),
       jsx('div', {
         className: 'text-(--ui-text-tertiary)',
         children: `gateway: ${gateway}`
@@ -1080,6 +1080,13 @@ host.state.profile          // ReadableAtom<string>
 host.state.viewport         // ReadableAtom<{ width, height, narrow }>
 ```
 
+`gatewayActivationEpoch` is a named SDK export: `import { gatewayActivationEpoch } from '@hermes/plugin-sdk'`.
+It reads the canonical activation counter, which changes on every active route
+selection, including same-profile source swaps. Capture `const epoch = gatewayActivationEpoch()`
+alongside the route before asynchronous work, then check both the captured route
+and `gatewayActivationEpoch() === epoch` before mutation or UI publication. This
+read-only counter is not a credential, permission grant, or durable gateway/session identity.
+
 `host.state.gateway` is the WebSocket connection, not whether a chat turn is
 running. A session can be mid-turn while the socket is `open`; another session
 can be idle at the same time. Disable composer or plugin actions from the
@@ -1142,12 +1149,13 @@ profile without changing the active chat or gateway. The profile-only overload i
 retained only for the sole-local/legacy topology; registry-aware plugins should pass
 the descriptor so two sources exposing the same profile name cannot collide.
 
-A call that may cold-start a pooled profile backend dials at background priority by
-default, and background dials never get the slot the pool keeps free for user actions.
-When the call IS a user action (a save, a button press, a dialog opening), pass
-`host.requestProfile(route, method, params, undefined, { spawnPriority: 'foreground' })`;
-otherwise, with the pool full of warm backends, it waits out the 30-second slot timeout
-and fails. Keep the background default for polling and roster warming.
+A call that has to open a connection to another profile dials at background priority
+by default. After a failed dial to that profile, background calls fail fast while the
+reconnect backoff runs (`Backend for "<profile>" is reconnecting; retry after it settles.`)
+instead of redialing on every tick. When the call IS a user action (a save,
+a button press, a dialog opening), pass
+`host.requestProfile(route, method, params, undefined, { spawnPriority: 'foreground' })`
+so it dials at once. Keep the background default for polling and roster warming.
 
 `host.openWorkspace(id, { render, title?, minWidth?, onClose? })` docks a
 plugin-rendered view into the **main workspace zone** — the same center area
@@ -1180,7 +1188,7 @@ is the registry routing identity;
 pair it with `profile` for keys and persistence. Endpoint, token, SSH host/key, and
 other raw connection fields never cross the plugin IPC boundary. `profile` is the
 source-local route used
-for requests; `targetProfile` is the backend Hermes profile served by that route.
+for requests; `targetProfile` is the backend Cybr Agent profile served by that route.
 They differ when a route explicitly maps to another backend profile (for example an
 SSH `remoteProfile` override or a legacy per-profile URL alias). This distinction
 preserves backend identity without exposing connection secrets.
@@ -1215,10 +1223,39 @@ listener can't affect app dispatch. Every `host` door is async-safe: a sync thro
 from an internal helper (e.g. no desktop bridge in a plain browser) becomes a
 rejection your `.catch()` sees, never an error-boundary crash.
 
+#### Live tool progress — `tool.progress` {#tool-progress-event}
+
+While a tool call runs, an MCP server that sends `notifications/progress` (the
+MCP spec's progress channel; Cybr Agent opts in by sending `_meta.progressToken` on
+every `tools/call`) reaches the renderer as a `tool.progress` event. The native
+tool row shows it as `42% · <message>` next to its timer; a plugin can render
+its own view:
+
+```javascript
+ctx.onEvent('tool.progress', ({ session_id, payload }) => {
+  // payload: { tool_id, name, progress, total, percent, message }
+  if (payload.name.startsWith('mcp__meshy__')) showRefineProgress(payload.tool_id, payload.percent, payload.message)
+})
+ctx.onEvent('tool.complete', ({ payload }) => clearRefineProgress(payload.tool_id))
+```
+
+| Field | Type | Meaning |
+|---|---|---|
+| `tool_id` | `string` | The call id; the same `tool_id` as the call's `tool.start` / `tool.complete` |
+| `name` | `string` | Registered tool name (`mcp__<server>__<tool>`) |
+| `progress` | `number` | The server's raw progress value |
+| `total` | `number \| null` | The server's total, when it sent one |
+| `percent` | `number \| null` | `0`–`100` (rounded, clamped) when `total` is set, else `null` |
+| `message` | `string \| null` | The server's progress message |
+
+Events are throttled to at most one per 500 ms per call; the first update and
+the one that reaches `total` always arrive. They are never stored in the
+transcript, so a reopened session shows only the finished row.
+
 `ctx.os` is the curated OS door — every way a plugin reaches outside the app
 window, in one namespace attributed to your plugin. `ctx.os.notify` posts a
 **native OS notification** — the same Electron pipeline the app's own
-approval/turn alerts use. It fires only while the user is away from Hermes
+approval/turn alerts use. It fires only while the user is away from Cybr Agent
 (backgrounded / unfocused); use `host.notify` for the in-app toast when
 they're looking at the app. Users can silence it per device under Settings ▸
 Notifications ▸ "Plugin notifications", and repeats from the same plugin are
@@ -1231,7 +1268,7 @@ ctx.os.notify({
   title: 'New match found',
   body: 'Someone matched your signal',
   icon: '/abs/path/to/icon.png', // Electron Notification icon
-  // Body click → focus Hermes + navigate. Same vocabulary as OS deep links:
+  // Body click → focus Cybr Agent + navigate. Same vocabulary as OS deep links:
   activate: 'hermes://index-network/intent/1',
   // or: activate: '/index-network/intent/1'
   // or: activate: { path: '/index-network/intent/1' }
@@ -1577,7 +1614,7 @@ Where English has a **function** entry (``results: n => `${n} results` ``), a pa
 gives a plain string with POSITIONAL placeholders — `{0}`, `{1}` in argument
 order — and the merge wraps it into the same call shape. The full key set is
 published in `locales/_keys.desktop.json` (regenerate with `npm run i18n:keys`
-in `apps/desktop` and commit it; CI pins the file to `en.ts`), which is what `hermes plugins
+in `apps/desktop` and commit it; CI pins the file to `en.ts`), which is what `cybr plugins
 validate` checks a pack's `<lang>.desktop.yaml` against.
 
 `host.i18n.registerAppLocale` is the same call for code with no `ctx` in reach;
@@ -1677,7 +1714,7 @@ pipeline as the standalone disk door (hot reload included):
 The `desktop/plugin.js` half is an ordinary disk plugin — same contract, same
 imports, same `ctx.rest('/…')` reaching the `plugin_api.py` sitting beside it.
 Installing, sharing, or removing the feature is one folder: the app-root copy
-is refreshed when the source `plugin.js` changes (`hermes plugins update`, or
+is refreshed when the source `plugin.js` changes (`cybr plugins update`, or
 **Rescan**) and removed when the package folder disappears. The copy is what
 makes the desktop half **app-level**: it exists once, however many profiles
 carry the package, and it never appears or disappears when the user switches
@@ -1710,7 +1747,7 @@ checkout's `desktop/plugin.js`; every save re-syncs the copy (by content, not
 mtime, so `git stash pop` counts) and hot-reloads the plugin. Catalog and Git
 installs keep the mtime rule.
 
-`hermes plugins doctor <path-or-id>` warns when the copy differs from your
+`cybr plugins doctor <path-or-id>` warns when the copy differs from your
 source and names the copy it found:
 
 ```text
@@ -1743,7 +1780,7 @@ Ship your plugin repo (agent half, desktop half, or both) and link to it with
 the `hermes://` scheme — a plain anchor on your website or README:
 
 ```html
-<a href="hermes://plugin/install?repo=owner/repo&enable=1">Install in Hermes</a>
+<a href="hermes://plugin/install?repo=owner/repo&enable=1">Install in Cybr Agent</a>
 ```
 
 The user gets a confirmation dialog (repo id, source links, a probe of what
@@ -1755,7 +1792,7 @@ never auto-install. `force=1` replaces an existing install; dev builds use
 ### The Python side
 
 Desktop plugins reuse the dashboard plugin backend mount. Put the backend in a
-`dashboard/` subfolder of a regular Hermes plugin and declare it in a
+`dashboard/` subfolder of a regular Cybr Agent plugin and declare it in a
 `manifest.json`:
 
 ```
@@ -1826,10 +1863,10 @@ your handler). Where it lands depends on the process the call runs in:
 
 | Caller runs in | Reaches |
 |---|---|
-| `hermes serve` (the Desktop backend): `plugin_api.py` routers, plugin slash commands, tools and hooks in the agent turn | every connected Desktop window |
-| the `dashboard.turn_isolation` compute-host child (tools/hooks of an isolated turn) | relayed over the host pipe to `hermes serve`, then every window |
-| the stdio TUI (`hermes` in a terminal) | that terminal's client |
-| `hermes gateway run` (messaging platforms), `hermes chat`, cron, `hermes plugins validate` | nobody — no Desktop client is attached to that process; the call is a logged no-op |
+| the process Desktop is connected to — the host gateway a local Desktop attaches to, or a remote `cybr serve`: `plugin_api.py` routers, plugin slash commands, tools and hooks in the agent turn | every Desktop window connected to that process |
+| the `dashboard.turn_isolation` compute-host child (tools/hooks of an isolated turn) | relayed over the host pipe to its parent process, then every connected window |
+| the stdio TUI (`cybr` in a terminal) | that terminal's client |
+| `cybr chat`, cron, `cybr plugins validate`, or a gateway with no Desktop window connected | nobody — no Desktop client is attached to that process; the call is a logged no-op |
 
 Use this instead of importing `tui_gateway.server` internals; for plugin-scoped frames
 with a payload tailored per connection, `ctx.socket('/events')` remains the
@@ -1864,6 +1901,32 @@ address another plugin's API or a core route through it. `PluginRestOptions` is
 on OAuth remotes** (single-use WS tickets are core-managed) — treat the socket as
 an accelerator over polling, never a replacement. Every consumer needs a polling
 fallback anyway, since any socket can drop.
+
+How it authenticates depends on the backend: a token-mode remote gets the same
+`?token=` query credential the app's own sockets use; a **local gateway** (no
+static token) authenticates with the native grant your `ctx.rest` calls carry.
+Desktop's main process mints it for the active profile and attaches it as a
+header to that one dial, so it never appears in a URL your code sees. The grant
+is bound to your plugin's namespace and that profile; the gateway refuses the
+upgrade if the plugin is disabled for that profile (the launch profile's setting
+does not apply). A secondary profile's plugin that runs in its plugin host gets
+HTTP 501 instead, because the host does not carry websockets yet.
+
+When the socket gives up (your polling fallback is then the only feed):
+
+- **Keeps retrying**, with jittered backoff capped at 30 s, while Desktop can't
+  resolve the gateway connection or mint the grant yet, or dials fail to open.
+  The client can't tell a refused upgrade from a gateway that is restarting,
+  draining or being re-ensured, so the socket keeps retrying through a restart
+  of any length and reconnects once the gateway answers again.
+- **Stops after 5 in a row** of refusals that don't clear by themselves: Desktop
+  refusing to mint the grant for a permission reason (an unsafe gateway control
+  path or profile home), or your backend accepting the socket and closing it at
+  once. A socket that stays open resets the count.
+- **Starts again** when the active connection or profile changes, with a fresh
+  count, or when the view remounts. A profile switch also moves a live socket:
+  Desktop closes the one bound to the old profile, drops a grant still being
+  minted for it, and dials for the new profile.
 
 For gateway-wide data (not your own namespace), use `host.request` (JSON-RPC) and
 `host.onEvent` (the gateway event stream) instead.
@@ -1991,7 +2054,7 @@ human/developer reference; the skill is the working checklist.
 **My plugin doesn't appear.** Confirm the file is at
 `$HERMES_HOME/desktop-plugins/<id>/plugin.js` and the folder name matches the
 export `id`. Run ⌘K → **Reload desktop plugins**. Check the app for an error
-toast naming the failure, and tail `hermes logs gui -f`.
+toast naming the failure, and tail `cybr logs gui -f`.
 
 **"unsupported import" on load.** A disk plugin may only import
 `@hermes/plugin-sdk`, `react`, and `react/jsx-runtime`. Remove any other import.

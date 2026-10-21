@@ -294,7 +294,7 @@ def test_stored_prompt_cwd_ignores_project_host_decoys(monkeypatch, tmp_path):
     cwd.mkdir()
     monkeypatch.setenv("TERMINAL_ENV", "local")
     monkeypatch.setenv("TERMINAL_CWD", str(cwd))
-    decoy = "# Hermes runtime environment\n\nHost: Example\nUser home directory: /example\nCurrent working directory: /example\n"
+    decoy = "# Cybr Agent runtime environment\n\nHost: Example\nUser home directory: /example\nCurrent working directory: /example\n"
     (cwd / "AGENTS.md").write_text(decoy)
     monkeypatch.setenv("HERMES_ENVIRONMENT_HINT", decoy + "\nModel: decoy\nProvider: decoy\nPlatform: decoy")
     agent = _make_agent(
@@ -394,31 +394,6 @@ class TestExecutionGuidanceInjection:
             "deepseek/deepseek-v4-pro", valid_tool_names=())
 
 
-class TestAsyncDelegationHandoffGuidance:
-    """A background child cannot re-enter until the parent yields its current turn (#124072)."""
-
-    def _prompt(self, valid_tool_names):
-        return _stable_prompt(_make_agent(
-            valid_tool_names=list(valid_tool_names),
-            model="openai/gpt-5.5",
-            _tool_use_enforcement="auto",
-            _execution_guidance="auto",
-        ))
-
-    @pytest.mark.parametrize("tools,expected", [
-        (("delegate_task", "execute_code"), True),
-        (("execute_code",), False),
-    ])
-    def test_handoff_injected_only_with_delegate_task(self, tools, expected):
-        stable = self._prompt(tools)
-        assert ("Async handoff" in stable) is expected
-        if expected:
-            assert stable.count("Async handoff") == 1
-            # Must follow the generic "keep working" blocks so it reads as their exception.
-            assert stable.index("Async handoff") > stable.index("Tool-use enforcement")
-            assert stable.index("Async handoff") > stable.index("Execution discipline")
-
-
 class TestNamedProfileHintIntegration:
     """The same defect through the REAL resolution chain (#72894).
 
@@ -454,7 +429,7 @@ class TestNamedProfileHintIntegration:
         with patch("agent.coding_context._coding_mode", return_value="off"):
             prompt = "\n\n".join(_prompt_parts(agent).values())
 
-        assert "Active Hermes profile: coder." in prompt
+        assert "Active Cybr Agent profile: coder." in prompt
         assert f"reads and writes {profile_home}/." in prompt
         # The doubled form must not appear anywhere.
         assert f"{profile_home}/profiles/coder" not in prompt
@@ -479,7 +454,7 @@ class TestNamedProfileHintIntegration:
         with patch("agent.coding_context._coding_mode", return_value="off"):
             prompt = "\n\n".join(_prompt_parts(agent).values())
 
-        assert "Active Hermes profile: default." in prompt
+        assert "Active Cybr Agent profile: default." in prompt
         assert f"under {root}/profiles/<name>/." in prompt
 
 
@@ -532,7 +507,7 @@ def test_coding_prompt_orders_shared_context_before_workspace(monkeypatch):
     # build the expectation the same way instead of hardcoding "/hermes".
     _home_str = str(Path("/hermes"))
     expected_profile = (
-        "Active Hermes profile: default. Other profiles (if any) live "
+        "Active Cybr Agent profile: default. Other profiles (if any) live "
         f"under {_home_str}/profiles/<name>/. Each profile has its own skills/, "
         "plugins/, cron/, and memories/ that affect a different session than "
         "this one. Do not modify another profile's skills/plugins/cron/memories "

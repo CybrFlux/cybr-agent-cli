@@ -1,10 +1,10 @@
 # Context Compression and Caching
 
-Hermes Agent uses a dual compression system and Anthropic prompt caching to
+Cybr Agent uses a dual compression system and Anthropic prompt caching to
 manage context window usage efficiently across long conversations.
 
 Source files: `agent/context_engine.py` (ABC), `agent/context_compressor.py` (default engine),
-`agent/prompt_caching.py`, `gateway/run_turn.py` (session hygiene), `agent/compression_facade.py` (search for `_compress_context`)
+`agent/prompt_caching.py`, `gateway/run_turn_hygiene.py` (session hygiene), `agent/compression_facade.py` (search for `_compress_context`)
 
 
 ## Bedrock context window cache
@@ -19,10 +19,10 @@ Bedrock context resolution in `agent/model_metadata.py` uses this precedence:
 - **Legacy entries are revalidated.** Old scalar entries have no provenance and
   may be either probe results or fallbacks. Their size does not establish which.
 - **Failed probes use the current table without persisting it.** Failures have a
-  five-minute in-memory cooldown scoped to Hermes home, endpoint, model, and
+  five-minute in-memory cooldown scoped to Cybr Agent home, endpoint, model, and
   region. Expiry or explicit cache invalidation permits another attempt.
 
-The cache remains at `context_length_cache.yaml` under the active Hermes home.
+The cache remains at `context_length_cache.yaml` under the active Cybr Agent home.
 `context_lengths` retains scalar values for older readers. An additive
 `bedrock_confirmed_v1` map binds each confirmed key to its exact value in the
 same atomic write. Generic writes clear that key's provenance. Older writers
@@ -59,13 +59,13 @@ Selection is config-driven via `context.engine` in `config.yaml`. The resolution
 
 Plugin engines are **never auto-activated** — the user must explicitly set `context.engine` to the plugin's name. The default `"compressor"` always uses the built-in.
 
-Configure via `hermes plugins` → Provider Plugins → Context Engine, or edit `config.yaml` directly.
+Configure via `cybr plugins` → Provider Plugins → Context Engine, or edit `config.yaml` directly.
 
 For building a context engine plugin, see [Context Engine Plugins](./context-engine-plugin.md).
 
 ## Dual Compression System
 
-Hermes has two separate compression layers that operate independently:
+Cybr Agent has two separate compression layers that operate independently:
 
 ```
                      ┌──────────────────────────┐
@@ -82,7 +82,7 @@ Hermes has two separate compression layers that operate independently:
 
 ### 1. Gateway Session Hygiene (85% threshold)
 
-Located in `gateway/run_turn.py` (search for `Session hygiene`). This is a **safety net** that
+Located in `gateway/run_turn_hygiene.py` (search for `Session hygiene`). This is a **safety net** that
 runs before the agent processes a message. It prevents API failures when sessions
 grow too large between turns (e.g., overnight accumulation in Telegram/Discord).
 
@@ -238,7 +238,7 @@ text, the focus topic or error messages.
   `gateway_hygiene` or `overflow`. An automatic caller that passes no label
   reads `auto`; a refusal before any attempt began (pool saturation) reads
   `unknown`.
-- `route` is `hermes` for the local compressor and `codex_app_server` when the
+- `route` is `cybr` for the local compressor and `codex_app_server` when the
   Codex thread owns compaction.
 - `commit_status` is `committed`, `aborted`, `failed`, `skipped` or `blocked`.
   A `blocked` attempt was refused by an automatic guard; its `failure_class`
@@ -321,7 +321,7 @@ auxiliary:
 | `idle_compact_after_seconds` | `0` | ≥0 seconds | Opt-in: compact up front when a session resumes after this many seconds idle (0 = disabled). Skips when context ≤ threshold × target_ratio; honors cooldown/anti-thrash/lock guards |
 | `codex_gpt55_autoraise` | `true` | bool | Raise the trigger to 85% for gpt-5.4/5.5/5.6 and gpt-6 Astra on the ChatGPT Codex OAuth route (see below). Set `false` to keep the global `threshold` |
 | `codex_gpt55_autoraise_notice` | `true` | bool | Show the one-time Codex gpt-5.5 autoraise notice. Set `false` to keep the 85% autoraise but suppress the banner |
-| `codex_app_server_auto` | `native` | `native`, `hermes`, `off` | Thread-compaction mode for Codex app-server sessions (see below) |
+| `codex_app_server_auto` | `native` | `native`, `cybr`, `off` | Thread-compaction mode for Codex app-server sessions (see below) |
 | `codex_responses_native` | `false` | bool | Opt in to OpenAI's server-side compaction on the Responses API. Engages for gpt-5.6-family models on the direct OpenAI API or a ChatGPT Codex subscription, and `gpt-6-astra` (including its `-900k` picker alias) on official Codex OAuth (see below) |
 | `codex_responses_compact_threshold` | `null` | `null` or positive integer | Server-side compaction trigger, read **only when `codex_responses_native: true`** — it never changes when local compression fires; the local trigger is `threshold` (ratio) capped by `threshold_tokens`. `null` follows the resolved local compression trigger with an 8,192 token safety margin. A positive integer remains absolute and only clamps downward when required. Invalid values use automatic behavior. Automatic mode falls back to `200000` when no usable local trigger exists |
 | `in_place` | `true` | bool | Compact on the same session id instead of rotating to a new one (see below) |
@@ -336,6 +336,13 @@ Consumers observe the mode rather than diffing session ids:
 - The gateway re-baselines transcript handling from the agent's rotation-independent `_last_compaction_in_place` flag, not from an id-change diff.
 
 Set `in_place: false` to restore the legacy rotating path, where each compaction commits a new session id linked to the previous one via `parent_session_id`.
+
+Canonical `/compress` uses the session's frozen `compression.in_place` and
+`min_tail_user_messages` settings too. In-place mode soft-archives the current physical
+transcript; rotating mode publishes a successor. Both keep the logical admission owner
+and previously issued input IDs unchanged, and commit the transcript, generation,
+revision and retry receipt together. Safe-mode sessions use code defaults rather than
+profile compression settings.
 
 ### Auxiliary feasibility and tail retention
 
@@ -406,7 +413,7 @@ GitHub Copilot). At the default 50% trigger, compaction would fire at ~136K —
 half the window the model can actually use. When the active route is Codex
 OAuth (`provider: openai-codex`) and the model is one of those families (Astra
 matches any slug containing `astra`; the opt-in `-900k` picker variants are
-excluded because they already unlock the wider window), Hermes raises the
+excluded because they already unlock the wider window), Cybr Agent raises the
 trigger to **85%** (~231K) and shows a notice with the opt-out command. The
 notice is shown once per profile — a marker under `$HERMES_HOME`
 (`.codex_gpt55_autoraise_notice`) records that it ran, so repeated agent/session
@@ -416,27 +423,27 @@ the same models on any other provider keep your global `threshold`. To opt back 
 the global value:
 
 ```bash
-hermes config set compression.codex_gpt55_autoraise false
+cybr config set compression.codex_gpt55_autoraise false
 ```
 
 To keep the 85% autoraise but hide only the one-time notice:
 
 ```bash
-hermes config set compression.codex_gpt55_autoraise_notice false
+cybr config set compression.codex_gpt55_autoraise_notice false
 ```
 
 ### Codex large-context `-900k` picker variants (opt-in)
 
 The ChatGPT Codex backend *advertises* a 272K window for the gpt-5.4, gpt-5.6
 (Sol/Terra/Luna) and GPT-6 (Sol/Terra/Luna) families, but actually accepts ~911K input tokens
-for ChatGPT-subscription accounts (live-verified Aug 2026). Hermes keeps the
+for ChatGPT-subscription accounts (live-verified Aug 2026). Cybr Agent keeps the
 **advertised 272K as the default** for the base slugs — a bigger window means
 more tokens per request and much faster subscription-usage burn, so the large
 window is strictly opt-in.
 
 To use the large window, pick the explicit `-900k` variant in `/model` (e.g.
 `gpt-6.1-sol-900k`, `gpt-6-sol-900k`, `gpt-6-luna-900k`, `gpt-5.6-sol-900k`,
-`gpt-5.6-terra-900k`, `gpt-5.6-luna-900k`, `gpt-5.4-900k`). These are Hermes-side aliases: the suffix is stripped before
+`gpt-5.6-terra-900k`, `gpt-5.6-luna-900k`, `gpt-5.4-900k`). These are Cybr Agent-side aliases: the suffix is stripped before
 the model id is sent to the backend, and pricing/usage accounting treats them
 as the base model. Slugs that genuinely enforce 272K (gpt-5.5, gpt-5.4-mini)
 have no `-900k` variant. When the authenticated Codex catalog publishes a
@@ -453,7 +460,7 @@ wasting a small window, which a 900K window doesn't need.
 
 Codex app-server sessions (`api_mode: codex_app_server` — the codex CLI/agent
 runtime) are different from every other route: the codex agent owns the backing
-thread context, so Hermes' auxiliary summarizer cannot shrink it — rewriting the
+thread context, so Cybr Agent' auxiliary summarizer cannot shrink it — rewriting the
 local transcript mirror leaves the real thread growing unbounded until a hard
 context reset. For this runtime, compaction goes through the app-server's own
 mechanism instead:
@@ -461,22 +468,22 @@ mechanism instead:
 - Manual compaction (`/compress`) asks the app-server to compact the thread
   (`thread/compact/start`) and waits for the compaction turn to complete.
 - Automatic compaction is controlled by `compression.codex_app_server_auto`:
-  the default `native` lets the app-server decide when to compact and Hermes
+  the default `native` lets the app-server decide when to compact and Cybr Agent
   records the resulting compaction events (compression counters, session
-  events). Set `hermes` to let Hermes' compression threshold initiate
-  app-server compaction, or `off` to disable Hermes-initiated automatic
+  events). Set `cybr` to let Cybr Agent' compression threshold initiate
+  app-server compaction, or `off` to disable Cybr Agent-initiated automatic
   compaction entirely (codex may still compact natively).
 
-Hermes' local transcript is never rewritten on this runtime — state.db records
+Cybr Agent' local transcript is never rewritten on this runtime — state.db records
 the compaction boundary while the visible transcript stays intact. All other
-routes (including Codex OAuth chat sessions) keep Hermes' summary compressor.
+routes (including Codex OAuth chat sessions) keep Cybr Agent' summary compressor.
 
 ### Native Responses compaction (gpt-5.6 and Astra on supported routes)
 
 OpenAI's Responses API supports server-side compaction: when a request includes
 `context_management: [{type: "compaction", compact_threshold: N}]` and the
 rendered input crosses N tokens, the server prunes older context into an opaque
-encrypted `compaction` output item. Hermes captures that item into the
+encrypted `compaction` output item. Cybr Agent captures that item into the
 assistant message's existing replay sidecar and sends it back on subsequent
 turns, standing in for the pruned history — long-horizon recall without a
 client-side summary pass, and ZDR-friendly (`store: false`, no
@@ -557,6 +564,17 @@ without `/steer` messages delivered after it) keeps its text results verbatim an
 results intact in the tail, so the model can use the output it requested. A round that alone
 exceeds 20% of the input budget (the context window minus the output reservation) can be
 summarized, and its older images are retired so compaction can still make room.
+
+#### Loaded skills across a compaction
+
+A skill's instructions are not kept verbatim forever, but the model is always told when they are
+gone. Every `skill_view` result that a pass stubs or summarizes away (whatever its size) carries
+`[SKILL_PRUNED: content lost in compression; reload with skill_view(name='…')]`, and the summary
+lists each such skill under `## Pruned Skills`. Skills loaded inline by `/skill-name`, bundles,
+stacked invocations and gateway channel auto-load get the same marker when their turn is
+summarized, and the summary quotes that turn as typed (`/skill-name do X`) rather than the skill
+body. A reload after the boundary returns the full skill again. Skills preloaded with `-s` or
+`skills.auto_load` live in the system prompt and are never compacted.
 
 ### Phase 2: Determine Boundaries
 
@@ -714,7 +732,7 @@ conversation prefix. Uses Anthropic's `cache_control` breakpoints.
 
 ### Strategy: system_and_3
 
-Anthropic allows a maximum of 4 `cache_control` breakpoints per request. Hermes
+Anthropic allows a maximum of 4 `cache_control` breakpoints per request. Cybr Agent
 uses the "system_and_3" strategy:
 
 ```
@@ -767,7 +785,7 @@ The marker is applied differently based on content type:
    credential-pool rotation onto a different account — means the next request
    gets zero cache hits and re-reads the full conversation at undiscounted
    input price. This is inherent to how provider caches work, not something
-   Hermes can avoid; user-facing docs for `/model`, fallback providers, and
+   Cybr Agent can avoid; user-facing docs for `/model`, fallback providers, and
    credential pools carry cost warnings for this reason. Don't add features
    that silently swap the model or credentials mid-session.
 

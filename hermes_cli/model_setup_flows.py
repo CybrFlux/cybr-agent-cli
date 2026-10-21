@@ -284,6 +284,11 @@ def _model_flow_nous(config, current_model="", args=None):
     from hermes_cli.config import load_config
     from hermes_cli.nous_subscription import prompt_enable_tool_gateway
     state = get_provider_auth_state("nous")
+    from hermes_cli import anon_auth
+    if anon_auth.guest_without_free_tier(state):
+        # A guest that carries no inference here: signing in promotes it and keeps its connectors.
+        print(anon_auth.UPGRADE_HINT)
+        return
     if not state or not state.get("access_token"):
         _say("Not logged into Nous Portal. Starting login...", "")
 
@@ -301,21 +306,6 @@ def _model_flow_nous(config, current_model="", args=None):
     # instead of the hundreds returned by the live /models endpoint.
     from hermes_cli.models import check_nous_free_tier, get_curated_nous_model_ids
     from hermes_cli.models_pricing import get_pricing_for_provider
-    from hermes_cli.model_switch_providers import _free_tier_nous_row
-    tier_row = _free_tier_nous_row({"name": "Nous Portal", "models": []})
-    if tier_row is None:
-        print("The Nous free tier is off for this install; sign in with `hermes auth upgrade` to use Nous models.")
-        return
-    if tier_row["models"]:
-        # Free-tier identity: the welcome host serves the single pinned model; no Portal catalog,
-        # pricing, or account lookups apply.
-        creds = _nous_verified_credentials()
-        if creds is None:
-            return
-        selected = tier_row["models"][0]
-        _nous_persist_selection(selected, creds)
-        print(f"Default model set to: {selected} (via {tier_row['name']})")
-        return
     model_ids = get_curated_nous_model_ids()
     if not model_ids:
         print("No curated models available for Nous Portal.")
@@ -607,9 +597,9 @@ def _model_flow_copilot_acp(config, current_model=""):
     resolved_command = status.get("resolved_command") or status.get("command") or "copilot"
     effective_base = status.get("base_url") or pconfig.inference_base_url
 
-    _say("  GitHub Copilot ACP delegates Hermes turns to `copilot --acp`.",
-         "  Hermes currently starts its own ACP subprocess for each request.",
-         "  Hermes uses your selected model as a hint for the Copilot ACP session.",
+    _say("  GitHub Copilot ACP delegates Cybr Agent turns to `copilot --acp`.",
+         "  Cybr Agent currently starts its own ACP subprocess for each request.",
+         "  Cybr Agent uses your selected model as a hint for the Copilot ACP session.",
          f"  Command: {resolved_command}", f"  Backend marker: {effective_base}", "")
     try:
         creds = resolve_external_process_provider_credentials(provider_id)
@@ -806,10 +796,10 @@ def _select_zai_endpoint(current_base: str) -> str:
 
 _GEMINI_FREE_TIER_NOTICE = (
     "", "❌ This Google API key is on the free tier (<= 250 requests/day for gemini-2.5-flash).",
-    "   Hermes typically makes 3-10 API calls per user turn (tool iterations + auxiliary tasks),",
+    "   Cybr Agent typically makes 3-10 API calls per user turn (tool iterations + auxiliary tasks),",
     "   so the free tier is exhausted after a handful of messages and cannot sustain",
     "   an agent session.", "",
-    "   To use Gemini with Hermes, enable billing on your Google Cloud project and regenerate",
+    "   To use Gemini with Cybr Agent, enable billing on your Google Cloud project and regenerate",
     "   the key in a billing-enabled project: https://aistudio.google.com/apikey", "",
     "   Alternatives with workable free usage: DeepSeek, OpenRouter (free models), Groq, Nous.", "",
     "Not saving Gemini as the default provider.")
@@ -1111,7 +1101,7 @@ def _external_process_login_gate(profile, status) -> bool:
 def _plugin_flow_external_process(provider_id: str, profile) -> tuple[str, str] | None:
     from hermes_cli.auth import get_external_process_provider_status, resolve_external_process_provider_credentials
     status = get_external_process_provider_status(provider_id)
-    _say(f"  {profile.display_name or provider_id} delegates Hermes turns to a local `{status.get('command') or profile.process_command}` process.",
+    _say(f"  {profile.display_name or provider_id} delegates Cybr Agent turns to a local `{status.get('command') or profile.process_command}` process.",
          f"  Command: {status.get('resolved_command') or status.get('command') or '(not found)'}",
          f"  Backend marker: {status.get('base_url') or profile.base_url}", "")
     try:

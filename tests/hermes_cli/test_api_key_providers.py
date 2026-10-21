@@ -156,7 +156,7 @@ class TestResolveProvider:
         # behavior, not the Bedrock fallback.
         monkeypatch.setattr(
             "agent.bedrock_adapter.has_aws_credentials",
-            lambda env=None: False,
+            lambda env=None, **_kw: False,
         )
         monkeypatch.setenv("GITHUB_TOKEN", "gh-test-token")
         with pytest.raises(AuthError, match="not connected to any AI provider"):
@@ -318,7 +318,7 @@ class TestHasAnyProviderConfigured:
 
 
     def test_claude_code_creds_ignored_on_fresh_install(self, monkeypatch, tmp_path):
-        """Claude Code credentials should NOT skip the wizard when Hermes is unconfigured."""
+        """Claude Code credentials should NOT skip the wizard when Cybr Agent is unconfigured."""
         from hermes_cli import config as config_module
         hermes_home = tmp_path / ".hermes"
         hermes_home.mkdir()

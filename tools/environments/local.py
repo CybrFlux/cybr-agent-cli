@@ -83,19 +83,39 @@ def cleanup_terminal_temp_cache(max_age_hours: float = TERMINAL_TEMP_MAX_IDLE_HO
         if m := _BG_GROUP_RE.match(f.name):
             group_newest[m.group(1)] = max(group_newest.get(m.group(1), 0.0), mt)
 
+    def group_touched(stem: str) -> bool:
+        # Re-stat every member right before each delete: the snapshot above is a candidate
+        # list, and a session that writes its .log after it must keep the whole group.
+        for sfx in ("log", "pid", "exit"):
+            try:
+                if (root / f"{stem}.{sfx}").stat().st_mtime >= cutoff:
+                    return True
+            except FileNotFoundError:
+                continue
+            except OSError:
+                return True
+        return False
+
     removed = 0
-    for f, mt in mtimes.items():
+    for f in mtimes:
         m = _BG_GROUP_RE.match(f.name)
         if m:
-            if group_newest[m.group(1)] >= cutoff:
+            if group_newest[m.group(1)] >= cutoff or group_touched(m.group(1)):
                 continue
         elif subtree_touched_since(f, cutoff):
             continue
         try:
             shutil.rmtree(f, ignore_errors=True) if f.is_dir() else f.unlink()
-            removed += 1
         except OSError:
             continue
+        # rmtree ignores errors: only a path that is really gone counts as removed, and only
+        # an explicit lstat proves absence (lexists() swallows OSError from lstat).
+        try:
+            os.lstat(f)
+        except FileNotFoundError:
+            removed += 1
+        except OSError:
+            pass
     return removed
 
 
@@ -242,7 +262,7 @@ def _inject_session_context_env(env: dict) -> None:
 def _filter_secret_env(
     items: Mapping[str, str], out: dict, *, unwrap_force: bool,
     plugin_strip: frozenset = frozenset()) -> None:
-    """Copy *items* into *out*, dropping Hermes-managed secrets. ``_HERMES_FORCE_<NAME>``
+    """Copy *items* into *out*, dropping Cybr Agent-managed secrets. ``_HERMES_FORCE_<NAME>``
     unwraps to ``NAME`` when ``unwrap_force`` (caller extras / terminal env), else is
     dropped. Blocklisted names survive only via env_passthrough registration or as
     context-entitled first-party ``BUZZ_*`` vars; the latter are used directly, never
@@ -275,7 +295,7 @@ def _filter_secret_env(
 
 def _finalize_child_env(env: dict) -> dict:
     """Guards shared by every spawn surface: profile-home propagation, session-context
-    bridging, Hermes-owned PYTHONPATH + venv-marker strip, MSYS defaults, delegate_task
+    bridging, Cybr Agent-owned PYTHONPATH + venv-marker strip, MSYS defaults, delegate_task
     Kanban scrub. Returns the (possibly new) dict."""
     _apply_profile_home(env)
     _inject_session_context_env(env)
@@ -308,10 +328,18 @@ def _scrubbed_env(parts, plugin_strip: frozenset, fix_path) -> dict:
 
 
 def _sanitize_subprocess_env(base_env: dict | None, extra_env: dict | None = None) -> dict:
-    """Filter Hermes-managed secrets from a subprocess environment (background/PTY
+    """Filter Cybr Agent-managed secrets from a subprocess environment (background/PTY
     spawn path, search workers, computer-use driver, user-script runners)."""
     return _scrubbed_env([(base_env or {}, False), (extra_env or {}, True)],
                          _plugin_terminal_env_strip_keys(), lambda p: p)
+
+
+def _terminal_env(env: dict) -> dict:
+    """*env* with the user's tools first on PATH (``_user_tools_first``), for background commands."""
+    path_key = _path_env_key(env)
+    if path_key is not None:
+        env[path_key] = _user_tools_first(env[path_key])
+    return env
 
 
 def hermes_subprocess_env(
@@ -513,7 +541,7 @@ def restore_managed_env(env: dict) -> dict:
 
 # --- Shell discovery ---
 def _find_bash() -> str:
-    """Resolve the shell Hermes runs commands with. Owned by pm (the store
+    """Resolve the shell Cybr Agent runs commands with. Owned by pm (the store
     is the authority on bundled bash); this is a thin wrapper over
     pm.shell() for callers that need a bash binary."""
     import pm.shell
@@ -522,7 +550,7 @@ def _find_bash() -> str:
     if bash:
         return bash
     raise RuntimeError(
-        "No shell found. Hermes needs bash (Git for Windows on Windows). "
+        "No shell found. Cybr Agent needs bash (Git for Windows on Windows). "
         "Run `hermes pm install` or reinstall the bundle."
     )
 
@@ -561,10 +589,18 @@ def _prepend_missing_path_entries(existing_path: str, dirs: list[str]) -> str:
     return os.pathsep.join([*missing, *entries]) if missing else existing_path
 
 
-def _prepend_git_bash_dirs(existing_path: str) -> str:
-    """Prepend Git Bash's binary dirs if missing (no-op off Windows), so the
-    non-login ``bash -c`` fallback can find coreutils."""
-    return _prepend_missing_path_entries(existing_path, _git_bash_bin_dirs())
+def _user_tools_first(existing_path: str) -> str:
+    """*existing_path* with the user's tools before Cybr Agent's (``pm.user_facing``) and, on
+    Windows, Git Bash's dirs first. They go first even when already listed: they are store
+    dirs that now sit behind the user's entries, and a non-login ``bash -c`` needs its
+    coreutils ahead of System32's lookalikes."""
+    from pm.user_facing import user_facing_path
+
+    path = user_facing_path(existing_path)
+    bash_dirs = _git_bash_bin_dirs()
+    keys = {os.path.normcase(d) for d in bash_dirs}
+    rest = [p for p in path.split(os.pathsep) if p and os.path.normcase(p) not in keys]
+    return os.pathsep.join([*bash_dirs, *rest]) if bash_dirs else path
 
 
 # POSIX-sh-family shells that understand spawn_local's ``[shell, "-lic", "set +m; …"]``
@@ -646,11 +682,11 @@ def _prepend_hermes_bin_dir(existing_path: str) -> str:
 
 
 def _managed_runtime_path_entries() -> list[str]:
-    """Return existing Hermes-managed runtime dirs for the terminal subshell PATH.
+    """Return existing Cybr Agent-managed runtime dirs for the terminal subshell PATH.
 
     The terminal tool spawns a subshell whose PATH is the agent process's PATH
-    plus ``_SANE_PATH``. Neither carries the runtimes Hermes installs for
-    itself, so on a machine where Hermes provisioned its own toolchain a
+    plus ``_SANE_PATH``. Neither carries the runtimes Cybr Agent installs for
+    itself, so on a machine where Cybr Agent provisioned its own toolchain a
     command the agent runs resolves a system copy instead — or nothing at all:
 
     - the pm store's node/npm entries — installed to satisfy the desktop and
@@ -713,7 +749,7 @@ def _apply_windows_msys_bash_env_defaults(env: dict) -> None:
 
     Git Bash rewrites arguments that look like Unix paths (``/FO``, ``/TN``, ``/Create``) into
     ``C:/.../git/FO``-style paths, which breaks native Windows commands such as ``tasklist``, ``schtasks``,
-    and ``wmic``. Hermes runs terminal commands through bash on Windows, so set the standard MSYS opt-out by
+    and ``wmic``. Cybr Agent runs terminal commands through bash on Windows, so set the standard MSYS opt-out by
     default. Refs #56700.
     MSYS2-proper and Cygwin bash (which ``_find_bash`` can still return via the final ``shutil.which``
     fallback) ignore it and honor ``MSYS2_ARG_CONV_EXCL`` instead, so set both. ``*`` disables all argv
@@ -734,11 +770,14 @@ def _make_run_env(env: dict) -> dict:
     """Build a run environment with a sane PATH and provider-var stripping. The process env is
     the LAUNCH profile's; under a routed home override its ``.env`` residue is dropped first
     (``strip_launch_profile_env``, a no-op for the launch profile) so the backend's own ``env``
-    and the served profile's declared passthrough names are what the child sees."""
+    and the served profile's declared passthrough names are what the child sees. A local session's
+    client toolchain (PATH, venv, nvm/pyenv/conda: ``agent.session_client_env``) replaces the daemon's
+    beneath the backend's own ``env``."""
+    from agent.session_client_env import toolchain_environ
     run_env = _scrubbed_env(
-        [(dict(strip_launch_profile_env(os.environ.copy()) | env), True)],
+        [(dict(toolchain_environ(strip_launch_profile_env(os.environ.copy())) | env), True)],
         frozenset(),
-        lambda p: _prepend_git_bash_dirs(_append_missing_sane_path_entries(p)),
+        lambda p: _user_tools_first(_append_missing_sane_path_entries(p)),
     )
     # While this profile's Bot Desktop is running, its DISPLAY/XAUTHORITY/DBUS ride along so GUI
     # apps the agent launches from the terminal open on the Bot Screen the user is watching, not
@@ -758,11 +797,11 @@ def _make_run_env(env: dict) -> dict:
     return run_env
 
 
-# --- Hermes venv / repo-root detection (module-level, computed once) ---
+# --- Cybr Agent venv / repo-root detection (module-level, computed once) ---
 # Owned here; read lazily by tools.environments.local_pythonpath (tests patch here).
 # The Electron app prepends the repo root to PYTHONPATH so the backend can ``import
 # tools``; other subprocesses must not inherit it. Aliases: launchers may emit other
-# spellings — the Windows gateway launcher renders Hermes-owned paths under the
+# spellings — the Windows gateway launcher renders Cybr Agent-owned paths under the
 # configured HERMES_HOME spelling (possibly a junction to another drive).
 _hermes_repo_root: Path = Path(__file__).resolve().parents[2]
 _hermes_repo_root_aliases: tuple[Path, ...] = _build_hermes_repo_root_aliases(
@@ -967,12 +1006,12 @@ def _kill_process_windows(proc) -> None:
 
 class LocalEnvironment(BaseEnvironment):
     """Run commands directly on the host: every execute() spawns a fresh bash;
-    the session snapshot preserves env vars across calls; CWD persists via the
-    stdout marker."""
+    the session snapshot preserves exported env vars across calls (unless
+    ``persistent=False``); CWD persists via the stdout marker."""
 
     _sudo_nopasswd_probe_supported = True
     _profile_scoped_passthrough = True
-    # Commands run on the Hermes host itself — controller-side platform behavior
+    # Commands run on the Cybr Agent host itself — controller-side platform behavior
     # (macOS TCC pruning, etc.) legitimately applies here.
     is_local = True
 
@@ -987,14 +1026,14 @@ class LocalEnvironment(BaseEnvironment):
             name for name in merged
             if isinstance(name, str) and _matches_terminal_first_party_prefix(name)))
 
-    def __init__(self, cwd: str = "", timeout: int = 60, env: dict | None = None):
-        super().__init__(cwd=_resolve_local_initial_cwd(cwd), timeout=timeout, env=env)
+    def __init__(self, cwd: str = "", timeout: int = 60, env: dict | None = None, persistent: bool = True):
+        super().__init__(cwd=_resolve_local_initial_cwd(cwd), timeout=timeout, env=env, persist_env=persistent)
         self.init_session()
 
     def get_temp_dir(self) -> str:
         """Shell-safe writable temp dir. Precedence: ``TERMINAL_TEMP_DIR``, TMPDIR/TMP/TEMP
         (Termux has no system temp dir), ``HERMES_HOME/cache/terminal`` (real storage: a
-        tmpfs system temp dir fills under Hermes load; pruned by ``cleanup_terminal_temp_cache``),
+        tmpfs system temp dir fills under Cybr Agent load; pruned by ``cleanup_terminal_temp_cache``),
         ``tempfile.gettempdir()``; backend env before process env so terminal.env
         overrides work. Windows: ``%TEMP%`` often has spaces that break unquoted bash,
         so always the HERMES_HOME cache dir with forward slashes (bash- and Python-valid)."""

@@ -60,7 +60,7 @@ def _pm_package_for_command(command: str) -> str | None:
 
 
 def _doctor_tool(name: str) -> tuple[str | None, str]:
-    """Resolve the tool Hermes would actually run: the pm store first
+    """Resolve the tool Cybr Agent would actually run: the pm store first
     (pinned installs run tools out of the store, which nothing puts on
     PATH), then PATH. *name* is the command ("rg"); its pm package
     ("ripgrep") is resolved from pm's own definitions. Returns
@@ -89,7 +89,7 @@ def _termux_browser_setup_steps(node_installed: bool) -> list[str]:
 
 
 _TERMUX_INSTALL_ALL_FALLBACK_NOTES = (
-    "Termux uses the Hermes APT package: pkg install hermes-agent.",
+    "Termux uses the Cybr Agent APT package: pkg install hermes-agent.",
     "Matrix E2EE extra is excluded on Termux (python-olm currently fails to build).",
     "Local faster-whisper extra is excluded on Termux (ctranslate2/av build path unavailable).",
     "STT fallback: use Groq Whisper (set GROQ_API_KEY) or OpenAI Whisper (set VOICE_TOOLS_OPENAI_KEY).",
@@ -249,7 +249,7 @@ def _check_daytona_backend(issues: list[str]) -> None:
         from daytona import Daytona
         check_ok("daytona SDK", "(installed)")
     except ImportError:
-        _fail_and_issue("daytona SDK not installed", "(run hermes setup terminal)", "Run hermes setup terminal and select Daytona, then restart Hermes", issues)
+        _fail_and_issue("daytona SDK not installed", "(run hermes setup terminal)", "Run hermes setup terminal and select Daytona, then restart Cybr Agent", issues)
 
 
 def _check_vercel_backend(issues: list[str]) -> None:
@@ -263,7 +263,7 @@ def _check_vercel_backend(issues: list[str]) -> None:
              "Vercel Sandbox does not support custom container_disk; use the shared default 51200", issues)
     _require(importlib.util.find_spec("vercel") is not None, ("vercel SDK", "(installed)"),
              ("vercel SDK not installed", "(run hermes setup terminal)"),
-             "Run hermes setup terminal and select Vercel Sandbox, then restart Hermes", issues)
+             "Run hermes setup terminal and select Vercel Sandbox, then restart Cybr Agent", issues)
     auth_status = describe_vercel_auth()
     if auth_status.ok:
         check_ok("Vercel auth", f"({auth_status.label})")
@@ -414,7 +414,7 @@ def _plural(n: int) -> str:
     return "vulnerability" if n == 1 else "vulnerabilities"
 
 
-def _audit_one(npm_bin: str, npm_dir, label: str, audit_extra: list[str], issues: list[str]) -> None:
+def _audit_one(npm_bin: str, npm_dir, label: str, audit_extra: list[str], manual_issues: list[str]) -> None:
     """Run one `npm audit --json` and report; any failure is silently skipped.
 
     Every row here audits a tree whose versions come from a COMMITTED lockfile
@@ -440,16 +440,18 @@ def _audit_one(npm_bin: str, npm_dir, label: str, audit_extra: list[str], issues
         if total == 0:
             check_ok(f"{label} deps", "(no known vulnerabilities)")
         elif critical > 0 or high > 0:
-            detail = "build-time tooling" if workspace_scoped else "runtime dependency tree"
             remedy = ("fix is an upstream lockfile bump — a local manual fix does not persist"
                       " (the next `hermes update` reinstalls from the committed lockfile)")
             check_warn(f"{label} deps", f"({critical} critical, {high} high, {moderate} moderate — {remedy})")
             if workspace_scoped:
-                check_info("  ^ build-time tooling (not runtime); if manual npm remediation "
+                check_info("  ^ workspace audit includes runtime and build dependencies; if manual npm remediation "
                            "errors with an arborist crash it's a known npm bug — clears via a lockfile bump")
             else:
-                check_info(f"  ^ {detail}; report/pin the fix in package-lock.json — see #116774")
-            issues.append(f"{label} has {total} npm {_plural(total)}")
+                check_info("  ^ runtime dependency tree; report/pin the fix in package-lock.json — see #116774")
+            manual_issues.append(
+                f"{label} has {total} npm {_plural(total)}; wait for an upstream lockfile fix, then update "
+                "your installation (Docker: pull a rebuilt image; recreating the same image restores the same dependencies)"
+            )
         else:
             check_ok(f"{label} deps", f"({moderate} moderate {_plural(moderate)})")
     except Exception:
@@ -480,14 +482,18 @@ def _check_npm_audit(should_fix: bool, f: Finding) -> None:
         except Exception:
             whatsapp_bridge_dir = PROJECT_ROOT / "scripts" / "whatsapp-bridge"
         for npm_dir, label, audit_extra in (
-            (PROJECT_ROOT, "Browser tools (agent-browser)", ["--workspaces=false"]),
+            # NOT agent-browser: it is now a pm-managed precompiled binary
+            # (see AgentBrowser in pm/packages.py) with no node_modules/lockfile
+            # of its own to audit. This row is the root package.json itself
+            # (js-yaml, semver, eslint tooling). See #122223.
+            (PROJECT_ROOT, "Root npm package", ["--workspaces=false"]),
             (PROJECT_ROOT, "web workspace", ["--workspace", "web"]),
             (PROJECT_ROOT, "ui-tui workspace", ["--workspace", "ui-tui"]),
             (whatsapp_bridge_dir, "WhatsApp bridge", []),
         ):
             # Workspace-scoped audits check the root node_modules; standalone dirs check their own.
             if ((PROJECT_ROOT if audit_extra else npm_dir) / "node_modules").exists():
-                _audit_one(npm_bin, npm_dir, label, audit_extra, f.issues)
+                _audit_one(npm_bin, npm_dir, label, audit_extra, f.manual_issues)
     if _is_termux():
         check_info("Termux compatibility fallbacks:")
         for note in _TERMUX_INSTALL_ALL_FALLBACK_NOTES:

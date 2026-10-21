@@ -266,7 +266,7 @@ _SDK_IMPORTS = {
 @contextmanager
 def _suppress_third_party_dotenv() -> Iterator[None]:
     """No-op ``dotenv.load_dotenv`` while importing the Teams SDK: ``microsoft_teams.apps.app`` loads a
-    cwd-discovered ``.env`` at import, mutating process-global ``os.environ``. Hermes owns dotenv loading.
+    cwd-discovered ``.env`` at import, mutating process-global ``os.environ``. Cybr Agent owns dotenv loading.
 
     See #62935.
     """
@@ -411,7 +411,7 @@ class TeamsAdapter(BasePlatformAdapter):
             self._app = App(
                 client_id=self._client_id, client_secret=self._client_secret, tenant_id=self._tenant_id,
                 http_server_adapter=_AiohttpBridgeAdapter(aiohttp_app),
-                client=ClientOptions(headers={"User-Agent": "Hermes"}))
+                client=ClientOptions(headers={"User-Agent": "Cybr Agent"}))
             # Handlers (ours, then plugin on_* decorators) must be wired before initialize(),
             # which registers POST /api/messages on aiohttp_app via the bridge's register_route().
             @self._app.on_message
@@ -476,7 +476,7 @@ class TeamsAdapter(BasePlatformAdapter):
         """Download attachment bytes with SSRF protection. Connector URLs get the bot's bearer token;
         redirects and body size go through the shared guards (as the cache_*_from_url helpers)."""
         from tools.url_safety import create_ssrf_safe_async_client, is_safe_url
-        from gateway.platforms.base import _ssrf_redirect_guard, _read_httpx_body_with_limit
+        from gateway.platforms.base import ssrf_redirect_guard, _read_httpx_body_with_limit
         if not is_safe_url(url):
             raise ValueError("Blocked unsafe attachment URL (SSRF protection)")
         headers = {"User-Agent": "Mozilla/5.0 (compatible; HermesAgent/1.0)"}
@@ -486,7 +486,7 @@ class TeamsAdapter(BasePlatformAdapter):
             except Exception as e:
                 logger.warning("[teams] Could not acquire Bot Framework token for attachment: %s", e)
         async with create_ssrf_safe_async_client(
-            timeout=timeout, follow_redirects=True, event_hooks={"response": [_ssrf_redirect_guard]}) as client:
+            timeout=timeout, follow_redirects=True, event_hooks={"response": [ssrf_redirect_guard]}) as client:
             async with client.stream("GET", url, headers=headers) as response:
                 response.raise_for_status()
                 # Never buffer .content — a lying Content-Length must not OOM the gateway.
@@ -795,7 +795,7 @@ _SETUP_CREDENTIALS = (
 _SETUP_INTRO = (  # "" → blank line
     "You'll need the Teams CLI. If you haven't already:", "  npm install -g @microsoft/teams.cli@preview",
     "  teams login", "", "Then expose port 3978 publicly (devtunnel / ngrok / cloudflared),", "and create your bot:",
-    '  teams app create --name "Hermes" --endpoint "https://<tunnel>/api/messages"', "",
+    '  teams app create --name "Cybr Agent" --endpoint "https://<tunnel>/api/messages"', "",
     "The CLI will print CLIENT_ID, CLIENT_SECRET, and TENANT_ID. Paste them below.", "")
 
 
@@ -839,6 +839,8 @@ def _install_hint() -> str:
 def register(ctx) -> None:
     ctx.register_platform(
         name="teams", label="Microsoft Teams", adapter_factory=lambda cfg: TeamsAdapter(cfg),
+        dashboard_description="Connect Cybr Agent to Microsoft Teams chats via the Bot Framework.",
+        docs_url="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/teams",
         check_fn=check_requirements,  # PASSIVE probe — never installs
         ensure_deps_fn=check_teams_requirements,  # ACTIVE lazy-installer, run by create_adapter()
         validate_config=validate_config, is_connected=is_connected,

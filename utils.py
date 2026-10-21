@@ -49,6 +49,17 @@ def file_signature(st: os.stat_result) -> tuple[int, int, int, int]:
     return (st.st_mtime_ns, st.st_size, st.st_ino, st.st_ctime_ns)
 
 
+# Filesystem timestamps tick coarsely (~4 ms; whole seconds on some filesystems), so a write in the
+# same tick as a stat leaves the signature unchanged. A signature this fresh is "racily clean" (as in
+# git's index) and must not be trusted as "nothing changed since".
+RACY_MTIME_WINDOW_NS = 2_000_000_000
+
+
+def mtime_is_racy(mtime_ns: int) -> bool:
+    """True while ``mtime_ns`` is too recent to rule out a same-tick write after the stat."""
+    return time.time_ns() - mtime_ns < RACY_MTIME_WINDOW_NS
+
+
 def _preserve_file_mode(path: Path) -> int | None:
     """Permission bits of *path* if it exists, else ``None``."""
     try:
@@ -409,7 +420,7 @@ def read_json_or_empty(path: str | Path) -> dict:
 def warn_if_credential_file_broadly_readable(path: str | Path, *, label: str = "", log: logging.Logger | None = None) -> bool:
     """Warn when a credential file is group/world-readable; True when a warning was emitted.
 
-    Hand-made secret files (or ones older Hermes wrote without an explicit mode) commonly end up
+    Hand-made secret files (or ones older Cybr Agent wrote without an explicit mode) commonly end up
     0o644 under the default umask; call this before loading any token/credential file. No-op on
     non-POSIX (Windows ACLs don't map onto group/other bits; st_mode there is synthesized), when
     the file is missing, or when permissions are already tight.

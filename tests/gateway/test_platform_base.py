@@ -6,17 +6,19 @@ import time
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from pathlib import Path
+
 import pytest
 
 from gateway.platforms.base import (
     BasePlatformAdapter,
     SendResult,
     cache_image_from_bytes,
-    safe_url_for_log,
     utf16_len,
     _prefix_within_utf16_limit,
     cache_audio_from_bytes,
 )
+from gateway.platforms.base_log_safety import safe_url_for_log
 from gateway.platforms.event import MessageEvent
 
 
@@ -869,6 +871,34 @@ class TestMediaDeliveryDefaultMode:
         assert BasePlatformAdapter.validate_media_delivery_path(str(link)) is None
 
 
+def test_windows_drive_letter_host_mount_parses(monkeypatch):
+    """``C:/data:/workspace`` splits on the container colon, not the drive, and keeps the
+    POSIX container root on every gateway (``Path("/workspace").is_absolute()`` is False on
+    Windows; the Windows lanes run the marked twin below)."""
+    import json
+
+    from gateway.platforms import base
+
+    monkeypatch.setenv("TERMINAL_DOCKER_VOLUMES", json.dumps(["C:/data:/workspace:ro"]))
+    monkeypatch.setattr(base, "_resolve_path", lambda p, **_k: p)
+
+    assert base._parse_docker_volume_mounts() == [(Path("C:/data"), Path("/workspace"))]
+
+
+@pytest.mark.platforms("windows")
+def test_windows_drive_letter_host_mount_parses_on_windows(monkeypatch):
+    """Windows-lane twin of the parse test: there ``Path("/workspace").is_absolute()`` is
+    False, which is the case the fix is for (the lanes only run ``-m platforms``)."""
+    import json
+
+    from gateway.platforms import base
+
+    monkeypatch.setenv("TERMINAL_DOCKER_VOLUMES", json.dumps(["C:/data:/workspace:ro"]))
+    monkeypatch.setattr(base, "_resolve_path", lambda p, **_k: p)
+
+    assert base._parse_docker_volume_mounts() == [(Path("C:/data"), Path("/workspace"))]
+
+
 @pytest.mark.platforms("linux")
 class TestDockerContainerMediaPathTranslation:
     """MEDIA:/workspace (and configured mounts) must resolve to host paths."""
@@ -1355,7 +1385,7 @@ class _CapturingAdapter(BasePlatformAdapter):
 
     The four media-send fallbacks (send_voice, send_video, send_document,
     send_image_file) historically forwarded their *_path argument into the
-    chat text. That argument is a host filesystem path inside the Hermes
+    chat text. That argument is a host filesystem path inside the Cybr Agent
     cache, so any subclass that fell back to super() — like the Telegram
     adapter on a rejected video — would leak the host's directory layout
     into the user's chat.

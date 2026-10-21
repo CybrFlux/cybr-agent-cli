@@ -200,7 +200,7 @@ function isModuleMimeError(message: string): boolean {
  */
 const PREVIEW_PRINT_GUARD_SCRIPT =
   '(function(){if(window.__hermesPrintGuard)return;window.__hermesPrintGuard=true;' +
-  'window.print=function(){console.warn("[Hermes] Printing is disabled in the in-app preview. ' +
+  'window.print=function(){console.warn("[Cybr Agent] Printing is disabled in the in-app preview. ' +
   'Open the page in your browser to print.");};})()'
 
 function PreviewLoadError({
@@ -702,7 +702,7 @@ export function PreviewPane({
 
     // Auto-open the preview console so the user can see progress events
     // streaming back from the background agent. Without this, clicking
-    // "Ask Hermes to restart the server" looked like it did nothing —
+    // "Ask Cybr Agent to restart the server" looked like it did nothing —
     // the work was happening, but in a collapsed pane.
     consoleState.setOpen(true)
 
@@ -1134,7 +1134,8 @@ export function PreviewPane({
     }
 
     const webview = document.createElement('webview') as PreviewWebview
-    webview.className = 'flex h-full w-full flex-1 bg-transparent'
+    // A page with no background of its own shows white, as in a browser and the remote HTML frame below.
+    webview.className = 'flex h-full w-full flex-1 bg-white'
     webview.setAttribute('partition', 'persist:hermes-preview')
     webview.setAttribute('src', initialUrl)
     webview.setAttribute('webpreferences', 'contextIsolation=yes,nodeIntegration=no,sandbox=yes')

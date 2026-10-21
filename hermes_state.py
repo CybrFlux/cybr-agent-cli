@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""SQLite state store for Hermes Agent: session metadata, message history, model
+"""SQLite state store for Cybr Agent: session metadata, message history, model
 config, FTS5 search. WAL mode (concurrent readers + one writer); compression
 splits sessions via parent_session_id chains; sessions are source-tagged
 ('cli', 'telegram', ...). Batch-runner / RL trajectories live elsewhere.
@@ -23,6 +23,7 @@ import uuid
 from collections import deque
 from contextlib import contextmanager, suppress
 from pathlib import Path
+from hermes_dir_acl import make_user_dir
 
 from hermes_constants import get_hermes_home, mkdir_under_hermes_home
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, TypeVar, cast
@@ -66,6 +67,8 @@ from hermes_state_dbfile import (
     RetiredGenerationCaptureError, capture_retired_wal_generation, refuse_deleted_wal_generation,
 )
 from hermes_state_messages import SessionMessagesMixin
+from hermes_state_prune_rewrite import SessionPruneRewriteMixin
+from hermes_state_api_content import SessionApiContentMixin
 from hermes_state_coverage import SessionCoverageMixin
 from hermes_state_rewind import SessionRewindMixin
 from hermes_state_wal import (
@@ -73,7 +76,6 @@ from hermes_state_wal import (
 )
 from hermes_state_repair import _claim_repair_attempt, preflight_db_writability, repair_state_db_schema
 from hermes_state_titles import SessionTitlesMixin
-from hermes_state_tool_retries import SessionToolRetriesMixin
 from hermes_state_usage import SessionUsageMixin
 from hermes_state_maintenance import SessionMaintenanceMixin
 from hermes_state_gateway import SessionGatewayMixin
@@ -231,7 +233,7 @@ def _ensure_test_isolation(db_path: Path) -> None:
         if _is_production_state_db(resolved, root):
             raise RuntimeError(
                 "live-system guard: test attempted to open production "
-                f"state.db at {resolved} (under real Hermes root {root}). "
+                f"state.db at {resolved} (under real Cybr Agent root {root}). "
                 "Tests must run against a temporary HERMES_HOME — pass an "
                 "explicit tmp db_path or let the hermetic conftest redirect "
                 "HERMES_HOME. If this test genuinely needs the live database, mark it with "
@@ -371,12 +373,12 @@ _SESSION_DB_CONSEQUENCE = "Sessions will not be saved until this is fixed."
 _NETWORK_DRIVE_HINT = " If the database lives on a network drive, move it to a local disk."
 _NETWORK_DRIVE_GLOSS = "the session database could not be opened; it may be on a network or unsupported drive"
 _NETWORK_DRIVE_ACTION = (
-    "Move it to a local disk (`hermes {profile_arg}doctor` shows where it is), then start Hermes again."
+    "Move it to a local disk (`hermes {profile_arg}doctor` shows where it is), then start Cybr Agent again."
 )
 
 
 def format_session_db_unavailable(
-    prefix: str = "Hermes can't open its session history right now",
+    prefix: str = "Cybr Agent can't open its session history right now",
     *,
     details: bool = False,
 ) -> str:
@@ -435,7 +437,7 @@ def divert_session_transcript_jsonl(session_id: str, messages) -> Optional[Path]
     if not sid or not messages:
         return None
     sessions_dir = get_hermes_home() / "sessions"
-    sessions_dir.mkdir(parents=True, exist_ok=True)
+    make_user_dir(sessions_dir, parents=True, exist_ok=True)
     path = sessions_dir / f"{sid}.jsonl"
     with path.open("a", encoding="utf-8") as handle:
         for msg in messages:
@@ -462,7 +464,7 @@ class SessionDB(
     SessionSessionsMixin, SessionFtsSetupMixin, SessionSearchMixin, SessionSchemaMixin,
     SessionPortabilityMixin, SessionTelegramTopicsMixin, SessionCompressionMixin,
     SessionGatewayMixin, SessionMaintenanceMixin, SessionUsageMixin, SessionTitlesMixin,
-    SessionMessagesMixin, SessionCoverageMixin, SessionRewindMixin, SessionProfileRepairMixin, SessionToolRetriesMixin,
+    SessionMessagesMixin, SessionPruneRewriteMixin, SessionApiContentMixin, SessionCoverageMixin, SessionRewindMixin, SessionProfileRepairMixin,
 ):
     """SQLite-backed session storage with FTS5 search; many reader threads, one writer (WAL)."""
 
@@ -680,22 +682,29 @@ class SessionDB(
         # Never materialize a deleted/archived named profile's home: a multiplexer or Desktop backend
         # still holding the profile's route would otherwise re-scaffold it on the next turn (#94590).
         mkdir_under_hermes_home(self.db_path.parent)
-        # Read-only file/sidecar preflight BEFORE the first connection: an actionable message
-        # instead of an opaque "attempt to write a readonly database" from inside _init_schema.
-        preflight_db_writability(self.db_path, db_label="state.db")
         try:
             # Serialize zero-byte check, quarantine, connect and schema commit so concurrent
             # openers don't race the absent-path -> schema-commit window.
             if not self.db_path.exists() or has_invalid_sqlite_header_preopen(self.db_path):
+                # The directory must be writable before the lock file can be created in it; the
+                # directory never vanishes mid-quarantine, so checking it unlocked is race-free.
+                preflight_db_writability(self.db_path, db_label="state.db", directory_only=True)
                 with quarantine_cross_process_lock(self.db_path) as lock_acquired:
                     if not lock_acquired:
                         logger.warning(
                             "startup quarantine lock for %s not acquired within 5s; proceeding",
                             self.db_path,
                         )
+                    # Preflight under the lock: unlocked, it can list state.db just before a
+                    # concurrent opener renames it aside, and os.access on the vanished path
+                    # then reports a writable DB as "read-only for this user".
+                    preflight_db_writability(self.db_path, db_label="state.db")
                     self._handle_quarantine_if_invalid(already_locked=lock_acquired)
                     self._connect_and_init_with_lock_patience()
             else:
+                # Read-only file/sidecar preflight BEFORE the first connection: an actionable message
+                # instead of an opaque "attempt to write a readonly database" from inside _init_schema.
+                preflight_db_writability(self.db_path, db_label="state.db")
                 self._handle_quarantine_if_invalid(already_locked=False)
                 self._connect_and_init_with_lock_patience()
         except sqlite3.DatabaseError as exc:
@@ -775,7 +784,7 @@ class SessionDB(
         qpath = quarantine_invalid_state_db(self.db_path, already_locked=already_locked)
         where = f"moved aside to {qpath}" if qpath else "left in place (it could not be moved aside)"
         msg = (
-            f"state.db was empty or damaged ({zsize} bytes) and has been {where}; Hermes started with a "
+            f"state.db was empty or damaged ({zsize} bytes) and has been {where}; Cybr Agent started with a "
             "fresh, empty session database. To bring old sessions back, run "
             f"`hermes sessions recover --source {qpath or self.db_path} --inspect-only`, or restore a "
             "snapshot with `/snapshot list` then `/snapshot restore <id>` (terminal `hermes` chat only)."
@@ -919,11 +928,13 @@ class SessionDB(
             return self._get_read_conn()
 
     @contextmanager
-    def _read_ctx(self) -> Iterator[sqlite3.Connection]:
+    def _read_ctx(self, *, reopen: bool = True) -> Iterator[sqlite3.Connection]:
         """Yield a connection for read-only statements: a pooled read-only
         connection with NO lock under WAL; otherwise (non-WAL, open failure,
         ceiling reached) the writer connection under self._lock — deliberate
-        degradation: slower beats EMFILE, which the supervisor cannot see."""
+        degradation: slower beats EMFILE, which the supervisor cannot see.
+        ``reopen=False``: a read after ``close()`` raises instead of reopening the
+        writer (an optional reader must not hold a home that is being deleted)."""
         conn = self._checkout_read_conn()
         if conn is not None:
             try:
@@ -944,6 +955,8 @@ class SessionDB(
             return
         with self._lock:
             if self._conn is None:  # close() raced a still-unwinding reader
+                if not reopen:
+                    raise sqlite3.ProgrammingError(f"SessionDB for {self.db_path} is closed")
                 self._reopen_after_close_locked(context="read")
             conn = cast(sqlite3.Connection, self._conn)
             if self._wal_active or self.read_only:  # WAL: no SHARED-lock wait; ro: opened with the read budget
@@ -1078,7 +1091,7 @@ class SessionDB(
                         # a holder's argv (a worktree named fix-corrupt-db) would flip the bucket.
                         log_write_lock_holders(self.db_path, patience_s)
                         raise sqlite3.OperationalError(
-                            f"database is locked (another Hermes process held the "
+                            f"database is locked (another Cybr Agent process held the "
                             f"state.db write lock for over {patience_s:.0f}s — "
                             "likely a long maintenance operation such as VACUUM, "
                             "a large WAL checkpoint, or an older pre-update "

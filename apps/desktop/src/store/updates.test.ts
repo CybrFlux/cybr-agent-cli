@@ -109,6 +109,7 @@ const {
   BACKGROUND_UPDATE_CHECK_MS
 } = await import('./updates')
 
+const { CANONICAL_GATEWAY_PROTOCOL } = await import('@/api/canonical-protocol')
 const { setConnection } = await import('./session')
 
 const registryOf = (ids: string[]) => ({
@@ -312,6 +313,18 @@ describe('reportBackendContract', () => {
     expect(notifySpy).not.toHaveBeenCalled()
   })
 
+  it('accepts only the matching canonical gateway protocol without claiming the legacy contract', () => {
+    reportBackendContract(undefined, CANONICAL_GATEWAY_PROTOCOL)
+    expect(dismissSpy).toHaveBeenCalledWith('backend-contract-skew')
+    expect(notifySpy).not.toHaveBeenCalled()
+
+    reportBackendContract(undefined, 'hermes-gateway-v0')
+    expect(notifySpy).toHaveBeenCalledTimes(1)
+
+    reportBackendContract(Number.MAX_SAFE_INTEGER, 'hermes-gateway-v0')
+    expect(notifySpy).toHaveBeenCalledTimes(2)
+  })
+
   it('warns when the backend is behind (or reports no contract)', () => {
     reportBackendContract(undefined)
     expect(notifySpy).toHaveBeenCalledTimes(1)
@@ -470,7 +483,7 @@ describe('checkBackendUpdates', () => {
   })
 })
 
-// The ⌘K "Update Hermes" row. It used to call applyBackendUpdate() flat, which
+// The ⌘K "Update Cybr Agent" row. It used to call applyBackendUpdate() flat, which
 // in local mode aimed at the backend checkout instead of the client and, with
 // no overlay open, showed nothing at all.
 describe('requestActiveUpdate', () => {
@@ -572,7 +585,7 @@ describe('requestActiveUpdate', () => {
       ok: false,
       name: 'hermes-update',
       error: 'dashboard_update_managed_externally',
-      message: 'Hermes updates are managed outside this dashboard in containerized environments.',
+      message: 'Cybr Agent updates are managed outside this dashboard in containerized environments.',
       update_command: ''
     })
 
@@ -1078,7 +1091,7 @@ describe('applyUpdates terminal state', () => {
       guiUpdated: false,
       manualRestart: true,
       sandboxBlocked: true,
-      message: 'Backend updated. Quit and reopen Hermes to finish.'
+      message: 'Backend updated. Quit and reopen Cybr Agent to finish.'
     })
 
     const result = await applyUpdates()

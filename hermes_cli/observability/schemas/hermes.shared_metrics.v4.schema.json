@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:hermes-agent:schema:shared-metrics:v4",
-  "title": "Hermes Shared Metrics Package v4",
+  "title": "Cybr Agent Shared Metrics Package v4",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -70,6 +70,7 @@
             "git",
             "home-manager",
             "homebrew",
+            "microsoft-store",
             "nixos",
             "pip",
             "unknown"
@@ -276,6 +277,15 @@
           },
           {
             "$ref": "#/$defs/install_run_counter"
+          },
+          {
+            "$ref": "#/$defs/tool_search_counter"
+          },
+          {
+            "$ref": "#/$defs/tool_batch_counter"
+          },
+          {
+            "$ref": "#/$defs/connector_chain_counter"
           }
         ]
       }
@@ -811,6 +821,7 @@
                 "code_execution",
                 "communication",
                 "computer_use",
+                "connector",
                 "delegation",
                 "file",
                 "home_automation",
@@ -1034,12 +1045,16 @@
           "properties": {
             "error_class": {
               "enum": [
+                "alias",
                 "blocked",
+                "connection_required",
+                "connector_backend",
                 "contract_violation",
                 "exception",
                 "interrupted",
                 "invalid_arguments",
                 "none",
+                "not_allowed",
                 "timeout",
                 "tool_error",
                 "unknown"
@@ -2175,12 +2190,16 @@
             },
             "error_class": {
               "enum": [
+                "alias",
                 "blocked",
+                "connection_required",
+                "connector_backend",
                 "contract_violation",
                 "exception",
                 "interrupted",
                 "invalid_arguments",
                 "none",
+                "not_allowed",
                 "timeout",
                 "tool_error",
                 "unknown"
@@ -2725,6 +2744,7 @@
                     "deps_failed",
                     "detached_head",
                     "disk_full",
+                    "downgrade_refused",
                     "download_failed",
                     "exception",
                     "fetch_failed",
@@ -3503,7 +3523,7 @@
               ]
             }
           },
-          "description": "One per tool result: whether Hermes spilled or truncated it (per-result cap or per-turn budget), by raw size."
+          "description": "One per tool result: whether Cybr Agent spilled or truncated it (per-result cap or per-turn budget), by raw size."
         },
         "value": {
           "type": "integer",
@@ -3633,6 +3653,7 @@
                 "image_gen",
                 "kanban",
                 "memory",
+                "onboarding",
                 "project",
                 "safe",
                 "search",
@@ -3711,7 +3732,7 @@
               "$ref": "#/$defs/provider_identifier"
             }
           },
-          "description": "A prompt-cache break mid-conversation: a cause Hermes knows (compression is expected), or a cold provider read after a warm one on the same route."
+          "description": "A prompt-cache break mid-conversation: a cause Cybr Agent knows (compression is expected), or a cold provider read after a warm one on the same route."
         },
         "value": {
           "type": "integer",
@@ -4665,7 +4686,7 @@
               ]
             }
           },
-          "description": "A model called a tool Hermes ships that this session did not enable (background reviews and delegated children excluded)."
+          "description": "A model called a tool Cybr Agent ships that this session did not enable (background reviews and delegated children excluded)."
         },
         "value": {
           "type": "integer",
@@ -4860,7 +4881,7 @@
               ]
             }
           },
-          "description": "A user turned off something Hermes ships on (or removed a shipped skill), or turned it back on. name is a shipped toolset / bundled or catalog skill or plugin / DEFAULT_CONFIG key path (never a value), else custom. At most once per (kind, name, event) per day."
+          "description": "A user turned off something Cybr Agent ships on (or removed a shipped skill), or turned it back on. name is a shipped toolset / bundled or catalog skill or plugin / DEFAULT_CONFIG key path (never a value), else custom. At most once per (kind, name, event) per day."
         },
         "value": {
           "const": 1
@@ -4904,6 +4925,7 @@
                 "code_execution",
                 "communication",
                 "computer_use",
+                "connector",
                 "delegation",
                 "file",
                 "home_automation",
@@ -5071,6 +5093,162 @@
                 "failed",
                 "success"
               ]
+            }
+          }
+        },
+        "value": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "tool_search_counter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "type",
+        "dimensions",
+        "value"
+      ],
+      "properties": {
+        "name": {
+          "const": "hermes.tool_search.count"
+        },
+        "type": {
+          "const": "counter"
+        },
+        "dimensions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "hits_bucket",
+            "outcome",
+            "scope"
+          ],
+          "properties": {
+            "hits_bucket": {
+              "$ref": "#/$defs/count_bucket"
+            },
+            "outcome": {
+              "enum": [
+                "connector_unavailable",
+                "error",
+                "hits",
+                "no_hits"
+              ]
+            },
+            "scope": {
+              "enum": [
+                "both",
+                "connector",
+                "local"
+              ]
+            }
+          }
+        },
+        "value": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "tool_batch_counter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "type",
+        "dimensions",
+        "value"
+      ],
+      "properties": {
+        "name": {
+          "const": "hermes.tool_batch.count"
+        },
+        "type": {
+          "const": "counter"
+        },
+        "dimensions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "connector_share",
+            "model",
+            "provider",
+            "size_bucket"
+          ],
+          "properties": {
+            "connector_share": {
+              "enum": [
+                "all",
+                "none",
+                "some"
+              ]
+            },
+            "model": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^[a-z0-9][a-z0-9._:/@+\\-]*$"
+            },
+            "provider": {
+              "$ref": "#/$defs/provider_identifier"
+            },
+            "size_bucket": {
+              "$ref": "#/$defs/count_bucket"
+            }
+          }
+        },
+        "value": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "connector_chain_counter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "type",
+        "dimensions",
+        "value"
+      ],
+      "properties": {
+        "name": {
+          "const": "hermes.connector_chain.count"
+        },
+        "type": {
+          "const": "counter"
+        },
+        "dimensions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "described_first",
+            "outcome",
+            "searches_before_bucket"
+          ],
+          "properties": {
+            "described_first": {
+              "enum": [
+                "no",
+                "yes"
+              ]
+            },
+            "outcome": {
+              "enum": [
+                "blocked",
+                "cancelled",
+                "failed",
+                "success",
+                "timed_out",
+                "unknown"
+              ]
+            },
+            "searches_before_bucket": {
+              "$ref": "#/$defs/count_bucket"
             }
           }
         },

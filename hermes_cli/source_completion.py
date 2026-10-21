@@ -66,7 +66,7 @@ def complete_source_checkout(
     if not lock.acquire():
         raise RuntimeError(
             f"an update is still running ({describe_holder(lock.holder)}); "
-            "wait for it to exit, then relaunch Hermes"
+            "wait for it to exit, then relaunch Cybr Agent"
         )
     try:
         return _complete_locked(
@@ -174,8 +174,17 @@ def main(argv: list[str] | None = None) -> int:
                              "same launchers/products/maintenance with update wording.")
     args = parser.parse_args([argument for argument in argv if argument != _PREPARED])
     root = args.source.resolve()
+    # cybr: show the product command name in install/update messages
+    try:
+        import importlib.util as _ilu
+        _spec = _ilu.spec_from_file_location('_cybr_brand_output', root / 'hermes_cli' / '_brand_output.py')
+        _mod = _ilu.module_from_spec(_spec)
+        _spec.loader.exec_module(_mod)
+        _mod.install()
+    except Exception:
+        pass
     if not (root / "hermes_cli/source_completion.py").is_file():
-        print(f"✗ {root} is not a Hermes source checkout", file=sys.stderr)
+        print(f"✗ {root} is not a Cybr Agent source checkout", file=sys.stderr)
         return 1
 
     if prepared:

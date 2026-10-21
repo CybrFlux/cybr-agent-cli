@@ -2,7 +2,7 @@
 
 The installer runs before the user is asked about shared metrics and must never send anything, so a
 full-ladder run only leaves ONE small local receipt (closed tokens plus two epoch timestamps) under
-the profile's store dir. A later Hermes start that runs the process-exit reporter reads it:
+the profile's store dir. A later Cybr Agent start that runs the process-exit reporter reads it:
 
 - collection off: ``shared_metrics_process.begin_process`` (and every opt-out answer) deletes every
   receipt unreported, the same rule as parked update receipts;
@@ -22,7 +22,6 @@ import os
 import re
 import shutil
 import sqlite3
-import time
 from datetime import datetime, timezone, UTC
 from pathlib import Path
 from typing import Any
@@ -147,7 +146,11 @@ def _claim_receipt(path: Path) -> Path | None:
 
 
 def _stale(receipt: dict) -> bool:
-    return time.time() - receipt["finished_at"] > MAX_RECEIPT_AGE_SECONDS
+    # The store's clock, the same one that picks the consented day: a second clock let a receipt
+    # the day logic still considered fresh expire on wall time.
+    from .shared_metrics import _utc_now
+
+    return _utc_now().timestamp() - receipt["finished_at"] > MAX_RECEIPT_AGE_SECONDS
 
 
 def report_pending_installs(home: Path) -> None:

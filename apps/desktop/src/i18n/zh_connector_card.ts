@@ -23,13 +23,22 @@ export const zhConnectorCard: TranslationOverrides['connectors'] = {
   ownerMissing: '请重新打开此对话以管理连接。',
   search: '查找应用',
   empty: '没有匹配的应用',
-  disclaimer: '连接为可选操作。请仅授权你希望 Hermes 使用的应用。',
+  disclaimer: '连接为可选操作。请仅授权你希望 Cybr Agent 使用的应用。',
   execution: '连接器工具',
   setup: server => `设置 ${server}`,
   openInBrowser: '在浏览器中打开',
   setupCancel: '取消',
   authorizedToolsUnavailable: '已授权。工具不可用。',
   required: '必填',
-  namedAccount: (app, alias) => `Hermes 已将这个 ${app} 账户命名为 ${alias}。`,
-  renameAccount: '重命名'
+  namedAccount: (app, alias) => `Cybr Agent 已将这个 ${app} 账户命名为 ${alias}。`,
+  renameAccount: '重命名',
+  directory: {
+    suggested: '推荐',
+    allApps: '全部应用',
+    receiptConnected: apps => `已连接：${apps}`,
+    receiptNone: '未连接新应用',
+    receiptTimedOut: '5 分钟后已关闭',
+    finishInBrowser: '请在浏览器中完成',
+    signInFailed: '连接失败，点击重试'
+  }
 }

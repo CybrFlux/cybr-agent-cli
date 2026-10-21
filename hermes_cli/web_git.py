@@ -645,7 +645,7 @@ def _ensure_repo(cwd: str) -> None:
     else:
         needs_root = not _ref_exists(cwd, "HEAD")
     if needs_root:
-        _git_ok(cwd, ["-c", "user.email=hermes@localhost", "-c", "user.name=Hermes",
+        _git_ok(cwd, ["-c", "user.email=hermes@localhost", "-c", "user.name=Cybr Agent",
                       "commit", "--allow-empty", "-m", "Initial commit"])
 
 
@@ -718,7 +718,11 @@ def worktree_add(cwd: str, options: dict) -> dict:
     root = _main_root(cwd)
     options = options or {}
     if options.get("existingBranch"):
-        return _worktree_for_existing(root, options["existingBranch"])
+        result = _worktree_for_existing(root, options["existingBranch"])
+        if result.get("path") != root:  # a new checkout, not a switch of the main tree
+            from hermes_cli.worktree_registry import record_worktree_repo
+            record_worktree_repo(root)
+        return result
 
     slug = _slugify(options.get("name") or f"work-{os.urandom(4).hex()}")
     branch = _sanitize_branch(options.get("branch") or "") or f"hermes/{slug}"
@@ -744,6 +748,8 @@ def worktree_add(cwd: str, options: dict) -> dict:
         if "already exists" not in (err or "").lower():
             raise RuntimeError(err.strip() or "git worktree add failed")
         _git_ok(root, ["worktree", "add", target, branch])
+    from hermes_cli.worktree_registry import record_worktree_repo
+    record_worktree_repo(root)
     return {"path": target, "branch": branch, "repoRoot": root}
 
 

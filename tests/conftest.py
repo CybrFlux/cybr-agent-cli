@@ -5,10 +5,10 @@ Hermetic-test invariants enforced here (see AGENTS.md for rationale):
 1. **No credential env vars.** All provider/credential-shaped env vars
    (ending in _API_KEY, _TOKEN, _SECRET, _PASSWORD, _CREDENTIALS, etc.)
    are unset before every test. Local developer keys cannot leak in.
-2. **Isolated Hermes homes.** HERMES_HOME and the platform-default root
+2. **Isolated Cybr Agent homes.** HERMES_HOME and the platform-default root
    resolve inside a per-test tempdir. Profile/root resolution can inspect
    both without probing production state. HOME and Path.home() stay intact
-   for subprocesses and non-Hermes paths. Explicit test overrides still win.
+   for subprocesses and non-Cybr Agent paths. Explicit test overrides still win.
 3. **Deterministic runtime.** TZ=UTC, LANG=C.UTF-8, PYTHONHASHSEED=0.
 4. **No HERMES_SESSION_* inheritance** — the agent's current gateway
    session must not leak into tests.
@@ -62,7 +62,7 @@ _version_info._cached_version_info = _version_info.VersionInfo(
 # window. The per-test fixture still applies for everything after import.
 #
 # ORDER MATTERS: the kanban write guard's deny-list (further down) must know
-# the REAL Hermes root — capture it BEFORE the sandbox rewires HERMES_HOME,
+# the REAL Cybr Agent root — capture it BEFORE the sandbox rewires HERMES_HOME,
 # otherwise the deny-list would point at the throwaway tempdir and the guard
 # would silently stop protecting the operator's actual ~/.hermes (#69385).
 _PRE_SANDBOX_KANBAN_OVERRIDE = os.environ.get("HERMES_KANBAN_HOME", "").strip()
@@ -109,12 +109,12 @@ def _hermes_home_points_at_production(value: str) -> bool:
 # ``import hermes_bootstrap`` (transitively: any entry-point module) runs
 # ``export_scratch_tmp_env()``, which points TMPDIR/TMP/TEMP at
 # ``<HERMES_HOME>/cache/scratch`` unless a temp var is already set — and a
-# Hermes-launched shell (agent terminal, ``hermes`` child) arrives with that
+# Cybr Agent-launched shell (agent terminal, ``hermes`` child) arrives with that
 # redirect already applied, tagged by HERMES_SCRATCH_DIR. Either way the tmp
 # root ends up INSIDE a guarded real home (the operator's, or a custom one
 # honored below), so the session sandbox, pytest's basetemp and every
 # ``tempfile`` default in the code under test trip the real-home guard. Strip
-# Hermes' own export (the marker tells it apart from a user-set var), and
+# Cybr Agent' own export (the marker tells it apart from a user-set var), and
 # relocate even user-set temp directories inside a guarded home. Pin the
 # system default so the import-time hook stays a no-op. The parallel runner
 # exports its own disk-backed TMPDIR anyway.
@@ -250,6 +250,7 @@ from tests._fixtures.live_system_guard import (
     _LIVE_SYSTEM_GUARD_BYPASS_MARK,
     _live_system_guard,
 )
+from tests._fixtures.model_peer import model_peer  # fixture registers here
 from tests._fixtures.platform_gating import _platforms_gate_reason, _reject_contradictory_platform_marks
 
 
@@ -280,7 +281,7 @@ def _hermetic_environment(tmp_path, tmp_path_factory, monkeypatch):
     # 3. Isolate both inputs to profile/root resolution. HERMES_HOME alone
     #    is insufficient: get_default_hermes_root() resolves the native root
     #    too, to distinguish standard profiles from custom deployments.
-    #    Patch only the Hermes default, not HOME/Path.home(). Subprocesses need
+    #    Patch only the Cybr Agent default, not HOME/Path.home(). Subprocesses need
     #    a stable HOME. Hardcoded real-home I/O must still trip the guard.
     import hermes_constants
 
@@ -309,6 +310,17 @@ def _hermetic_environment(tmp_path, tmp_path_factory, monkeypatch):
         monkeypatch.setattr(_hc, "_PINNED_PROCESS_HERMES_HOME", None, raising=False)
     except Exception:
         pass
+    # The install probe looks past HERMES_HOME (other roots, gateway services, the launcher on
+    # PATH) and writes a marker at a fixed per-user path: confine it to this test's directory.
+    from hermes_cli import install_state
+
+    isolated_places = install_state.Places(markers=(tmp_path / "machine-marker",),
+                                           sources=(install_state._active_root,))
+    monkeypatch.setattr(install_state, "machine_places", lambda: isolated_places)
+    install_state.probe.cache_clear()
+    from hermes_cli import onboarding_due
+
+    onboarding_due.reset_for_tests()
     # Per-TEST host-rendezvous dir (see the session-level block at the top): the
     # host gateway/serve record is shared per OS user by design, so without this
     # one test's published owner makes the next test's lifecycle code attach to it.
@@ -322,7 +334,7 @@ def _hermetic_environment(tmp_path, tmp_path_factory, monkeypatch):
     # Relay normally discovers the user's XDG plugins.toml and merges the machine
     # policy above it. Select a per-test user file with a deny-by-default dynamic
     # plugin policy so ordinary tests do not activate ambient worker/native plugins,
-    # without changing XDG_CONFIG_HOME for unrelated Hermes code under test.
+    # without changing XDG_CONFIG_HOME for unrelated Cybr Agent code under test.
     # Outside tmp_path: tests that list or git-status their tmp dir must not see it.
     relay_plugins = tmp_path_factory.getbasetemp() / "relay-plugins.toml"
     if not relay_plugins.exists():
@@ -363,6 +375,10 @@ def _hermetic_environment(tmp_path, tmp_path_factory, monkeypatch):
     tui_server_mod = sys.modules.get("tui_gateway.server")
     if tui_server_mod is not None and hasattr(tui_server_mod, "_served_profile_homes"):
         monkeypatch.setattr(tui_server_mod, "_served_profile_homes", set())
+    # A classic CLI's gateway-session toolset reader is process-global too (``_ensure_gateway_session``).
+    tools_config_mod = sys.modules.get("hermes_cli.tools_config")
+    if tools_config_mod is not None and hasattr(tools_config_mod, "_gateway_plugin_toolsets"):
+        monkeypatch.setattr(tools_config_mod, "_gateway_plugin_toolsets", None)
 
     hermes_state_mod = sys.modules.get("hermes_state")
     if hermes_state_mod is not None and hasattr(hermes_state_mod, "DEFAULT_DB_PATH"):
@@ -610,7 +626,7 @@ def _capture_real_kanban_root() -> Path:
     deny-list keeps pointing at the operator's actual root. Mirrors
     ``kanban_db.kanban_home()`` resolution order:
     1. ``HERMES_KANBAN_HOME`` env var when set and non-empty
-    2. the real (pre-sandbox) Hermes root otherwise
+    2. the real (pre-sandbox) Cybr Agent root otherwise
     """
     if _PRE_SANDBOX_KANBAN_OVERRIDE:
         return Path(_PRE_SANDBOX_KANBAN_OVERRIDE).expanduser().resolve()
@@ -691,7 +707,7 @@ def _kanban_write_guard(_hermetic_environment, monkeypatch):
 # Companion to the kanban guard above, for the MAIN state database.
 # ``hermes_state._ensure_test_isolation`` (the single choke point every
 # ``SessionDB()`` construction goes through) refuses, under pytest, any DB
-# path that resolves inside the REAL Hermes root. This fixture wires the
+# path that resolves inside the REAL Cybr Agent root. This fixture wires the
 # test-side knobs:
 #   • honors ``@pytest.mark.live_system_guard_bypass`` (the established
 #     escape-hatch marker) by disabling the state-db guard for that test;
@@ -827,7 +843,7 @@ def _reset_tui_gateway_server_state():
         mod._db = None
         mod._db_error = None
 
-    # A leaked context-local Hermes home override redirects every later
+    # A leaked context-local Cybr Agent home override redirects every later
     # ``get_hermes_home()`` call (active-session registry, config paths)
     # to a stale per-test tmpdir. Force the main-thread ContextVar back
     # to its default.
@@ -919,9 +935,9 @@ _REQUIRES_WAL_MARK = "requires_wal"
 
 
 def _wal_is_usable() -> bool:
-    """True when Hermes will actually put a database into WAL mode here.
+    """True when Cybr Agent will actually put a database into WAL mode here.
 
-    Hermes refuses journal_mode=WAL on SQLite builds carrying the upstream
+    Cybr Agent refuses journal_mode=WAL on SQLite builds carrying the upstream
     WAL-reset corruption bug (3.7.0–3.51.2, excluding backports 3.50.7 /
     3.44.6) and falls back to DELETE. On such a build NO ``-wal`` sidecar is
     ever created, so a test asserting on WAL frames, ``-wal`` file size, or
@@ -929,8 +945,8 @@ def _wal_is_usable() -> bool:
     declined to enable, not a regression.
 
     This matters because the interpreter running the tests and the interpreter
-    running Hermes can link DIFFERENT SQLite versions: a repo ``.venv`` on
-    3.50.4 (vulnerable → DELETE) alongside a Hermes managed runtime on 3.53.1
+    running Cybr Agent can link DIFFERENT SQLite versions: a repo ``.venv`` on
+    3.50.4 (vulnerable → DELETE) alongside a Cybr Agent managed runtime on 3.53.1
     (fixed → WAL). The same test then passes in one and fails in the other.
 
     IMPORTANT: this must NOT import ``hermes_state``. That module computes
@@ -1003,7 +1019,7 @@ _ALLOW_MACOS_KEYCHAIN_MARK = "allow_macos_keychain"
 
 
 def _relocate_basetemp_outside_operator_home(config) -> None:
-    """Move pytest's basetemp out of the operator's platform-native Hermes home.
+    """Move pytest's basetemp out of the operator's platform-native Cybr Agent home.
 
     Every per-test sandbox is ``<basetemp>/.../hermes_test``. ``get_default_hermes_root()``
     prefers the platform-native home whenever ``HERMES_HOME`` sits *under* it, so a basetemp
@@ -1022,7 +1038,7 @@ def _relocate_basetemp_outside_operator_home(config) -> None:
     if not candidate.resolve().is_relative_to(native):
         return
     # The system temp dir may itself be inside the home (Windows TEMP under the
-    # Hermes home). The repo is no escape either: the default install checks it
+    # Cybr Agent home). The repo is no escape either: the default install checks it
     # out *inside* the home (~/.hermes/hermes-agent). The relocated basetemp goes
     # into ONE prunable root outside the home, never loose into the operator's
     # $HOME (123 ``hermes-pytest-basetemp-*`` dirs piled up there in a day, one per
@@ -1030,7 +1046,7 @@ def _relocate_basetemp_outside_operator_home(config) -> None:
     # and, for runs that were killed before that, swept once it is 24h idle.
     safe = Path(tempfile.mkdtemp(prefix="b-", dir=_pytest_disk_temp_root(native)))
     assert not safe.resolve().is_relative_to(native), (
-        f"pytest basetemp {safe} still resolves inside the operator's Hermes home {native}; "
+        f"pytest basetemp {safe} still resolves inside the operator's Cybr Agent home {native}; "
         "refusing to run the suite against the live install (pass --basetemp outside it)"
     )
     factory._given_basetemp = safe
@@ -1058,6 +1074,59 @@ def _remove_relocated_basetemp(config) -> None:
     safe = getattr(config, "_hermes_relocated_basetemp", None)
     if safe is not None:
         shutil.rmtree(safe, ignore_errors=True)
+
+
+def _processes_with_hermes_home_under(roots) -> list[int]:
+    """PIDs (never this process) whose environment names a ``HERMES_HOME`` inside one of *roots*.
+
+    Linux only (``/proc/<pid>/environ``; unreadable entries are another user's and skipped).
+    Elsewhere the scan is empty: a test-spawned daemon there is the per-test guard's problem.
+    """
+    if not sys.platform.startswith("linux") or not os.path.isdir("/proc"):
+        return []
+    resolved = [Path(r).resolve() for r in roots if r]
+    found = []
+    for entry in os.scandir("/proc"):
+        if not entry.name.isdigit() or int(entry.name) == os.getpid():
+            continue
+        try:
+            with open(f"/proc/{entry.name}/environ", "rb") as handle:
+                environ = handle.read().split(b"\0")
+        except OSError:
+            continue
+        home = next((item[12:] for item in environ if item.startswith(b"HERMES_HOME=")), None)
+        if not home:
+            continue
+        try:
+            path = Path(os.fsdecode(home)).resolve()
+        except (OSError, ValueError):
+            continue
+        if any(path == root or path.is_relative_to(root) for root in resolved):
+            found.append(int(entry.name))
+    return found
+
+
+def _reap_session_hermes_processes(config) -> list[int]:
+    """SIGTERM every process still running against a Cybr Agent home this session created.
+
+    Tests that run a real ``hermes chat -q`` child get a grandchild ``gateway run`` (detached, own
+    session) that no per-test subprocess patch can see, and pytest's tmp cleanup removes only
+    directories: each one used to outlive the run at ~250 MB. The session basetemp and the session
+    sandbox home bound exactly what this run created, so nothing else is ever signalled.
+    """
+    import signal
+
+    factory = getattr(config, "_tmp_path_factory", None)
+    # The basetemp pytest already created (never create one at teardown just to scan it).
+    roots = [getattr(config, "_hermes_relocated_basetemp", None), os.environ.get("HERMES_TEST_SANDBOX_HOME"),
+             getattr(factory, "_basetemp", None)]
+    pids = _processes_with_hermes_home_under(roots)
+    for pid in pids:
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except (ProcessLookupError, PermissionError):
+            pass
+    return pids
 
 
 def _pinned_mcp_sdk_version() -> str:
@@ -1095,6 +1164,7 @@ def require_mcp_2_sdk():
 
 
 def pytest_unconfigure(config):
+    _reap_session_hermes_processes(config)
     _remove_relocated_basetemp(config)
 
 
@@ -1128,7 +1198,7 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers",
         f"{_REQUIRES_WAL_MARK}: test needs the runtime to actually enable "
-        "SQLite WAL mode; skipped on builds where Hermes falls back to "
+        "SQLite WAL mode; skipped on builds where Cybr Agent falls back to "
         "journal_mode=DELETE for the WAL-reset bug.",
     )
     config.addinivalue_line(
@@ -1255,7 +1325,7 @@ def pytest_collection_modifyitems(config, items):
         return
 
     reason = (
-        f"SQLite {sqlite3.sqlite_version} has the WAL-reset bug — Hermes uses "
+        f"SQLite {sqlite3.sqlite_version} has the WAL-reset bug — Cybr Agent uses "
         "journal_mode=DELETE here, so no -wal sidecar exists to assert on"
     )
     skip_marker = pytest.mark.skip(reason=reason)
@@ -1407,13 +1477,31 @@ def _capture_real_hermes_root() -> list[Path]:
 
 _REAL_HERMES_ROOT_CANDIDATES = _capture_real_hermes_root()
 # Captured before any test can patch sys.platform, HOME or XDG_*: a test that runs the real
-# GUI uninstall or update swap would otherwise delete the developer's own Hermes app. Only the
+# GUI uninstall or update swap would otherwise delete the developer's own Cybr Agent app. Only the
 # ones present (none on CI runners, so the guard costs nothing there), each literal and resolved.
 from hermes_cli.gui_uninstall import packaged_gui_app_paths
 
 _REAL_INSTALLED_GUI_APPS = sorted({
     os.path.normcase(form) for app in packaged_gui_app_paths() if os.path.lexists(app)
     for form in (os.path.abspath(app), os.path.realpath(app))})
+
+
+@pytest.fixture(autouse=True)
+def _forbid_real_user_path_writes(monkeypatch):
+    """Fail a test that would add an entry to the real Windows User PATH.
+
+    The registry has no temporary-home equivalent: a test home that reached
+    these writers stayed on the developer's PATH after the run. Tests of the
+    writers' callers inject fakes (``write_user_path=``) or stub them.
+    """
+    if sys.platform != "win32":
+        return
+
+    def refuse(*_args, **_kwargs):
+        raise AssertionError("TEST BUG: write to the real Windows User PATH (HKCU\\Environment)")
+
+    monkeypatch.setattr("hermes_cli._launchers._register_windows_user_path", refuse)
+    monkeypatch.setattr("hermes_cli._install_repair._write_user_path_raw", refuse)
 
 
 @pytest.fixture(autouse=True)

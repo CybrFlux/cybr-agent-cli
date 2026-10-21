@@ -1,3 +1,4 @@
+# health: allow FILE_LINES -- platform-tables refactor: core's PLATFORM_HINTS/_PLATFORM_DEFAULTS rows for this platform moved onto its register() call (hint text lives in adapter_hint.py); the growth is only those kwargs
 """
 Feishu/Lark platform adapter.
 
@@ -91,7 +92,8 @@ from gateway.platforms.base import (
     cache_audio_from_bytes_async, cache_image_from_bytes_async,
 )
 from gateway.platforms.event import MessageEvent, MessageType, ProcessingOutcome
-from gateway.status import acquire_scoped_lock, release_scoped_lock
+from gateway.status import acquire_scoped_lock
+from gateway.status_scoped_locks import release_scoped_lock
 from hermes_constants import get_hermes_home
 from utils import atomic_json_write, env_float, env_int
 
@@ -1001,7 +1003,7 @@ def _strip_edge_self_mentions(text: str, mentions: Sequence[FeishuMentionRef]) -
 # --- Multiplex isolation for the lark_oapi WebSocket client ---
 #
 # ``lark_oapi.ws.client`` keeps the asyncio loop in a *module-level global* (``loop``), and
-# Hermes monkey-patches ``websockets.connect`` on the shared module to inject ping settings.
+# Cybr Agent monkey-patches ``websockets.connect`` on the shared module to inject ping settings.
 # In multiplex mode N profiles each run a WS client on their own thread, so they overwrite
 # each other's globals (last-write-wins): tasks land on a sibling's loop ("Future attached
 # to a different loop") or a client binds the wrong loop and goes deaf. Fix: install
@@ -1016,7 +1018,7 @@ def _strip_edge_self_mentions(text: str, mentions: Sequence[FeishuMentionRef]) -
 # lark_oapi WebSocket client (#73779)
 # --------------------------------------------------------------------------- ``lark_oapi.ws.client`` keeps
 # the asyncio loop used by ``Client.start()`` and every coroutine it spawns in a *module-level global*
-# (``loop``), and Hermes also monkey-patches ``websockets.connect`` on the shared ``websockets`` module to
+# (``loop``), and Cybr Agent also monkey-patches ``websockets.connect`` on the shared ``websockets`` module to
 # inject per-adapter ping settings. In multiplex mode every profile runs its own WS client on a dedicated
 # thread, so the N threads overwrite each other's module globals (last-write-wins): a client ends up
 # scheduling tasks on a sibling profile's loop ("Future attached to a different loop" crashes) or binds to
@@ -1289,7 +1291,7 @@ class FeishuAdapter(BasePlatformAdapter):
 
     supports_code_blocks = True  # Feishu renders fenced code blocks
     splits_long_messages = True  # send() chunks via truncate_message(MAX_MESSAGE_LENGTH)
-
+    serial_receive_loop = True  # a chat's next message waits on its lock (_handle_message_with_guards)
     MAX_MESSAGE_LENGTH = 8000
     CHAT_LOCK_MAX_SIZE: int = 1000  # distinct chat IDs kept in _chat_locks before LRU eviction
     _SPLIT_THRESHOLD = 4000  # chunk near Feishu's ~4096-char client split → continuation almost certain
@@ -1517,7 +1519,7 @@ class FeishuAdapter(BasePlatformAdapter):
             if not acquired:
                 owner_pid = existing.get("pid") if isinstance(existing, dict) else None
                 message = (
-                    "Another local Hermes gateway is already using this Feishu app_id"
+                    "Another local Cybr Agent gateway is already using this Feishu app_id"
                     + (f" (PID {owner_pid})." if owner_pid else ".")
                     + " Stop the other gateway before starting a second Feishu websocket client."
                 )
@@ -2126,7 +2128,7 @@ class FeishuAdapter(BasePlatformAdapter):
         )
 
     def _on_message_read_event(self, data: P2ImMessageMessageReadV1) -> None:
-        """Ignore read-receipt events that Hermes does not act on."""
+        """Ignore read-receipt events that Cybr Agent does not act on."""
         message = getattr(getattr(data, "event", None), "message", None)
         logger.debug("[Feishu] Ignoring message_read event: %s", getattr(message, "message_id", None) or "")
 
@@ -2158,10 +2160,8 @@ class FeishuAdapter(BasePlatformAdapter):
     def _on_drive_comment_event(self, data: Any) -> None:
         """drive.notice.comment_add_v1 → feishu_comment.handle_drive_comment_event on the adapter loop."""
         from plugins.platforms.feishu.feishu_comment import handle_drive_comment_event
-        self._submit_if_ready(
-            "drive comment event",
-            lambda: handle_drive_comment_event(self._client, data, self_open_id=self._bot_open_id),
-        )
+        self._submit_if_ready("drive comment event", lambda: handle_drive_comment_event(
+            self._client, data, self_open_id=self._bot_open_id, secondary=bool(getattr(self, "_owner_profile", None))))
 
     def _on_meeting_invited_event(self, data: Any) -> None:
         """vc.bot.meeting_invited_v1 → feishu_meeting_invite.handle_meeting_invited_event."""
@@ -2748,12 +2748,12 @@ class FeishuAdapter(BasePlatformAdapter):
         return await cache_image_from_url(image_url, ext=ext)
 
     async def _download_remote_document(self, file_url: str, *, default_ext: str, preferred_name: str) -> tuple[str, str]:
-        from gateway.platforms.base import _ssrf_redirect_guard
+        from gateway.platforms.base import ssrf_redirect_guard
         from tools.url_safety import create_ssrf_safe_async_client, is_safe_url
         if not is_safe_url(file_url):
             raise ValueError(f"Blocked unsafe URL (SSRF protection): {file_url[:80]}")
         async with create_ssrf_safe_async_client(
-            timeout=30.0, follow_redirects=True, event_hooks={"response": [_ssrf_redirect_guard]},
+            timeout=30.0, follow_redirects=True, event_hooks={"response": [ssrf_redirect_guard]},
         ) as client:
             response = await client.get(
                 file_url, headers={"User-Agent": "Mozilla/5.0 (compatible; HermesAgent/1.0)", "Accept": "*/*"},
@@ -2857,7 +2857,7 @@ class FeishuAdapter(BasePlatformAdapter):
             return self._webhook_reject(remote_ip, "401-sig", 401, "Invalid signature")
 
         if payload.get("encrypt"):
-            logger.error("[Feishu] Encrypted webhook payloads are not supported by Hermes webhook mode")
+            logger.error("[Feishu] Encrypted webhook payloads are not supported by Cybr Agent webhook mode")
             return self._webhook_reject(
                 remote_ip, "400-encrypted", 400, json_msg="encrypted webhook payloads are not supported",
             )
@@ -4278,7 +4278,7 @@ def _qr_register_inner(*, initial_domain: str, timeout_seconds: int) -> Optional
         print(f"\n  Scan the QR code above, or open this URL directly:\n  {qr_url}")
     else:
         print(f"  Open this URL in Feishu / Lark on your phone:\n\n  {qr_url}\n")
-        print("  Tip: from the Hermes environment, run: "
+        print("  Tip: from the Cybr Agent environment, run: "
               f"{install_hint('messaging')} "
               "to display a scannable QR code here next time")
     print()
@@ -4470,24 +4470,31 @@ def _apply_yaml_config(yaml_cfg: dict, feishu_cfg: dict) -> dict | None:
     return {"allow_bots": str(seeded["allow_bots"]).lower()} if seeded else None
 
 
-
 def _is_connected(config) -> bool:
     """Feishu counts as connected once app_id is configured."""
     extra = getattr(config, "extra", {}) or {}
     return bool(extra.get("app_id"))
 
 
-
 def register(ctx) -> None:
-    """Plugin entry point — called by the Hermes plugin system."""
+    """Plugin entry point — called by the Cybr Agent plugin system."""
+    from .adapter_hint import PLATFORM_HINT
+    from .send_targets import SEND_ENTRY_KWARGS
+    from .dashboard_card import DASHBOARD_CARD
+    from . import gateway_env  # env -> GatewayConfig bridge (gateway.config_env)
     ctx.register_platform(
+        **SEND_ENTRY_KWARGS,  # send_message target syntax + routing
         name="feishu", label="Feishu / Lark", adapter_factory=FeishuAdapter,
+        **DASHBOARD_CARD,
         check_fn=feishu_deps_present, ensure_deps_fn=check_feishu_requirements,
         is_connected=_is_connected, validate_config=_is_connected,
         required_env=["FEISHU_APP_ID", "FEISHU_APP_SECRET"],
         install_hint="Run `hermes setup` to install Feishu support.", setup_fn=interactive_setup,
-        apply_yaml_config_fn=_apply_yaml_config, allowed_users_env="FEISHU_ALLOWED_USERS",
-        allow_all_env="FEISHU_ALLOW_ALL_USERS", cron_deliver_env_var="FEISHU_HOME_CHANNEL",
+        apply_yaml_config_fn=_apply_yaml_config, cron_deliver_env_var="FEISHU_HOME_CHANNEL",
         standalone_sender_fn=_standalone_send, max_message_length=8000, emoji="🪽",
         allow_update_command=True,
+        platform_hint=PLATFORM_HINT,
+        display_tier="medium",
+        env_overrides=gateway_env.ENV_OVERRIDES,
+        env_enable_credentials=gateway_env.ENV_ENABLE_CREDENTIALS, **gateway_env.AUTHZ,
     )

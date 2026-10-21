@@ -156,6 +156,11 @@ def collect_superseded_generations(project_root: Path) -> None:
 _METADATA_FLAGS = frozenset({"-h", "--help", "-V", "--version"})
 
 
+def _is_read_only_gateway_status(command: list[str]) -> bool:
+    """Whether *command* is the recovery diagnostic that must not run an update tail."""
+    return command[:2] == ["gateway", "status"]
+
+
 def completion_pending_path(project_root: Path) -> Path:
     """Marker for a source update whose dependency sync committed but whose tail
     (launchers, products, maintenance) has not finished.
@@ -359,8 +364,13 @@ def prepare_launch(project_root: Path, argv: list[str]) -> Path | None:
     from hermes_cli._parser import command_argv
     from hermes_cli.steward import read_install_stamp
 
-    if (command_argv(argv)[:1] == ["pm"]
+    command = command_argv(argv)
+    if (command[:1] == ["pm"]
             or _METADATA_FLAGS & set(argv)
+            # This is the recovery path shown by the Desktop when a pending update has
+            # fenced the gateway. Completing that same tail first can take minutes and
+            # leaves the user without the fence diagnosis or a usable restart remedy.
+            or _is_read_only_gateway_status(command)
             or os.environ.get("HERMES_DISABLE_LAZY_INSTALLS", "").lower() in ("1", "true", "yes")
             or not (root / ".git").exists()
             or not (root / "pyproject.toml").is_file()):
@@ -406,7 +416,7 @@ def prepare_launch(project_root: Path, argv: list[str]) -> Path | None:
         # keeps a dead update's marker (R6: refused as held, never reclaimed).
         lock = UpdateLock(install_root=root, checkout_first=False)
         if not lock.acquire():
-            raise RuntimeError("an update is still running; wait for it to exit, then relaunch Hermes")
+            raise RuntimeError("an update is still running; wait for it to exit, then relaunch Cybr Agent")
         try:
             # Under the launching update's own claim (its pid is our ancestor) a process it
             # spawned owes no tail: that obligation is the updater's.
@@ -425,7 +435,7 @@ def prepare_launch(project_root: Path, argv: list[str]) -> Path | None:
                 # marker over a held checkout lock is a killed update whose tree (its completion
                 # child) still runs.
                 if not lock.acquire_checkout(root):
-                    raise RuntimeError("an update is still running; wait for it to exit, then relaunch Hermes")
+                    raise RuntimeError("an update is still running; wait for it to exit, then relaunch Cybr Agent")
                 _finish_source_update(root, current=current, pending=pending)
         finally:
             lock.release()
@@ -469,7 +479,7 @@ def _prepare_borrowed_launch(root: Path, owner: Path, *, current: bool) -> Path 
     if not current:
         lock = UpdateLock(install_root=root, checkout_first=False)  # R6, as in prepare_launch
         if not lock.acquire():
-            raise RuntimeError("an update is still running; wait for it to exit, then relaunch Hermes")
+            raise RuntimeError("an update is still running; wait for it to exit, then relaunch Cybr Agent")
         try:
             _sync_source_dependencies(root, arm=False, borrowed_from=owner)
         finally:
@@ -495,7 +505,7 @@ def _finish_source_update(root: Path, *, current: bool, pending: Path) -> None:
         # Current post-sync verification children can boot under a live updater.
         legacy_markers = (root / ".update-incomplete", root / ".lazy-refresh-incomplete")
         if any(_marker_owner_is_live(marker) for marker in legacy_markers):
-            raise RuntimeError("an update is still running; wait for it to exit, then relaunch Hermes")
+            raise RuntimeError("an update is still running; wait for it to exit, then relaunch Cybr Agent")
         print("hermes: completing source-update dependencies...", file=sys.stderr, flush=True)
         completed = _tree_matches_completed_stamp(root)
         # ponytail: commit-only match; a product dir deleted by hand is rebuilt on demand

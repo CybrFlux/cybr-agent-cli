@@ -37,7 +37,7 @@ try {
   // tools list crosses the real application/config/registry imports, unlike
   // version/help and PM's stdlib bootstrap fast paths.
   for (const args of [['--version'], ['--help'], ['tools', 'list'], ['pm', 'doctor']]) {
-    console.log(`— published hermes ${args.join(' ')} (relocated) —`)
+    console.log(`— published cybr ${args.join(' ')} (relocated) —`)
     const child = spawnSync(executable, args, {
       cwd: home, env, stdio: 'inherit', timeout: 120000,
     })

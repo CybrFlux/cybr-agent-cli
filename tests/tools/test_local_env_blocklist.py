@@ -78,7 +78,7 @@ def test_terminal_child_observes_declared_policy(child_env, monkeypatch):
     blocked.update(name for name, meta in OPTIONAL_ENV_VARS.items()
                    if meta.get("category") in {"tool", "messaging"}
                    or (meta.get("category") == "setting" and meta.get("password")))
-    blocked.discard("CLAUDE_CODE_OAUTH_TOKEN")  # operator's subscription, not Hermes inference
+    blocked.discard("CLAUDE_CODE_OAUTH_TOKEN")  # operator's subscription, not Cybr Agent inference
     for name in blocked | set(OPERATOR_ALLOWED):
         monkeypatch.setenv(name, "fake-" + name)
     before = dict(os.environ)
@@ -102,7 +102,7 @@ YUANBAO_APP_SECRET FEISHU_ENCRYPT_KEY FEISHU_VERIFICATION_TOKEN TELEGRAM_WEBHOOK
 PHOTON_SIDECAR_TOKEN A2A_PUSH_SECRET TEAMS_GRAPH_ACCESS_TOKEN QQ_STT_API_KEY
 MSGRAPH_WEBHOOK_CLIENT_STATE MSGRAPH_CLIENT_SECRET
 """.split()
-# The user's own credentials that merely start with a platform name. Hermes never reads them, so
+# The user's own credentials that merely start with a platform name. Cybr Agent never reads them, so
 # they reach the terminal like any other variable, and passthrough can forward them.
 OPERATOR_SECRETS = ["MY_APP_KEY", "DEPLOY_WEBHOOK_SECRET", "SLACK_USER_TOKEN", "LOCAL_LLM_API_KEY",
                     "GATEWAY_API_KEY"]
@@ -115,7 +115,7 @@ def test_adapter_and_provider_profile_secrets_never_reach_children(child_env, mo
     secrets = set(ADAPTER_SECRETS)
     # child_env's HERMES_HOME has no provider plugins, so these are the bundled profiles.
     secrets.update(name for profile in list_providers() for name in (profile.env_vars or ()))
-    secrets.discard("CLAUDE_CODE_OAUTH_TOKEN")  # operator's subscription, not Hermes inference
+    secrets.discard("CLAUDE_CODE_OAUTH_TOKEN")  # operator's subscription, not Cybr Agent inference
     for name in [*secrets, *OPERATOR_SECRETS]:
         monkeypatch.setenv(name, "fake-" + name)
     factories = {
@@ -656,6 +656,42 @@ def test_runtime_provenance_is_independent_of_aliases_and_virtual_env(child_env,
     assert base["VIRTUAL_ENV"] == str(user_venv)
 
 
+@pytest.mark.usefixtures("child_env")
+def test_sealed_payload_venv_is_runtime_provenance_without_facts(tmp_path, monkeypatch):
+    """A sealed payload boots its store interpreter (not a venv) on its shipped venv
+    before PM commits a generation; that venv's site-packages must never reach a child."""
+    from pm.environments import site_packages
+    shipped = tmp_path / "payload/venv"
+    shipped.mkdir(parents=True)
+    (shipped / "pyvenv.cfg").write_text("version = 3.14\n", encoding="utf-8")
+    monkeypatch.setattr("pm.environments.install_state_dir", lambda repo: tmp_path / "payload/state")
+    monkeypatch.setattr("pm.environments.payload_venv", lambda repo: shipped)
+    monkeypatch.setattr(local, "_in_venv", False)
+    monkeypatch.setattr(local, "_hermes_site_packages", None)
+    user_site = tmp_path / "user-site"
+    result = local._sanitize_subprocess_env(
+        {"PYTHONPATH": os.pathsep.join([str(site_packages(shipped)), str(user_site)])})
+    assert result["PYTHONPATH"] == str(user_site)
+
+
+@pytest.mark.usefixtures("child_env")
+@pytest.mark.parametrize("shipped", ["phantom", "escapes-root"])
+def test_payload_venv_that_is_not_real_is_not_provenance(tmp_path, monkeypatch, shipped):
+    """A stray manifest.json can name a venv that does not exist, or one that escapes its root:
+    neither may be trusted (a phantom path would shadow the user's own venv) or raise."""
+    def payload_venv(repo):
+        if shipped == "escapes-root":
+            raise RuntimeError("payload environment escapes its root")
+        return tmp_path / "no-such-venv"
+
+    monkeypatch.setattr("pm.environments.install_state_dir", lambda repo: tmp_path / "payload/state")
+    monkeypatch.setattr("pm.environments.payload_venv", payload_venv)
+    monkeypatch.setattr(local, "_hermes_repo_root_aliases", ())
+    from tools.environments.local_pythonpath import _validated_runtime_venv
+
+    assert _validated_runtime_venv({}) is None
+
+
 @pytest.mark.parametrize("existing,expected", [
     (["/usr/bin", "/bin"], ["/opt/hermes/bin", "/usr/bin", "/bin"]),
     (["/usr/bin", "/opt/hermes/bin"], ["/usr/bin", "/opt/hermes/bin"]),
@@ -723,8 +759,8 @@ class TestNativeEnvironmentContracts:
 
     @pytest.mark.platforms("windows")
     def test_windows_hermes_owned_paths_stripped(self):
-        """On Windows, a Hermes venv site-packages entry written with
-        backslashes is stripped by the same Hermes-owned check, while a
+        """On Windows, a Cybr Agent venv site-packages entry written with
+        backslashes is stripped by the same Cybr Agent-owned check, while a
         user Windows path is preserved.  Windows-only: POSIX ``Path`` does
         not split on backslashes, so this cannot be meaningfully simulated
         on a POSIX host."""
@@ -784,9 +820,9 @@ class TestNativeEnvironmentContracts:
     def test_base_python_sanitizer_uses_validated_separate_runtime_venv(self, tmp_path, monkeypatch):
         """A base interpreter strips the exact Windows runtime site-packages.
 
-        This deliberately uses a synthetic Hermes venv separate from the test
+        This deliberately uses a synthetic Cybr Agent venv separate from the test
         runner: sys.prefix represents base Python, while validated VIRTUAL_ENV
-        identifies ``<repo>/venv`` as the Hermes runtime producer contract.
+        identifies ``<repo>/venv`` as the Cybr Agent runtime producer contract.
         """
         from tools.environments import local
         from tools.environments import local_pythonpath
@@ -856,7 +892,7 @@ class TestNativeEnvironmentContracts:
     ])
     def test_builders_strip_hermes_venv_pythonpath(self, builder):
         """Every subprocess env builder applies the same sanitation contract:
-        Hermes venv site-packages is stripped, user entries survive.
+        Cybr Agent venv site-packages is stripped, user entries survive.
         """
         from tools.environments import local as local_mod
 
@@ -879,7 +915,7 @@ class TestNativeEnvironmentContracts:
         assert "/home/user/my-lib" in entries
 
     def test_scrub_child_env_strips_hermes_venv_pythonpath(self):
-        """execute_code's _scrub_child_env path: after scrubbing, Hermes venv
+        """execute_code's _scrub_child_env path: after scrubbing, Cybr Agent venv
         site-packages entries should be stripped when
         _strip_hermes_owned_pythonpath is applied (as the spawn path does),
         while user entries (even for another Python version) are preserved.
@@ -909,12 +945,12 @@ class TestNativeEnvironmentContracts:
     def test_execute_code_composition_strips_inherited_hermes_entries(self, same_env):
         """Integration: execute_code's real spawn path composes a clean PYTHONPATH.
 
-        Seeds a contaminated inherited PYTHONPATH (Hermes repo root + Hermes
+        Seeds a contaminated inherited PYTHONPATH (Cybr Agent repo root + Cybr Agent
         venv site-packages + user entries) through os.environ and drives
         execute_code all the way to Popen.  Proves the #84500 conditional
         composition and the #82581 selective strip compose correctly:
 
-        * inherited Hermes venv site-packages never survive into the sandbox;
+        * inherited Cybr Agent venv site-packages never survive into the sandbox;
         * the staging tmpdir stays the first entry;
         * the repo root is deliberately re-added exactly once for a same-env
           child (the single occurrence proves the inherited copy was stripped
@@ -980,7 +1016,7 @@ class TestNativeEnvironmentContracts:
         assert norm_parts[0] == norm_staging, \
             "staging tmpdir must be the first PYTHONPATH entry"
         assert norm_venv not in norm_parts, \
-            "inherited Hermes venv site-packages must be stripped"
+            "inherited Cybr Agent venv site-packages must be stripped"
         assert norm_user_a in norm_parts and norm_user_b in norm_parts, \
             "user PYTHONPATH entries must survive"
         assert norm_parts.index(norm_user_a) > norm_parts.index(norm_staging), \
@@ -1262,11 +1298,11 @@ class TestNativeEnvironmentContracts:
 
 
 class TestPythonhomeSanitized:
-    """PYTHONHOME must not leak from the Hermes runtime into subprocesses.
+    """PYTHONHOME must not leak from the Cybr Agent runtime into subprocesses.
 
     The gateway inherits/sets PYTHONHOME in its process environment; a child
     interpreter (system Python, another venv, cron no_agent scripts) that
-    inherits it redirects its stdlib search to the Hermes venv and crashes
+    inherits it redirects its stdlib search to the Cybr Agent venv and crashes
     with version-mismatch errors before importing anything (#75018).
     """
 
@@ -1374,7 +1410,7 @@ class TestBlocklistCoverage:
         must appear in the blocklist — ensures no drift.
 
         CLAUDE_CODE_OAUTH_TOKEN is the one deliberate exemption: it is owned
-        by the user's Claude Code install, not Hermes (#55878).
+        by the user's Claude Code install, not Cybr Agent (#55878).
         """
         from hermes_cli.auth import PROVIDER_REGISTRY
 
@@ -1396,7 +1432,7 @@ class TestBlocklistCoverage:
     def test_general_aws_chain_not_in_blocklist(self):
         """The general AWS credential chain must NOT be in the blocklist —
         no-regression guard for #32314. These belong to the user's trusted
-        operator shell (SECURITY.md §3.2), not to Hermes, and blocklisting
+        operator shell (SECURITY.md §3.2), not to Cybr Agent, and blocklisting
         them would be unrecoverable via env_passthrough (GHSA-rhgp-j443-p4rf).
         """
         general_chain = {
@@ -1420,7 +1456,7 @@ class TestBlocklistCoverage:
 
     def test_claude_code_oauth_token_is_inheritable(self):
         """CLAUDE_CODE_OAUTH_TOKEN is owned by the user's Claude Code install
-        (subscription OAuth), not a Hermes inference credential. Stripping it
+        (subscription OAuth), not a Cybr Agent inference credential. Stripping it
         made agent-spawned ``claude`` fall through to the shared Keychain /
         ~/.claude credential store and clobber the user's interactive login
         on auth failure (#55878). It must stay inheritable."""

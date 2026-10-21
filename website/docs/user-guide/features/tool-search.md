@@ -10,13 +10,13 @@ session, their JSON schemas can consume a substantial fraction of the
 context window on every turn — even when only a few of them are relevant
 to what the user actually asked for.
 
-**Tool Search** is Hermes' opt-in progressive-disclosure layer for that
+**Tool Search** is Cybr Agent' opt-in progressive-disclosure layer for that
 problem. When activated, MCP and plugin tools are replaced in the
 model-visible tools array by three bridge tools, and the model loads each
 specific tool's schema on demand.
 
 :::info Built-in tools and explicit deferral
-Hermes keeps its working-set core tools (`terminal`, `read_file`, `write_file`,
+Cybr Agent keeps its working-set core tools (`terminal`, `read_file`, `write_file`,
 `patch`, `search_files`, `todo`, `memory`, `browser_*`, `web_search`,
 `web_extract`, `clarify`, `execute_code`, `delegate_task`, and the rest of
 `_HERMES_CORE_TOOLS`) loaded directly by default. Cold, event-triggered built-ins
@@ -74,7 +74,7 @@ miss is not mistaken for a missing capability.
 `tool_describe` resolves every requested name in one call; unknown names
 are reported in `not_found` without failing the rest of the batch.
 
-When the model invokes `tool_call`, Hermes **unwraps the bridge** and
+When the model invokes `tool_call`, Cybr Agent **unwraps the bridge** and
 dispatches the underlying tool exactly as if the model had called it
 directly. Pre-tool-call hooks, guardrails, approval prompts, and
 post-tool-call hooks all run against the real tool name — not against
@@ -157,8 +157,8 @@ tools:
 
 ## Connectors (remote tools)
 
-When you are signed in to the Nous Portal, the bridge additionally reaches
-**connectors** — remote tools served by the managed tool gateway. They are
+The bridge also reaches **connectors**: remote tools served by the managed tool
+gateway. They are
 never registered locally: `tool_search` sends each query to the gateway, adds
 the gateway's hits to the local catalog as documents (tagged
 `source: "connectors"`, named `connectors__<connector>__<tool>`), and ranks
@@ -182,9 +182,22 @@ tools:
                     # behaves exactly as if the feature didn't exist
 ```
 
-Signed out (or when the gateway does not serve connectors for your
-account), everything above is invisible: local search behaves exactly as
-described in the rest of this page, with no errors shown to the model.
+Connectors need a Nous identity. You do not have to sign in for one: if you
+have no Nous account, the first `manage_connections` action (or opening the
+desktop Connectors page) creates a free Nous identity for you, on every
+surface. It does not change your model provider: outside builds that ship
+the Nous free tier it is used for connectors and managed tools only. Until it exists, `tool_search` sends nothing to the
+gateway and its result says that hosted connectors are not set up yet and
+that `manage_connections` sets them up. To opt out, set:
+
+```yaml
+nous:
+  guest: false
+```
+
+With that setting, or when the gateway does not serve connectors for a
+signed-in account, everything above is invisible: local search behaves exactly
+as described in the rest of this page, with no errors shown to the model.
 
 A connector call that needs an account you haven't linked returns a
 `CONNECTION_REQUIRED` error. The `manage_connections` tool lists connectors and
@@ -192,9 +205,8 @@ their connection state and starts an authorization: in the desktop app the call
 shows a card, blocks until each app is connected or skipped, and reports the
 outcomes; elsewhere it returns a connect link per app for the user to open.
 Disconnecting an account is done by the user in the Portal. The same tool also installs, enables and authorizes
-local MCP servers from the catalog (targets with `mcp: true`), so it is
-present whether or not you are signed in; only the managed-connector actions
-need the sign-in.
+local MCP servers from the catalog (targets with `mcp: true`); those actions
+never create a Nous identity.
 
 You can link more than one account of the same app, each with its own name
 (see [Multiple connector accounts](./tool-gateway.md#multiple-connector-accounts)).
@@ -249,9 +261,9 @@ to any progressive-disclosure design, not specific to this implementation:
   prefix.
 - **No provider-native validation for deferred schemas.** `tool_describe`
   lets the model read a deferred tool's schema, but the provider still sees
-  only the generic `tool_call.arguments` object. Hermes therefore coerces and
+  only the generic `tool_call.arguments` object. Cybr Agent therefore coerces and
   validates the underlying arguments locally before dispatch; the concrete
-  tool or MCP server remains responsible for schemas Hermes cannot safely
+  tool or MCP server remains responsible for schemas Cybr Agent cannot safely
   validate, such as malformed schemas or external references.
 - **Model-quality dependence.** Tool Search assumes the model can write a
   reasonable search query for the tool it wants. Smaller models do this
@@ -302,7 +314,7 @@ to any progressive-disclosure design, not specific to this implementation:
   discover or call a tool outside that subset — the deferred catalog is
   the deferrable slice of the session's own enabled/disabled toolsets,
   not the whole process registry.
-- **No JS sandbox.** Hermes uses the simpler "structured tools" mode
+- **No JS sandbox.** Cybr Agent uses the simpler "structured tools" mode
   (search / describe / call as plain functions). The JS-sandbox "code
   mode" some other implementations offer is a large surface area; we
   skip it.

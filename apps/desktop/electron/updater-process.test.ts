@@ -1,12 +1,17 @@
 import assert from 'node:assert/strict'
 import type { SpawnOptions } from 'node:child_process'
+import fs from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
 
-import { test } from 'vitest'
+import { test, vi } from 'vitest'
 
 import {
   collectRelaunchArgs,
   describeUpdaterHandoffFailure,
+  LAUNCHER_ROOT_MISS_TTL_MS,
+  launcherInstallDirectory,
+  launcherInstallRoot,
   MARKER_SELF_ADOPT_EPOCH_MS,
   observeUpdaterHandoff,
   resolvePosixScriptHandoff,
@@ -24,7 +29,7 @@ test('stagedUpdaterSupportsPrewrittenMarker rejects installers predating the sel
   // The real-world trap: an installer staged at first install months ago, never
   // refreshed because copy_self_to_hermes_home no-ops during --update.
   assert.equal(
-    stagedUpdaterSupportsPrewrittenMarker('C:\\Hermes\\hermes-setup.exe', {
+    stagedUpdaterSupportsPrewrittenMarker('C:\\Cybr Agent\\hermes-setup.exe', {
       stagedMtimeMs: () => MARKER_SELF_ADOPT_EPOCH_MS - 60 * DAY_MS
     }),
     false
@@ -33,13 +38,13 @@ test('stagedUpdaterSupportsPrewrittenMarker rejects installers predating the sel
 
 test('stagedUpdaterSupportsPrewrittenMarker accepts installers from the fix onward', () => {
   assert.equal(
-    stagedUpdaterSupportsPrewrittenMarker('C:\\Hermes\\hermes-setup.exe', {
+    stagedUpdaterSupportsPrewrittenMarker('C:\\Cybr Agent\\hermes-setup.exe', {
       stagedMtimeMs: () => MARKER_SELF_ADOPT_EPOCH_MS
     }),
     true
   )
   assert.equal(
-    stagedUpdaterSupportsPrewrittenMarker('C:\\Hermes\\hermes-setup.exe', {
+    stagedUpdaterSupportsPrewrittenMarker('C:\\Cybr Agent\\hermes-setup.exe', {
       stagedMtimeMs: () => MARKER_SELF_ADOPT_EPOCH_MS + 30 * DAY_MS
     }),
     true
@@ -50,7 +55,7 @@ test('stagedUpdaterSupportsPrewrittenMarker treats an unreadable mtime as unsupp
   // Bias toward the path that can always make progress: a skipped pre-write
   // loses anti-respawn hardening, a wedged updater can never update again.
   assert.equal(
-    stagedUpdaterSupportsPrewrittenMarker('C:\\Hermes\\hermes-setup.exe', {
+    stagedUpdaterSupportsPrewrittenMarker('C:\\Cybr Agent\\hermes-setup.exe', {
       stagedMtimeMs: () => null
     }),
     false
@@ -62,12 +67,12 @@ test('resolveStagedUpdaterBinary still returns a stale staged updater on Windows
   // the stale binary is the only updater these users have, and it works fine
   // once it is allowed to write its own claim.
   assert.equal(
-    resolveStagedUpdaterBinary('C:\\Hermes', {
+    resolveStagedUpdaterBinary('C:\\Cybr Agent', {
       fileExists: () => true,
       isWindows: true,
       stagedMtimeMs: () => MARKER_SELF_ADOPT_EPOCH_MS - 60 * DAY_MS
     }),
-    path.join('C:\\Hermes', 'hermes-setup.exe')
+    path.join('C:\\Cybr Agent', 'hermes-setup.exe')
   )
 })
 
@@ -85,7 +90,7 @@ test('spawnUpdaterProcess hides the updater console and detaches the child on Wi
   const result = spawnUpdaterProcess(
     'hermes-setup.exe',
     ['--update', '--branch', 'main'],
-    { cwd: 'C:\\Hermes', detached: true, stdio: 'ignore' },
+    { cwd: 'C:\\Cybr Agent', detached: true, stdio: 'ignore' },
     {
       isWindows: true,
       spawnProcess: (command, args, options) => {
@@ -102,7 +107,7 @@ test('spawnUpdaterProcess hides the updater console and detaches the child on Wi
     {
       args: ['--update', '--branch', 'main'],
       command: 'hermes-setup.exe',
-      options: { cwd: 'C:\\Hermes', detached: true, stdio: 'ignore', windowsHide: true }
+      options: { cwd: 'C:\\Cybr Agent', detached: true, stdio: 'ignore', windowsHide: true }
     }
   ])
 })
@@ -477,3 +482,79 @@ test('observeUpdaterHandoff settles ok for children without an event interface',
 
   assert.equal(outcome.ok, true)
 })
+
+test.skipIf(process.platform === 'win32')('launcherInstallDirectory returns the root the launcher reports', async () => {
+  const dir = await realpathMkdtemp('launcher-install-')
+  const reported = await fs.realpath(await fs.mkdir(path.join(dir, 'hermes-agent')).then(() => path.join(dir, 'hermes-agent')))
+  const launcher = await writeLauncher(dir, `printf 'Cybr Agent v0.22.1\\nInstall directory: ${reported}\\n'`)
+
+  assert.equal(launcherInstallDirectory(launcher), reported)
+})
+
+test.skipIf(process.platform === 'win32')('launcherInstallDirectory stays null when the launcher reports nothing', async () => {
+  const dir = await realpathMkdtemp('launcher-install-')
+
+  for (const body of ["printf 'Cybr Agent v0.22.1\\n'", 'exit 3']) {
+    const launcher = await writeLauncher(dir, body)
+
+    assert.equal(launcherInstallDirectory(launcher), null)
+  }
+})
+
+// The backend resolver runs on Electron's main thread, pool resolves included (every tick of
+// reensureDuringRestart): the `--version` probe must not block it, and a launcher that never
+// names its root must not pay a fresh spawn on each resolve.
+test.skipIf(process.platform === 'win32')('launcherInstallRoot probes off the main thread, once for concurrent callers', async () => {
+  const dir = await realpathMkdtemp('launcher-root-')
+  const reported = await fs.realpath(await fs.mkdir(path.join(dir, 'hermes-agent')).then(() => path.join(dir, 'hermes-agent')))
+  const calls = path.join(dir, 'calls')
+  const launcher = await writeLauncher(dir, `echo x >> ${calls}; sleep 0.4; printf 'Install directory: ${reported}\\n'`)
+  let ticked = false
+  const timer = setTimeout(() => { ticked = true }, 50)
+
+  const first = launcherInstallRoot(launcher)
+  const second = launcherInstallRoot(launcher)
+
+  assert.ok(first instanceof Promise, 'the probe must not run synchronously on the caller')
+  assert.deepEqual(await Promise.all([first, second]), [reported, reported])
+  clearTimeout(timer)
+  assert.equal(ticked, true, 'the event loop kept running while the launcher probed')
+  assert.equal((await fs.readFile(calls, 'utf8')).trim().split('\n').length, 1)
+})
+
+// A miss is cached briefly, not forever: the ticket resolver retries after a failure, and a
+// permanent miss would keep the override rootless until Desktop restarts.
+test.skipIf(process.platform === 'win32')('launcherInstallRoot caches a miss for a short window, then retries and keeps the root', async () => {
+  const dir = await realpathMkdtemp('launcher-root-')
+  const reported = await fs.realpath(await fs.mkdir(path.join(dir, 'hermes-agent')).then(() => path.join(dir, 'hermes-agent')))
+  const calls = path.join(dir, 'calls')
+  const launcher = await writeLauncher(dir, `echo x >> ${calls}; printf 'Cybr Agent v0.22.1\\n'`)
+  const count = async () => (await fs.readFile(calls, 'utf8')).trim().split('\n').length
+  const now = vi.spyOn(Date, 'now')
+
+  try {
+    now.mockReturnValue(1_000_000)
+    assert.equal(await launcherInstallRoot(launcher), undefined)
+    assert.equal(await launcherInstallRoot(launcher), undefined)
+    assert.equal(await count(), 1, 'a miss inside the window does not spawn again')
+
+    await writeLauncher(dir, `echo x >> ${calls}; printf 'Install directory: ${reported}\\n'`)
+    now.mockReturnValue(1_000_000 + LAUNCHER_ROOT_MISS_TTL_MS + 1)
+    assert.equal(await launcherInstallRoot(launcher), reported)
+    await writeLauncher(dir, 'exit 3')
+    assert.equal(await launcherInstallRoot(launcher), reported)
+    assert.equal(await count(), 2)
+  } finally { now.mockRestore() }
+})
+
+async function realpathMkdtemp(prefix: string): Promise<string> {
+  return fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), prefix)))
+}
+
+/** A POSIX script stands in for the installation launcher's --version boundary. */
+async function writeLauncher(dir: string, body: string): Promise<string> {
+  const file = path.join(dir, 'hermes')
+  await fs.writeFile(file, `#!/bin/sh\n${body}\n`, { mode: 0o755 })
+
+  return file
+}

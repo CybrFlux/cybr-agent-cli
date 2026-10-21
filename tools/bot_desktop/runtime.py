@@ -1,5 +1,5 @@
-"""Bot Desktop runtime: one headless Xfce desktop per Hermes profile, served over RFB on a private
-Unix socket, viewed and driven from Hermes Desktop.
+"""Bot Desktop runtime: one headless Xfce desktop per Cybr Agent profile, served over RFB on a private
+Unix socket, viewed and driven from Cybr Agent Desktop.
 
 Layout under ``<HERMES_HOME>/bot-desktop/``: ``display`` (allocated X display number), ``rfb.sock``
 (Xvnc RFB Unix socket, 0600), ``Xauthority``, ``env`` (DISPLAY/XAUTHORITY/DBUS_SESSION_BUS_ADDRESS
@@ -93,7 +93,7 @@ def package_manager() -> Optional[str]:
 
 def install_command() -> Optional[str]:
     """The distro command that installs the Bot Desktop packages, as the human would type it on THIS host:
-    prefixed with ``sudo`` unless Hermes already runs as root, so it is both what the pane shows and what
+    prefixed with ``sudo`` unless Cybr Agent already runs as root, so it is both what the pane shows and what
     :mod:`tools.bot_desktop.install` runs. ``None`` when no package manager is present.
 
     Not a promise that it can run here: see :func:`installable`. The published Docker image supervises
@@ -602,9 +602,11 @@ def _sandbox_status(profile: Optional[str], where) -> DesktopStatus:
     blocker = None
     image_switch = None
     if missing:
-        blocker = (f"The terminal backend's sandbox image lacks {', '.join(missing)}. Use "
-                   f"{sandbox_host.SANDBOX_IMAGE_HINT} as terminal.{where.backend}_image (the default sandbox base "
-                   f"plus the desktop stack), or set bot_desktop.placement: gateway.")
+        advice = sandbox_host.plugin_image_advice(where.backend) or (
+            f"use {sandbox_host.SANDBOX_IMAGE_HINT} as terminal.{where.backend}_image (the default sandbox base "
+            f"plus the desktop stack)")
+        blocker = (f"The terminal backend's sandbox image lacks {', '.join(missing)}. {advice[0].upper()}{advice[1:]}, "
+                   f"or set bot_desktop.placement: gateway.")
         if where.backend == "docker":
             # The usual reason on an upgraded install: the persisted container predates the default
             # flip and was kept on purpose. The pane offers the switch instead of a config hint.

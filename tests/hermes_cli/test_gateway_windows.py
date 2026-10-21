@@ -44,6 +44,24 @@ def test_exec_schtasks_decodes_ansi_output_under_utf8_mode(monkeypatch):
 
 
 @pytest.mark.platforms("windows")
+def test_registered_task_launchers_reads_each_hermes_task_action(monkeypatch):
+    """The install probe's view of the Scheduled Tasks: the launcher each ``Hermes_Gateway*`` task
+    starts, as the task XML this module writes names it, and a pre-``wscript`` task's ``.cmd``."""
+    launcher = r"C:\Users\Ann Lee\custom hermes\gateway-service\Hermes_Gateway_work.vbs"
+    legacy = r"C:\Users\ann\h2\gateway-service\Hermes_Gateway.cmd"
+    current = gateway_windows._build_scheduled_task_xml("Hermes_Gateway_work", Path(launcher), "PC\\ann")
+    older = current.replace("<Command>wscript.exe</Command>", f"<Command>{legacy}</Command>").replace(
+        f'//B //Nologo "{launcher}"', "")
+    listing = ('\r\n"\\Microsoft\\Windows\\Defrag\\ScheduledDefrag","N/A","Ready"\r\n'
+               '"\\Hermes_Gateway_work","N/A","Ready"\r\n"\\Hermes_Gateway","N/A","Running"\r\n')
+    xml = {"Hermes_Gateway_work": current, "Hermes_Gateway": older}
+    monkeypatch.setattr(gateway_windows, "_exec_schtasks",
+                        lambda args, timeout=None: (0, listing if "/FO" in args else xml[args[2]], ""))
+
+    assert gateway_windows.registered_task_launchers() == [launcher, legacy]
+
+
+@pytest.mark.platforms("windows")
 def test_exec_schtasks_round_trips_non_ascii_task_argument_live(monkeypatch):
     """Real schtasks.exe on a real task whose argument carries a non-ASCII (ANSI-representable)
     character, queried from a UTF-8-mode interpreter: the template/live comparison in
@@ -287,7 +305,7 @@ def test_elevated_gateway_command_uses_hidden_console_python(monkeypatch):
         shell32 = FakeShell32()
 
     monkeypatch.setattr(gateway_windows, "_current_profile_cli_args", lambda: ["--profile", "alice"])
-    monkeypatch.setattr(gateway_windows.sys, "executable", r"C:\Hermes\venv\Scripts\python.exe")
+    monkeypatch.setattr(gateway_windows.sys, "executable", r"C:\Cybr Agent\venv\Scripts\python.exe")
     monkeypatch.setattr(gateway_windows.ctypes, "windll", FakeWindll(), raising=False)
 
     assert gateway_windows._launch_elevated_gateway_command("install", ["--start-now", "--elevated-handoff"])
@@ -295,7 +313,7 @@ def test_elevated_gateway_command_uses_hidden_console_python(monkeypatch):
     assert len(calls) == 1
     _hwnd, verb, executable, params, cwd, show = calls[0]
     assert verb == "runas"
-    assert executable == r"C:\Hermes\venv\Scripts\python.exe"
+    assert executable == r"C:\Cybr Agent\venv\Scripts\python.exe"
     assert "--profile alice gateway install --start-now --elevated-handoff" in params
     assert show == 0
     assert cwd
@@ -359,8 +377,8 @@ def test_gateway_vbs_script_is_console_less(monkeypatch):
     )
     content = gateway_windows._build_gateway_vbs_script(
         r"C:\venv\Scripts\python.exe",
-        r"C:\Hermes",
-        r"C:\Hermes",
+        r"C:\Cybr Agent",
+        r"C:\Cybr Agent",
         "--profile work",
     )
     assert "cmd.exe" not in content.lower()
@@ -806,7 +824,7 @@ def test_start_on_tty_hands_both_answers_to_install_and_honours_the_env_opt_out(
 
 def test_hermes_owns_windows_service_requires_name_or_binary_under_a_hermes_root():
     """Task Scheduler (``Schedule`` in svchost) above a task-launched gateway is never its supervisor;
-    a service is Hermes-owned only by a ``hermes*`` name or a binary under the install (#97208)."""
+    a service is Cybr Agent-owned only by a ``hermes*`` name or a binary under the install (#97208)."""
     roots = (
         r"C:\Users\kaize\AppData\Local\hermes\hermes-agent",
         r"C:\Users\kaize\AppData\Local\hermes\hermes-agent\venv\Scripts",
@@ -842,3 +860,11 @@ def test_wizard_install_service_asks_once_and_never_starts_after_windows_install
 
     assert installs == [{"force": False, "start_now": True, "start_on_login": True}]
     assert starts == []
+
+
+def test_decode_schtasks_output_honours_a_utf16_bom():
+    """A genuine UTF-16 write (BOM) decodes as UTF-16, never as a code page; a malformed one falls
+    back like any other bytes instead of raising past callers that catch only timeout/OS errors."""
+    text = "Herm\u00e9s"
+    assert gateway_windows._decode_schtasks_output(text.encode("utf-16")) == text
+    assert gateway_windows._decode_schtasks_output(b"\xff\xfe<\x00?")

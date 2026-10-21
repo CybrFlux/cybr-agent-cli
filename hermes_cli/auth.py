@@ -1,4 +1,4 @@
-"""Multi-provider authentication system for Hermes Agent.
+"""Multi-provider authentication system for Cybr Agent.
 
 - ``ProviderConfig`` / ``PROVIDER_REGISTRY`` describe every known inference provider.
 - The auth store (``~/.hermes/auth.json``) holds per-provider state, the credential pool and
@@ -631,8 +631,8 @@ def _lock_holder_hint(lock_path: Path) -> str:
             return ""
         except OSError:
             pass  # exists but is not signalable (e.g. EPERM): still a live holder
-    return (f"another hermes process (pid {pid}) probably still holds it "
-            "(e.g. a dashboard or a slow credential refresh)")
+    # No example holder: many stores use this lock; the caller's timeout_message names which one.
+    return f"another hermes process (pid {pid}) probably still holds it"
 
 
 def _stamp_lock_holder_pid(lock_file: Any) -> None:
@@ -1256,12 +1256,12 @@ def _config_selects_provider(normalized: str) -> bool:
 
 
 def _explicit_pool_entry_present(normalized: str) -> bool:
-    """Pool rows from EXPLICIT Hermes flows (manual add / device-code / PKCE) or live env keys;
+    """Pool rows from EXPLICIT Cybr Agent flows (manual add / device-code / PKCE) or live env keys;
     ambient borrowed sources (gh_cli / claude_code / qwen-cli) are deliberately excluded."""
     return any(_pool_entry_is_explicit(entry) for entry in read_credential_pool(normalized))
 
 
-# Set by Claude Code itself, not by the user explicitly configuring anthropic in Hermes.
+# Set by Claude Code itself, not by the user explicitly configuring anthropic in Cybr Agent.
 _IMPLICIT_ENV_VARS = frozenset({"CLAUDE_CODE_OAUTH_TOKEN"})
 _EXPLICIT_POOL_SOURCES = frozenset({"device_code", "loopback_pkce", "hermes_pkce", "manual"})
 _VERTEX_PROVIDER_IDS = ("vertex", "google-vertex", "vertex-ai", "gcp-vertex", "vertexai")
@@ -1304,7 +1304,7 @@ def _explicit_env_credentials_present(normalized: str) -> bool:
 
 
 def _pool_entry_is_explicit(entry: Any) -> bool:
-    """True for pool rows the user created via an explicit Hermes flow (or a still-live env key)."""
+    """True for pool rows the user created via an explicit Cybr Agent flow (or a still-live env key)."""
     if not isinstance(entry, dict):
         return False
     source = str(entry.get("source") or "").strip().lower()
@@ -1318,11 +1318,11 @@ def _pool_entry_is_explicit(entry: Any) -> bool:
 
 
 def _keyless_provider_has_explicit_config(normalized: str) -> bool:
-    """Vertex / Bedrock count as explicit when Hermes-scoped routing config is present.
+    """Vertex / Bedrock count as explicit when Cybr Agent-scoped routing config is present.
 
     Uses has_explicit_vertex_config(), NOT has_vertex_credentials(): the latter also counts an
     ambient GOOGLE_APPLICATION_CREDENTIALS path (commonly set for unrelated GCP work). Only
-    Hermes-scoped signals (VERTEX_PROJECT_ID / vertex.project_id / VERTEX_CREDENTIALS_PATH) count
+    Cybr Agent-scoped signals (VERTEX_PROJECT_ID / vertex.project_id / VERTEX_CREDENTIALS_PATH) count
     here."""
     if normalized in _VERTEX_PROVIDER_IDS:
         from agent.vertex_adapter import has_explicit_vertex_config
@@ -1346,7 +1346,7 @@ _EXPLICIT_CONFIG_CHECKS: tuple[tuple[Callable[[str], bool], bool], ...] = (
 def is_provider_explicitly_configured(provider_id: str) -> bool:
     """True only if the user explicitly configured this provider: auth.json ``active_provider``,
     config.yaml ``model.provider`` / MoA slots, a pasted provider env var, a pool entry from a
-    Hermes-initiated flow, or Hermes-scoped routing config for keyless cloud-SDK providers. Ambient
+    Cybr Agent-initiated flow, or Cybr Agent-scoped routing config for keyless cloud-SDK providers. Ambient
     borrowed credentials (gh CLI, qwen-cli, ~/.claude/.credentials.json) never count."""
     normalized = (provider_id or "").strip().lower()
     for check, best_effort in _EXPLICIT_CONFIG_CHECKS:
@@ -1544,9 +1544,9 @@ def _logged_in_oauth_active_provider(*, skip_free_tier: bool = False) -> Optiona
     try:
         _maybe = _load_auth_store().get("active_provider")
         if _maybe == "nous":
-            from hermes_cli.anon_auth import guest_enabled, has_guest
-            if has_guest() and (skip_free_tier or not guest_enabled()):
-                return None  # the free tier is off (or being discounted), so a guest is not a login
+            from hermes_cli.anon_auth import free_inference_active, has_guest
+            if has_guest() and (skip_free_tier or not free_inference_active()):
+                return None  # this guest carries no inference here (or is being discounted): not a login
         if _maybe and _maybe in PROVIDER_REGISTRY and get_auth_status(_maybe).get("logged_in"):
             return _maybe
     except Exception as e:
@@ -1637,7 +1637,7 @@ def resolve_provider(
     "auto" priority (explicit intent beats a stale OAuth login): 1. CLI api_key/base_url ->
     "openrouter"; 2. config.yaml ``model.provider``; 3. OPENROUTER_API_KEY (or an sk-or- key in
     OPENAI_API_KEY) -> "openrouter"; 4. OpenRouter pool; 5. provider env keys; 6. auth.json ``active_provider``;
-    7. Nous free tier when it is on and its identity exists (never created here);
+    7. Nous free tier when a claimed guest exists on the desktop's local backend (never created here);
     8. AWS Bedrock chain; 9. AuthError(no_provider_configured).
 
     ``skip_free_tier`` hides rungs 6-for-a-free-tier-identity and 7: the boot bootstrap asks
@@ -1690,16 +1690,16 @@ def resolve_provider(
                 _oauth_active)
         return _oauth_active
 
-    # Nous free tier, when it is on and its identity already exists. This rung sits ABOVE the Bedrock
+    # Nous free tier, when this guest claimed the welcome trial and this is the desktop's local
+    # backend (``anon_auth.free_inference_active``). This rung sits ABOVE the Bedrock
     # chain on purpose: every rung above this line is explicit user intent (CLI creds, config, env
     # keys, a sign-in); the boto chain below is implicit host state, and a leftover ~/.aws profile
     # used to win the first turn of a fresh install (NS-829). The rung never CREATES the identity:
-    # that is the boot bootstrap's job (free_tier_bootstrap), so provider resolution stays free of
-    # network and a fresh install without the bootstrap resolves exactly as upstream does.
+    # only the desktop's trial claim does (welcome_trial), so provider resolution stays free of network.
     if not skip_free_tier:
         try:
-            from hermes_cli.anon_auth import guest_enabled, has_guest
-            if guest_enabled() and has_guest():
+            from hermes_cli.anon_auth import free_inference_active
+            if free_inference_active():
                 return "nous"
         except Exception as exc:
             logger.debug("free tier check during provider resolution skipped: %s", exc)
@@ -1707,15 +1707,15 @@ def resolve_provider(
     # below explicit keys and below the free tier.
     try:
         from agent.bedrock_adapter import has_aws_credentials
-        if has_aws_credentials():
+        from hermes_cli.anon_auth import on_local_desktop_backend  # a laptop: no EC2 metadata lookup
+        if has_aws_credentials(instance_metadata=not on_local_desktop_backend()):
             return "bedrock"
     except ImportError:
         pass  # boto3 not installed
     from hermes_constants import display_hermes_home
     raise AuthError(
-        "Hermes is not connected to any AI provider yet. Run `hermes model` to pick one (the free "
-        "Nous tier needs no API key), type `/login` in chat, or add a key with "
-        f"`hermes auth add <provider>`. (Advanced: put an API key such as OPENROUTER_API_KEY in "
+        "Cybr Agent is not connected to any AI provider yet. Run `hermes model` to pick one, type `/login` in chat, "
+        f"or add a key with `hermes auth add <provider>`. (Advanced: put an API key such as OPENROUTER_API_KEY in "
         f"{display_hermes_home()}/.env.)",
         code="no_provider_configured")
 
@@ -1808,10 +1808,9 @@ def resolve_nous_access_token(
     insecure: Optional[bool] = None,
     ca_bundle: Optional[str] = None,
     refresh_skew_seconds: int = ACCESS_TOKEN_REFRESH_SKEW_SECONDS) -> str:
-    """Resolve a refresh-aware Nous Portal access token for managed tool gateways.
-
-    A free-tier exchange may be answered with a browser challenge (``anon_challenge``); it is worked
-    here, after the exchange's locks have unwound, and the exchange is then run once more."""
+    """Refresh-aware Nous Portal token for managed tool gateways, connectors and account reads, never
+    the free model: a guest gets a live held token, else a connectors-only mint NAS never challenges.
+    Only a NAS from before hermes-portal#1516 challenges that mint; it is worked here as before."""
     from hermes_cli.anon_challenge import run_with_challenge
     return run_with_challenge(lambda: _resolve_nous_access_token(
         timeout_seconds=timeout_seconds, insecure=insecure, ca_bundle=ca_bundle,
@@ -1841,7 +1840,7 @@ def _resolve_nous_access_token(
 
     with _provider_state_transaction("nous") as (auth_store, state, state_source_path):
         if not state:
-            raise _nous_err("Hermes is not logged into Nous Portal.", "nous_auth_missing", relogin=True)
+            raise _nous_err("Cybr Agent is not logged into Nous Portal.", "nous_auth_missing", relogin=True)
         portal_base_url = _nous_portal_base_url(state)
         client_id = str(state.get("client_id") or DEFAULT_NOUS_CLIENT_ID)
         verify = _resolve_verify(insecure=insecure, ca_bundle=ca_bundle, auth_state=state)
@@ -1850,20 +1849,17 @@ def _resolve_nous_access_token(
 
         lock_timeout = max(timeout_seconds + 5.0, AUTH_LOCK_TIMEOUT_SECONDS)
         with _nous_shared_store_lock(timeout_seconds=lock_timeout):
-            from hermes_cli.anon_auth import is_guest_state, refresh_guest_state
+            from hermes_cli.anon_auth import held_connectors_token, is_guest_state, refresh_guest_state
             if is_guest_state(state):
-                # Guest seam: the anon_ credential is the identity; a first use has no access token
-                # yet and an expired one is re-exchanged. No refresh token, no quarantine.
-                access_token = state.get("access_token")
-                if isinstance(access_token, str) and access_token and not _is_expiring(
-                        state.get("expires_at"), refresh_skew_seconds):
+                # A live held token serves (an inference one is a superset); else mint connectors-only.
+                if access_token := held_connectors_token(state, skew_seconds=refresh_skew_seconds):
                     return _memo(access_token)
                 with httpx.Client(timeout=httpx.Timeout(timeout_seconds or 15.0),
                                   headers={"Accept": "application/json"}, verify=verify) as client:
-                    refresh_guest_state(state, client)
+                    minted = refresh_guest_state(state, client, purpose="connectors")
                 persist()
                 _write_shared_nous_state(state)
-                return _memo(state["access_token"])
+                return _memo(minted)
 
             merged_shared = _merge_shared_nous_oauth_state(state)
             access_token = state.get("access_token")
@@ -2085,7 +2081,7 @@ def _external_process_auth_evidence(provider_id: str, resolved_command: Optional
 
     False means "not verifiable from here", NOT "signed out". Subprocess-free (spawning the CLI from
     status endpoints/pickers re-creates the cold-start stall copilot_auth.py avoids). Generic evidence
-    for any external-process profile is its binary resolving: the subprocess owns real auth and Hermes
+    for any external-process profile is its binary resolving: the subprocess owns real auth and Cybr Agent
     has nothing else to inspect, so out-of-tree ACP rows pass credential-gated surfaces (Desktop
     ``explicit_only`` picker) like the bundled one, whose CLI additionally exposes readable token stores."""
     if provider_id == "copilot-acp":
@@ -2241,9 +2237,9 @@ def _get_azure_foundry_auth_status() -> dict[str, Any]:
                     "azure-identity is installed; live credential validation "
                     "is skipped here. Run `hermes doctor` to verify token acquisition."
                 ) if installed else (
-                    "azure-identity not installed. From the Hermes environment, run: "
+                    "azure-identity not installed. From the Cybr Agent environment, run: "
                     f"{install_hint('azure-identity')}. "
-                    "Then restart Hermes."))
+                    "Then restart Cybr Agent."))
         except Exception as exc:
             info["logged_in"] = False
             info["error"] = f"azure-identity check failed: {exc}"
@@ -2489,6 +2485,6 @@ def logout_command(args) -> None:
     if not should_reset_config:
         print("Model provider configuration was unchanged.")
     elif os.getenv("OPENROUTER_API_KEY"):
-        print("Hermes will use OpenRouter for inference.")
+        print("Cybr Agent will use OpenRouter for inference.")
     else:
-        print("Run `hermes model` or configure an API key to use Hermes.")
+        print("Run `hermes model` or configure an API key to use Cybr Agent.")

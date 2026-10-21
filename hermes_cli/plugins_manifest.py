@@ -35,10 +35,10 @@ _KNOWN_MANIFEST_FIELDS: set[str] = {
     "pip_dependencies", "provides_browser_providers", "provides_web_providers",
     "manifest_version", "api_version", "requires_plugins", "python_dependencies", "config_schema",
     "license", "homepage", "tags", "capabilities", "emits", "listens", "hermes", "depends",
-    "requires_hermes", "python_runtime", "provides_locales", "requires_auth",
+    "requires_hermes", "python_runtime", "provides_locales", "requires_auth", "oauth",
 }
 
-# Highest manifest schema version this Hermes understands.
+# Highest manifest schema version this Cybr Agent understands.
 SUPPORTED_MANIFEST_VERSION = 2
 
 _CONFIG_SCHEMA_TYPES: dict[str, tuple] = {
@@ -126,6 +126,26 @@ def _manifest_int(raw: object, key: str, warn: str, fallback: Optional[int]) -> 
         return fallback
 
 
+def _config_schema_entries(key: str, raw: Any) -> dict[str, Any]:
+    """``config_schema`` (key -> {type?, default?, description?, ...}) keeping only mapping entries;
+    warns on what it drops or cannot type-check. Shared by ``plugin.yaml`` and ``plugin.json``."""
+    schema: dict[str, Any] = {}
+    for skey, spec in (raw if isinstance(raw, Mapping) else {}).items():
+        if not isinstance(spec, Mapping):
+            logger.warning(
+                "Plugin %s: config_schema entry %r must be a mapping (e.g. {type: str}); skipping", key, skey)
+            continue
+        stype = spec.get("type")
+        if stype is not None and str(stype).lower() not in _CONFIG_SCHEMA_TYPES:
+            logger.warning(
+                "Plugin %s: config_schema key %r declares unknown type %r "
+                "(known: %s); type check will be skipped for it",
+                key, skey, stype, ", ".join(sorted(_CONFIG_SCHEMA_TYPES)),
+            )
+        schema[str(skey)] = dict(spec)
+    return schema
+
+
 def _parse_manifest_v2_fields(data: Mapping, key: str) -> dict[str, Any]:
     """Validate/normalize manifest v2 fields into PluginManifest kwargs (warnings, never failures).
 
@@ -136,7 +156,7 @@ def _parse_manifest_v2_fields(data: Mapping, key: str) -> dict[str, Any]:
                        "Plugin %s: manifest_version %r is not an integer; treating as 1", 1)
     if mv > SUPPORTED_MANIFEST_VERSION:
         logger.warning(
-            "Plugin %s: manifest_version %d is newer than this Hermes "
+            "Plugin %s: manifest_version %d is newer than this Cybr Agent "
             "supports (%d); loading anyway and ignoring unknown fields", key, mv, SUPPORTED_MANIFEST_VERSION,
         )
     raw_api = data.get("api_version")
@@ -153,22 +173,7 @@ def _parse_manifest_v2_fields(data: Mapping, key: str) -> dict[str, Any]:
         lambda item: item.strip() if isinstance(item, str) and item.strip() else None,
         "Plugin %s: python_dependencies entry %r must be a non-empty requirement string; skipping",
     )
-    # config_schema — mapping of key -> {type?, default?, description?, required?}.
-    schema: dict[str, Any] = {}
-    raw_schema = _manifest_field_of_type(data, key, "config_schema", Mapping, "a mapping")
-    for skey, spec in (raw_schema or {}).items():
-        if not isinstance(spec, Mapping):
-            logger.warning(
-                "Plugin %s: config_schema entry %r must be a mapping (e.g. {type: str}); skipping", key, skey)
-            continue
-        stype = spec.get("type")
-        if stype is not None and str(stype).lower() not in _CONFIG_SCHEMA_TYPES:
-            logger.warning(
-                "Plugin %s: config_schema key %r declares unknown type %r "
-                "(known: %s); type check will be skipped for it",
-                key, skey, stype, ", ".join(sorted(_CONFIG_SCHEMA_TYPES)),
-            )
-        schema[str(skey)] = dict(spec)
+    schema = _config_schema_entries(key, _manifest_field_of_type(data, key, "config_schema", Mapping, "a mapping"))
     tags = [str(t) for t in (_manifest_field_of_type(data, key, "tags", list, "a list") or [])]
     # Forward compat: unknown fields warn (never fail); v1 manifests only at debug.
     unknown = sorted(set(data.keys()) - _KNOWN_MANIFEST_FIELDS)
@@ -359,7 +364,7 @@ class PluginManifest:
     # Path-derived registry key used by plugins.enabled/disabled and `hermes plugins list`: ``disk-cleanup``
     # for a flat plugin, ``image_gen/openai`` for a category plugin. Empty -> name.
     key: str = ""
-    # Hermes version requirement (``">=0.19"``, comma-separated clauses allowed). Unsatisfied plugins are
+    # Cybr Agent version requirement (``">=0.19"``, comma-separated clauses allowed). Unsatisfied plugins are
     # recorded with an error and skipped before import — see ``requires_hermes_error``.
     requires_hermes: str = ""
     portable: bool = False
@@ -376,7 +381,7 @@ class PluginManifest:
     # Advisory deps [{"id", "version_range"}]: missing ones warn but load; they order the load.
     requires_plugins: list[dict[str, Any]] = field(default_factory=list)
     # Declared pip deps — VALIDATED AND SURFACED ONLY, never auto-installed.
-    # VALIDATED AND SURFACED ONLY — Hermes never auto-installs these (isolation design for the install seam
+    # VALIDATED AND SURFACED ONLY — Cybr Agent never auto-installs these (isolation design for the install seam
     # is a deferred follow-up; see #64165 round-2 review and #15220).
     python_dependencies: list[str] = field(default_factory=list)
     # Schema for plugins.entries.<id>.settings; mismatches warn, never fail.
@@ -435,7 +440,7 @@ _VERSION_COMPARATOR_RE = re.compile(r"^\s*(>=|<=|==|!=|>|<)\s*(.+?)\s*$")
 
 
 def running_hermes_version() -> str:
-    """Base release version of the Hermes code that is running."""
+    """Base release version of the Cybr Agent code that is running."""
     from hermes_cli.version_info import get_version_info
 
     return get_version_info().base_version
@@ -488,7 +493,7 @@ def requires_hermes_error(manifest: PluginManifest) -> Optional[str]:
 
 def portable_plugin_manifest(child: Path, source: str, prefix: str) -> PluginManifest:
     """Build the manifest for a portable Agent Plugin directory (``plugin.json``); diagnostics warn."""
-    from hermes_cli.agent_plugins import read_agent_plugin_manifest
+    from hermes_cli.agent_plugins import manifest_config_schema, read_agent_plugin_manifest
     data, diagnostics = read_agent_plugin_manifest(child)
     for diagnostic in diagnostics:
         logger.warning("Agent Plugin '%s': %s", child, diagnostic.message)
@@ -497,6 +502,7 @@ def portable_plugin_manifest(child: Path, source: str, prefix: str) -> PluginMan
         name=data["name"], version=data.get("version", ""), description=data.get("description", ""),
         author=_display_author(data.get("author", "")), source=source, path=str(child), key=key,
         portable=True, skill_namespace=_portable_skill_namespace(key),
+        config_schema=_config_schema_entries(key, manifest_config_schema(data)),
     )
 
 

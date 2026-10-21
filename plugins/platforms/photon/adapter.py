@@ -30,7 +30,7 @@ else:
     try:
         import httpx
         HTTPX_AVAILABLE = True
-    except ImportError:  # pragma: no cover - httpx is already a Hermes dep
+    except ImportError:  # pragma: no cover - httpx is already a Cybr Agent dep
         HTTPX_AVAILABLE = False
         httpx = None
 
@@ -44,6 +44,7 @@ from gateway.platforms.base import BasePlatformAdapter, SendResult
 from gateway.platforms.event import MessageEvent, MessageType
 from gateway.platforms.helpers import compile_mention_patterns, strip_markdown
 from gateway.platforms.helpers import MessageDeduplicator, bounded_put, cancel_task
+from gateway.platforms.send_targets import regex_stripped_parser
 from utils import atomic_json_write
 
 from .auth import load_project_credentials
@@ -74,7 +75,7 @@ _PHOTON_RETRYABLE_PATTERNS = (
     "internal sidecar error", "upstream connect error", "upstream unavailable", "connection dropped",
     "reset reason: overflow", "upstream_overflow", "upstream_unavailable")
 # iMessage emits Open Graph preview art as attachments right after a URL message;
-# suppress those so Hermes sees the link once.
+# suppress those so Cybr Agent sees the link once.
 _RICHLINK_PREVIEW_SUPPRESS_SECONDS = 30.0
 _RICHLINK_PREVIEW_ATTACHMENT_SUFFIX = ".pluginpayloadattachment"
 _TYPING_COOLDOWN_SECONDS = 5.0  # per chat; reduces gRPC pressure during overflow
@@ -539,7 +540,7 @@ def _lookup_sent_text(chat_id: Optional[str], message_id: Optional[str]) -> Opti
 def _attachment_body(space_id: str, safe_path: str, *, kind: str, name: Optional[str] = None,
                      mime_type: Optional[str] = None, caption: Optional[str] = None) -> dict[str, Any]:
     """``/send-attachment`` body; spectrum-ts infers name/mimeType from the extension,
-    so optional keys are only sent when Hermes supplied them."""
+    so optional keys are only sent when Cybr Agent supplied them."""
     body: dict[str, Any] = {
         "spaceId": space_id, "path": safe_path, "kind": "voice" if kind == "voice" else "attachment"}
     body.update({k: v for k, v in (("name", name), ("mimeType", mime_type), ("caption", caption)) if v})
@@ -560,6 +561,7 @@ class PhotonAdapter(BasePlatformAdapter):
 
     MAX_MESSAGE_LENGTH = _MAX_MESSAGE_LENGTH
     SUPPORTS_MESSAGE_EDITING = False  # no edit API: streaming must not leave a stale cursor (▉)
+    serial_receive_loop = True  # the /inbound NDJSON loop awaits each line before reading the next
 
     def __init__(self, config: PlatformConfig):
         super().__init__(config, Platform("photon"))
@@ -940,7 +942,7 @@ class PhotonAdapter(BasePlatformAdapter):
 
     @classmethod
     def _pid_is_sidecar(cls, pid: int) -> bool:
-        """True if ``pid``'s command line is a Photon sidecar (any Hermes checkout)."""
+        """True if ``pid``'s command line is a Photon sidecar (any Cybr Agent checkout)."""
         out = cls._quick_stdout(["ps", "-p", str(pid), "-o", "command="])
         return out is not None and "photon/sidecar/index.mjs" in out
 
@@ -1622,7 +1624,7 @@ def _standalone_token_from_record(port: int) -> tuple[Optional[str], int, str]:
         stale_hint = (f" A stale sidecar runtime record was found (pid {record.get('pid')} is not running)"
                       " — the gateway appears to be down.")
     return None, port, (
-        "Photon standalone send requires a running sidecar. Start the Hermes gateway (which spawns "
+        "Photon standalone send requires a running sidecar. Start the Cybr Agent gateway (which spawns "
         f"the sidecar and records its address under <hermes-home>/runtime/{_RUNTIME_RECORD_NAME}), "
         "or set PHOTON_SIDECAR_TOKEN in this process's environment." + stale_hint)
 
@@ -1692,11 +1694,18 @@ async def _standalone_send(
 
 # -- Plugin entry point ----------------------------------------------------------
 
+_SEND_DM_GUID_RE = re.compile(r"^any;-;\+\d{6,}$")  # mirrors PhotonAdapter._DM_CHAT_GUID_RE
+
+
 def register(ctx) -> None:
-    """Called by the Hermes plugin loader at startup."""
+    """Called by the Cybr Agent plugin loader at startup."""
     from . import cli as _cli  # local: avoid argparse work at module load
     ctx.register_platform(
+        # DM GUIDs are adapter-native ids (mirrors the react handler).
+        target_ref_syntax_fn=regex_stripped_parser(_SEND_DM_GUID_RE),
         name="photon", label="iMessage via Photon", adapter_factory=lambda cfg: PhotonAdapter(cfg),
+        dashboard_description="Use Cybr Agent through iMessage via Photon's managed Spectrum platform.",
+        docs_url="https://hermes-agent.nousresearch.com/docs/user-guide/messaging/photon",
         check_fn=check_requirements, validate_config=validate_config, is_connected=is_connected,
         required_env=["PHOTON_PROJECT_ID", "PHOTON_PROJECT_SECRET"],
         install_hint=(
@@ -1722,7 +1731,10 @@ def register(ctx) -> None:
             "sends as a rich preview card. You can send files natively: write MEDIA:/absolute/path/to/file "
             "in your response (images and video appear inline, audio as voice notes, other files as "
             "attachments). Recipient identifiers are E.164 phone numbers; never expose them in responses "
-            "unless the user asked."))
+            "unless the user asked."),
+        # Permanent-message iMessage inboxes (no edit).
+        display_tier="low",
+    )
     ctx.register_cli_command(
         name="photon", help="Set up and manage the Photon iMessage integration",
         setup_fn=_cli.register_cli, handler_fn=_cli.dispatch)

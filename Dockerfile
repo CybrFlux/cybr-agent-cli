@@ -161,7 +161,7 @@ RUN set -eu; \
 
 # #34192 / #66679: backward-compat shim for orchestration templates that
 # still reference the legacy /usr/bin/tini entrypoint (Hostinger's
-# 'Hermes WebUI' catalog, NAS compose projects that preserve an old
+# 'Cybr Agent WebUI' catalog, NAS compose projects that preserve an old
 # entrypoint on image update, etc.). A plain symlink to /init made the
 # path exist, but forwarded tini flags like `-g` into s6-overlay's
 # rc.init as the container CMD (`rc.init: 91: -g: not found`) and
@@ -255,9 +255,9 @@ FROM runtime_base AS python_deps
 # so Docker users can use these providers without requiring runtime
 # lazy-install access to PyPI (often blocked in containerized envs).
 #
-# The [otlp] extra contains the SDK/exporter imported by Hermes when Gateway
+# The [otlp] extra contains the SDK/exporter imported by Cybr Agent when Gateway
 # Health export is enabled. Collector and observability-backend dependencies
-# remain external and are not part of the Hermes production image.
+# remain external and are not part of the Cybr Agent production image.
 #
 # The Matrix gateway's deps ([matrix] extra) are baked in because
 # python-olm (transitive via mautrix[encryption]) builds from source on
@@ -280,7 +280,13 @@ FROM runtime_base AS python_deps
 # Source binding is created after the source copy below.
 COPY pyproject.toml uv.lock ./
 RUN touch ./README.md
+# --cache puts uv's cache at /opt/hermes/uv-cache, the seed path that
+# pm.packages.uv_cache_dir() merges into $HERMES_HOME/cache/uv on first use.
+# Do not leave the cache at its default: HERMES_HOME is not set yet in this
+# stage, so the default is /root/.hermes/cache/uv, which nothing reads. A plugin
+# install then runs with an empty cache and builds python-olm from source.
 RUN python3 -m pm.build_env --source /opt/hermes --python /usr/local/bin/python3 \
+    --cache /opt/hermes/uv-cache \
     --out /opt/hermes/.venv --no-install-project --sealed --record-selection \
     --extra all --extra messaging --extra otlp --extra anthropic --extra bedrock \
     --extra azure-identity --extra matrix --extra google-chat
@@ -374,7 +380,7 @@ RUN mkdir -p /opt/hermes/bin && \
 # tree), NOT into $HERMES_HOME. $HERMES_HOME (/opt/data) is a shared data
 # volume that is commonly bind-mounted from the host and even shared with a
 # host-side Desktop/CLI install; stamping it at boot used to clobber that
-# host install's marker and wrongly block its ``hermes update``. A code-scoped
+# host install's marker and wrongly block its ``cybr update``. A code-scoped
 # stamp is read first by detect_install_method() and is immune to the share.
 # Start as root so the s6-overlay stage2 hook can usermod/groupmod and chown
 # the data volume. Each supervised service then drops to the hermes user via
@@ -387,7 +393,7 @@ RUN mkdir -p /opt/hermes/bin && \
 # full-provenance /opt/hermes/install-stamp.json next to the code.
 # .dockerignore excludes .git, so the stamp is the only commit channel the
 # image carries: hermes_cli/version_info.py reads it at runtime (stamp
-# first, live git second, unknown third), and both `hermes dump` and
+# first, live git second, unknown third), and both `cybr dump` and
 # banner.get_git_banner_state() consume it through version_info.
 #
 # A local `docker build` without CI gets the minimal all-zero fallback

@@ -149,11 +149,46 @@ class TestTelegramYamlConfigLoading:
         assert os.environ.get("TELEGRAM_REPLY_TO_MODE") == "all"
 
 
+class TestSyntheticReplyAnchor:
+    """A route wake's synthetic identity reaches send() as ``reply_to`` (#139611): the reply goes out
+    unanchored (or on the DM topic's own anchor) instead of failing on ``int()``."""
+
+    WAKE_ID = '["kanban-wake","agent:main:telegram:dm:12345:42","0f1e2d3c4b5a69788796a5b4c3d2e1f0"]'
+
+    @pytest.mark.asyncio
+    async def test_synthetic_anchor_sends_unanchored(self, adapter_factory):
+        adapter = adapter_factory(reply_to_mode="all")
+        adapter._bot = MagicMock()
+        adapter._bot.send_message = AsyncMock(return_value=MagicMock(message_id=1))
+        adapter.truncate_message = lambda content, max_len, **kw: ["chunk1", "chunk2"]
+
+        result = await adapter.send("12345", "test content", reply_to=self.WAKE_ID)
+
+        assert result.success, result.error
+        calls = adapter._bot.send_message.call_args_list
+        assert len(calls) == 2
+        assert all(call.kwargs.get("reply_to_message_id") is None for call in calls)
+
+    @pytest.mark.asyncio
+    async def test_synthetic_anchor_in_dm_topic_uses_the_topic_anchor(self, adapter_factory):
+        adapter = adapter_factory()
+        adapter._bot = MagicMock()
+        adapter._bot.send_message = AsyncMock(return_value=MagicMock(message_id=1))
+        adapter.truncate_message = lambda content, max_len, **kw: ["chunk1"]
+        metadata = {"thread_id": "42", "telegram_dm_topic_reply_fallback": True,
+                    "telegram_reply_to_message_id": "12345"}
+
+        result = await adapter.send("12345", "test content", reply_to=self.WAKE_ID, metadata=metadata)
+
+        assert result.success, result.error
+        assert adapter._bot.send_message.call_args.kwargs.get("reply_to_message_id") == 12345
+
+
 class TestDMTopicFallbackReplyToMode:
     """Tests for reply_to_mode enforcement on DM topic fallback paths.
 
     Regression tests for https://github.com/NousResearch/hermes-agent/issues/23994:
-    reply_to_mode 'off' was ignored when sending via Hermes-created DM topic
+    reply_to_mode 'off' was ignored when sending via Cybr Agent-created DM topic
     lanes (telegram_dm_topic_reply_fallback metadata), causing quote bubbles
     despite the user setting reply_to_mode: 'off'.
     """
@@ -216,8 +251,8 @@ class TestDMTopicSyntheticSendRouting:
     are injected as synthetic events with no reply anchor. The DM-topic
     fallback's no-anchor branch routed them via Telegram's native
     ``direct_messages_topic_id`` (or dropped the thread entirely), landing the
-    response in a different chat lane than the Hermes topic the session runs
-    in. The no-anchor branch must prefer the Hermes topic's
+    response in a different chat lane than the Cybr Agent topic the session runs
+    in. The no-anchor branch must prefer the Cybr Agent topic's
     ``message_thread_id`` whenever it resolves.
     """
 

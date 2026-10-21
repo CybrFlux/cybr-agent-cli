@@ -261,7 +261,9 @@ def gate_manifest(
     category-owned kinds (exclusive / model-provider), bundled auto-loads (backend now, platform deferred),
     then ``plugins.enabled`` opt-in (path-derived key or legacy bare name)."""
     lookup_key = manifest_key(manifest)
-    names = {lookup_key, manifest.name}
+    from hermes_cli.left_core_migration import legacy_plugin_keys
+    # A bundled key that left core (``observability/langfuse``) keeps selecting its catalog plugin.
+    names = {lookup_key, manifest.name, *legacy_plugin_keys(lookup_key)}
 
     def _placeholder(error: Optional[str], level: int, message: str, *args, enabled: bool = False) -> ManifestGate:
         return ManifestGate("placeholder", enabled=enabled, error=error, log=(level, message, lookup_key, *args))
@@ -269,10 +271,10 @@ def gate_manifest(
     # Relay lifecycle is core-owned; an old plugin copy would compete for its registries.
     if names & LEGACY_RELAY_PLUGIN_KEYS:
         error = (
-            "removed — Relay lifecycle is owned by Hermes core; configure a standard user or system Relay "
+            "removed — Relay lifecycle is owned by Cybr Agent core; configure a standard user or system Relay "
             f"plugins.toml, or use {RELAY_PLUGINS_CONFIG_ENV} for an explicit user-file override"
         )
-        return _placeholder(error, logging.WARNING, "Refusing to load removed Hermes Relay plugin '%s'; %s", error)
+        return _placeholder(error, logging.WARNING, "Refusing to load removed Cybr Agent Relay plugin '%s'; %s", error)
     if names & disabled:
         return _placeholder("disabled via config", logging.DEBUG, "Skipping disabled plugin '%s'")
     # Exclusive plugins (memory providers) have their own activation path; record only.
@@ -305,7 +307,7 @@ def gate_manifest(
         from hermes_cli.plugins_cmd_catalog import installed_plugin_removal
         removed = installed_plugin_removal(manifest.name, manifest.path)
         if removed is not None:
-            error = f"removed from the Hermes plugin catalog: {removed.reason or 'no reason recorded'}"
+            error = f"removed from the Cybr Agent plugin catalog: {removed.reason or 'no reason recorded'}"
             return _placeholder(error, logging.WARNING, "Refusing to load plugin '%s' — %s; run `hermes plugins remove`",
                                 error)
     return ManifestGate("load")

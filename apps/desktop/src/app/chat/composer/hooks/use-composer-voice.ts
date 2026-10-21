@@ -3,7 +3,7 @@ import { computed } from 'nanostores'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import { useI18n } from '@/i18n'
-import { chatMessageText, collectUnspokenTurnSpeech } from '@/lib/chat-messages'
+import { chatMessageText, collectUnspokenTurnSpeech, lastTextPartText } from '@/lib/chat-messages'
 import { triggerHaptic } from '@/lib/haptics'
 import {
   adoptSpokenReplySession,
@@ -145,6 +145,7 @@ export function useComposerVoice({
     return {
       id: last.id,
       pending: Boolean(last.pending),
+      segmentText: lastTextPartText(last),
       text,
       turnKey: assistantTurnKey(sessionId, messages, last.id)
     }
@@ -181,7 +182,7 @@ export function useComposerVoice({
     await onSubmit(text, { voiceTurn: true })
   }
 
-  /** A GPT-Live delegation → Hermes turn. The bubble and the persisted row are
+  /** A GPT-Live delegation → Cybr Agent turn. The bubble and the persisted row are
    *  what the user said; the transcript window rides the model input only. */
   const submitLiveDelegation = async (text: string, voiceContext: string) => {
     triggerHaptic('submit')
@@ -199,7 +200,7 @@ export function useComposerVoice({
         .map(m => ({ role: m.role as 'assistant' | 'user', text: chatMessageText(m) }))
     )
 
-  /** The tool Hermes is running right now, for quiet progress in the voice. */
+  /** The tool Cybr Agent is running right now, for quiet progress in the voice. */
   const activeToolLabel = () => {
     const last = $messages.get().findLast(m => m.role === 'assistant' && !m.hidden)
     const running = last?.parts.findLast(part => part.type === 'tool-call' && part.result === undefined)

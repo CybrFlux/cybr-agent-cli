@@ -4,7 +4,7 @@ sidebar_position: 9
 
 # Adding a Platform Adapter
 
-This guide covers adding a new messaging platform to the Hermes gateway. A platform adapter connects Hermes to an external messaging service (Telegram, Discord, WeCom, etc.) so users can interact with the agent through that service.
+This guide covers adding a new messaging platform to the Cybr Agent gateway. A platform adapter connects Cybr Agent to an external messaging service (Telegram, Discord, WeCom, etc.) so users can interact with the agent through that service.
 
 :::tip
 There are two ways to add a platform:
@@ -30,7 +30,7 @@ Inbound messages are received by the adapter and forwarded via `self.handle_mess
 
 ## Plugin Path (Recommended)
 
-The plugin system lets you add a platform adapter without modifying any core Hermes code. Your plugin is a directory with two files:
+The plugin system lets you add a platform adapter without modifying any core Cybr Agent code. Your plugin is a directory with two files:
 
 ```
 ~/.hermes/plugins/my-platform/
@@ -40,7 +40,7 @@ The plugin system lets you add a platform adapter without modifying any core Her
 
 ### plugin.yaml
 
-Plugin metadata. The `requires_env` and `optional_env` blocks auto-populate `hermes config` UI entries (see [Surfacing Env Vars](#surfacing-env-vars-in-hermes-config) below).
+Plugin metadata. The `requires_env` and `optional_env` blocks auto-populate `cybr config` UI entries (see [Surfacing Env Vars](#surfacing-env-vars-in-hermes-config) below).
 
 ```yaml
 name: my-platform
@@ -76,7 +76,7 @@ provides_tools:
   - my_platform_list
 ```
 
-With `provides_tools` declared, Hermes imports only `tools.py` during plugin
+With `provides_tools` declared, Cybr Agent imports only `tools.py` during plugin
 discovery and registers the client tools in every process — CLI and TUI
 included — while the adapter stays deferred. Keep the package `__init__.py`
 import-light and pull the adapter in from inside `register()` so the eager
@@ -84,7 +84,7 @@ import stays cheap. Without the field, nothing changes: the whole plugin stays
 deferred.
 
 Users enable the toolset per platform like any other, e.g.
-`hermes tools enable my_platform --platform cli`, or by listing the toolset
+`cybr tools enable my_platform --platform cli`, or by listing the toolset
 key under `platform_toolsets` in `config.yaml`. Plugin platform names are
 also valid `--platform` targets, so an inbound session on your platform can
 be granted its own outbound tools.
@@ -139,7 +139,7 @@ def _env_enablement() -> dict | None:
 
 
 def register(ctx):
-    """Plugin entry point — called by the Hermes plugin system."""
+    """Plugin entry point — called by the Cybr Agent plugin system."""
     ctx.register_platform(
         name="my_platform",
         label="My Platform",
@@ -155,7 +155,7 @@ def register(ctx):
         # ensure_deps_fn=ensure_requirements,
         validate_config=validate_config,
         required_env=["MY_PLATFORM_TOKEN"],
-        install_hint="Declare my-platform-sdk in this plugin's Python dependencies, then retry hermes plugins enable my-platform",
+        install_hint="Declare my-platform-sdk in this plugin's Python dependencies, then retry cybr plugins enable my-platform",
         # Env-driven auto-configuration — seeds PlatformConfig.extra from
         # env vars before adapter construction. See "Env-Driven Auto-
         # Configuration" section below.
@@ -212,11 +212,11 @@ When you call `ctx.register_platform()`, the following integration points are ha
 | Gateway adapter creation | Registry checked before the built-in `_BUILTIN_ADAPTERS` table |
 | Config parsing | `Platform._missing_()` accepts any platform name |
 | Connected platform validation | Registry `validate_config()` called |
-| User authorization | `allowed_users_env` / `allow_all_env` checked |
+| User authorization | `allowed_users_env` / `allow_all_env` checked; `group_allowed_chats_env` / `allowlist_suppresses_pairing` (see below) |
 | Env-only auto-enable | `env_enablement_fn` seeds `PlatformConfig.extra` + `home_channel` |
 | YAML config bridge | `apply_yaml_config_fn` translates `config.yaml` keys into env vars / extras |
 | Cron delivery | `cron_deliver_env_var` makes `deliver=<name>` work |
-| `hermes config` UI entries | `requires_env` / `optional_env` in `plugin.yaml` auto-populate |
+| `cybr config` UI entries | `requires_env` / `optional_env` in `plugin.yaml` auto-populate |
 | send engine (`tools/send_message_tool.py`) | Routes through live gateway adapter |
 | Webhook cross-platform delivery | Registry checked for known platforms |
 | `/update` command access | `allow_update_command` flag |
@@ -224,9 +224,9 @@ When you call `ctx.register_platform()`, the following integration points are ha
 | System prompt hints | `platform_hint` injected into LLM context |
 | Message chunking | `max_message_length` for smart splitting |
 | PII redaction | `pii_safe` flag |
-| `hermes status` | Lists plugin platforms alongside built-ins, one row each, using the gateway's own configured check |
-| `hermes gateway setup` | Plugin platforms appear in setup menu |
-| `hermes tools` / `hermes skills` | Plugin platforms in per-platform config |
+| `cybr status` | Lists plugin platforms alongside built-ins, one row each, using the gateway's own configured check |
+| `cybr gateway setup` | Plugin platforms appear in setup menu |
+| `cybr tools` / `cybr skills` | Plugin platforms in per-platform config |
 | Token lock (multi-profile) | Use `acquire_scoped_lock()` in your `connect()` |
 | Orphaned config warning | Descriptive log when plugin is missing |
 | Service-event authorization | `trusted_inbound=True` skips user allowlists/pairing (see below) |
@@ -269,12 +269,62 @@ def register(ctx):
 ```
 
 Feature-detect these fields with `dataclasses.fields(PlatformEntry)` as above so the plugin stays loadable on
-older Hermes cores that predate them.
+older Cybr Agent cores that predate them.
+
+## Authorization fields for chat platforms
+
+Two more optional `PlatformEntry` fields carry gateway authorization behaviour that core used to
+hard-code for its bundled platforms. Declare them and a plugin platform behaves the same way:
+
+| Field | Type / default | Effect |
+|---|---|---|
+| `group_allowed_chats_env` | `str = ''` | Env var holding comma-separated group/forum **chat** IDs. Any message from a listed chat is authorized, even without a `user_id` (anonymous admins, channel posts). Telegram declares `TELEGRAM_GROUP_ALLOWED_CHATS` and QQ Bot declares `QQ_GROUP_ALLOWED_USERS`. |
+| `allowlist_suppresses_pairing` | `bool = False` | When the platform's `allowed_users_env` (or `group_allowed_chats_env`) is set, unknown DM senders are ignored rather than sent a pairing code: the owner already restricted access. Most bundled chat platforms set it. |
+
+```python
+kwargs = dict(name="my_chat", label="My Chat", adapter_factory=MyChatAdapter, check_fn=check_requirements,
+              allowed_users_env="MY_CHAT_ALLOWED_USERS", allow_all_env="MY_CHAT_ALLOW_ALL_USERS")
+known = {f.name for f in dataclasses.fields(PlatformEntry)}
+for key, value in (("group_allowed_chats_env", "MY_CHAT_GROUP_ALLOWED_CHATS"),
+                   ("allowlist_suppresses_pairing", True)):
+    if key in known:  # older cores reject unknown kwargs
+        kwargs[key] = value
+ctx.register_platform(**kwargs)
+```
+
+## Public helpers for platform plugins
+
+A platform adapter needs more of core than a tool plugin does. These names are public: `cybr plugins
+validate` raises no private-import warning for them, and they keep their names and signatures across
+releases. Anything else under `gateway.*`, `tools.*` or `hermes_cli.*` is internal, and the validator
+lists each import of it.
+
+| Need | Import |
+|---|---|
+| Adapter base class, send results, media cache helpers | `gateway.platforms.base` (public names) |
+| SSRF-safe HTTP client: connect-time IP validation, per-redirect re-check, shared keepalive limits | `from gateway.platforms.helpers import platform_http_client` |
+| The pieces of that client, to build your own | `gateway.platforms.base.ssrf_redirect_guard` (httpx `response` hook), `tools.url_safety.create_ssrf_safe_async_client`, `tools.url_safety.is_safe_url`, `gateway.platforms._http_client_limits.platform_httpx_limits` |
+| Own DM/group policy (`dm_policy` / `group_policy` / allowlists) | `from gateway.platforms.access_policy_mixin import OwnAccessPolicyMixin` |
+| Resolve an approval from a native button | `from tools.approval import resolve_gateway_approval` |
+| Native clarify buttons | `tools.clarify_gateway`: `get_pending(clarify_id)` (the pending entry or `None`; read `session_key`, `choices`, `multi_select`), `resolve_gateway_clarify(clarify_id, text)`, `mark_awaiting_text(clarify_id)`, `SKIPPED` |
+| `setup_fn` wizard steps | `hermes_cli.gateway_setup_wizard`: `print_setup_header(title)`, `confirm_reconfigure(label, *env_vars)`, `offer_home_channel(home_var, user_id, what)`, `save_env_values(**values)`, `prompt_csv(text, default)`; prompts from `hermes_cli.setup` (`prompt`, `prompt_choice`, `prompt_yes_no`); output from `hermes_cli.cli_output` (`print_info`, `print_success`, `print_warning`, `print_error`); `.env` access through `hermes_cli.config` (`save_env_value`, `get_env_value`) |
+
+```python
+from gateway.platforms.helpers import platform_http_client
+
+async def connect(self) -> bool:
+    # timeout=30.0 and follow_redirects=True by default; any other httpx.AsyncClient kwarg passes through.
+    self._http = platform_http_client(headers={"User-Agent": "my-chat-bot/1.0"})
+    ...
+```
+
+`get_pending()` returns `None` once the clarify was answered, timed out or cleared, so compare the
+result by identity with the entry your card was rendered for before acting on a click.
 
 ## Standalone send-path extensions
 
 A standalone platform can participate in host-driven outbound delivery through
-direct `hermes send --to ...` and cron `deliver=platform:...` by declaring send
+direct `cybr send --to ...` and cron `deliver=platform:...` by declaring send
 behavior on the same `PlatformEntry` created by `ctx.register_platform()`.
 `send_message` is intentionally not an agent-callable model tool; plugins must
 not register an equivalent model surface that lets the agent initiate outbound
@@ -312,7 +362,7 @@ def register(ctx):
         check_fn=check_requirements,
         parse_target_ref_fn=_parse_address,
         validate_target_ref_fn=_validate_address,
-        # May be a regular function or async def. Hermes awaits any awaitable
+        # May be a regular function or async def. Cybr Agent awaits any awaitable
         # result, including callable objects and functools.partial wrappers.
         send_message_handler=_send_request,
         # Prefer this lower-level hook when cron must send from a process
@@ -331,7 +381,7 @@ the next profile.
 
 ## Env-Driven Auto-Configuration
 
-Most users set up a platform by dropping env vars into `~/.hermes/.env` rather than editing `config.yaml`. The `env_enablement_fn` hook lets your plugin pick those env vars up **before** the adapter is constructed, so `hermes gateway status`, `get_connected_platforms()`, and cron delivery see the correct state without instantiating the platform SDK.
+Most users set up a platform by dropping env vars into `~/.hermes/.env` rather than editing `config.yaml`. The `env_enablement_fn` hook lets your plugin pick those env vars up **before** the adapter is constructed, so `cybr gateway status`, `get_connected_platforms()`, and cron delivery see the correct state without instantiating the platform SDK.
 
 Read env through `gateway.platforms._shared.get_scoped_secret` — never `os.getenv`. Under `gateway.multiplex_profiles` the process env holds the DEFAULT profile's values; a secondary profile's `.env` exists only in its secret scope, and a raw read would enable your platform for the wrong profile with the wrong credentials. `seed_extra_from_env` builds the seed dict from a `(ENV_VAR, extra_key, conv)` table through that reader.
 
@@ -432,7 +482,7 @@ The scheduler reads this env var when resolving the home target for `deliver=my_
 
 ### Out-of-process cron delivery
 
-`cron_deliver_env_var` makes your platform a recognized `deliver=` target. To make the actual send succeed when the cron job runs in a separate process from the gateway (i.e., `hermes cron run` separate from `hermes gateway`), register a `standalone_sender_fn`:
+`cron_deliver_env_var` makes your platform a recognized `deliver=` target. To make the actual send succeed when the cron job runs in a separate process from the gateway (i.e., `cybr cron run` separate from `cybr gateway`), register a `standalone_sender_fn`:
 
 ```python
 async def _standalone_send(
@@ -461,7 +511,7 @@ Why this hook is necessary: built-in platforms (Telegram, Discord, Slack, etc.) 
 
 The function receives the same `pconfig` and `chat_id` that the live adapter would, plus optional `thread_id`, `media_files`, and `force_document` keyword arguments. Returning `{"success": True, "message_id": ...}` is treated as a successful delivery; returning `{"error": "..."}` surfaces the message in cron's `delivery_errors`. Exceptions raised inside the function are caught by the dispatcher and reported as `Plugin standalone send failed: <reason>`. Reference implementations live in `plugins/platforms/{irc,teams,google_chat}/adapter.py`.
 
-## Surfacing Env Vars in `hermes config`
+## Surfacing Env Vars in `cybr config`
 
 `hermes_cli/config.py` scans `plugins/platforms/*/plugin.yaml` at import time and auto-populates `OPTIONAL_ENV_VARS` from `requires_env` and (optional) `optional_env` blocks. Use the rich-dict form to contribute proper descriptions, prompts, password flags, and URLs — the CLI setup UI picks them up for free.
 
@@ -472,7 +522,7 @@ label: My Platform
 kind: platform
 version: 1.0.0
 description: >
-  My Platform gateway adapter for Hermes Agent.
+  My Platform gateway adapter for Cybr Agent.
 author: Your Name
 requires_env:
   - name: MY_PLATFORM_TOKEN
@@ -597,7 +647,7 @@ See `plugins/platforms/irc/` in the repo for a complete working example — a fu
 ## Step-by-Step Checklist (Built-in Path)
 
 :::note
-This checklist is for adding a platform directly to the Hermes core codebase — typically done by core contributors for officially supported platforms. Community/third-party platforms should use the [Plugin Path](#plugin-path-recommended) above.
+This checklist is for adding a platform directly to the Cybr Agent core codebase — typically done by core contributors for officially supported platforms. Community/third-party platforms should use the [Plugin Path](#plugin-path-recommended) above.
 :::
 
 ### 1. Platform Enum
@@ -712,16 +762,13 @@ Six touchpoints:
 
 ### 9. Optional: Platform Hints
 
-**`agent/prompt_builder.py`** — If your platform has specific rendering limitations (no markdown, message length limits, etc.), add an entry to the `PLATFORM_HINTS` dict. This injects platform-specific guidance into the system prompt:
+**`platform_hint=`** on `ctx.register_platform` — If your platform has specific rendering limitations (no markdown, message length limits, etc.), declare a hint on its registry entry (keep the text in a light sibling such as `adapter_hint.py`). It is injected into the system prompt; `agent/prompt_builder.py::PLATFORM_HINTS` holds only core surfaces:
 
 ```python
-PLATFORM_HINTS = {
-    # ...
-    "newplat": (
-        "You are chatting via NewPlat. It supports markdown formatting "
-        "but has a 4000-character message limit."
-    ),
-}
+PLATFORM_HINT = (
+    "You are chatting via NewPlat. It supports markdown formatting "
+    "but has a 4000-character message limit."
+)
 ```
 
 Not all platforms need hints — only add one if the agent's behavior should differ.
@@ -838,7 +885,7 @@ async def disconnect(self):
 
 | Adapter | Pattern | Complexity | Good reference for |
 |---------|---------|------------|-------------------|
-| `bluebubbles.py` | REST + webhook | Medium | Simple REST API integration |
-| `weixin.py` | Long-poll + CDN | High | Media handling, encryption |
+| `plugins/platforms/bluebubbles/adapter.py` | REST + webhook | Medium | Simple REST API integration |
+| `plugins/platforms/weixin/adapter.py` | Long-poll + CDN | High | Media handling, encryption |
 | `plugins/platforms/wecom/callback_adapter.py` | Callback/webhook | Medium | HTTP server, AES crypto, multi-app |
 | `plugins/platforms/irc/adapter.py` | Long-poll + IRC protocol | High | Full-featured plugin adapter with scoped token lock |

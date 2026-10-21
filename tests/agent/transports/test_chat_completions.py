@@ -108,8 +108,16 @@ class TestChatCompletionsBasic:
 
 
 
-
-
+    def test_convert_messages_strips_replayed_platform_message_id(self, transport):
+        """SQLite replay exposes ``platform_message_id`` as ``message_id`` (JSONL transcript compat);
+        the gateway stamps it on every user row from the admission id. It is delivery bookkeeping:
+        the in-process CLI never sent it, so a resuming surface that let it through would send a
+        different prefix for the same durable session and break the cache.
+        """
+        msgs = [{"role": "user", "content": "hi", "message_id": "adm-123"}]
+        result = transport.convert_messages(msgs)
+        assert "message_id" not in result[0]
+        assert result[0]["content"] == "hi"
 
     def test_convert_messages_strips_timestamp(self, transport):
         """Internal per-message ``timestamp`` metadata (stamped by
@@ -194,7 +202,7 @@ class TestChatCompletionsBasic:
         assert transport.convert_messages(msgs) is msgs
 
     def test_convert_messages_strips_internal_scaffolding_markers(self, transport):
-        """Hermes-internal ``_``-prefixed markers must never reach the wire.
+        """Cybr Agent-internal ``_``-prefixed markers must never reach the wire.
 
         The empty-response recovery path appends synthetic messages tagged
         with ``_empty_recovery_synthetic``; permissive providers ignore the

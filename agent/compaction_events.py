@@ -2,11 +2,12 @@
 
 One record per ``compress_context`` attempt (built from the attempt telemetry seam), per
 micro-compaction pass, per committed proactive tool-result prune, and per Codex-native thread
-compaction Hermes observes. A persistence-detached fork (background review) shares the live session id
+compaction Cybr Agent observes. A persistence-detached fork (background review) shares the live session id
 but rewrites only its own throwaway transcript, so it publishes nothing. The payload is flat because OpenTelemetry exporters flatten only top-level
 keys; every categorical field except the free-form ``summarizer_provider`` / ``summarizer_model`` identifiers
 comes from a closed set with an ``other`` fallback; no field carries message, summary, focus-topic, error or
-path text. Publishing never raises into compaction.
+path text. Publishing never raises into compaction. A committed record also fires the ``post_compaction`` plugin
+hook, so plugins learn about every compaction the model will see without inferring it from history shrinkage.
 """
 
 from __future__ import annotations
@@ -194,7 +195,7 @@ def attempt_payload(record: dict[str, Any], *, compression_count: Any = None) ->
         has_focus_topic=record.get("has_focus_topic") if isinstance(record.get("has_focus_topic"), bool) else None,
     )
     if codex:
-        values["cache_break"] = None  # the Codex thread's provider cache is not Hermes's prompt cache
+        values["cache_break"] = None  # the Codex thread's provider cache is not Cybr Agent's prompt cache
     return _payload(**values)
 
 
@@ -228,30 +229,66 @@ def prune_payload(
 
 
 def provider_native_payload(*, session_id: str, compression_count: Any = None) -> dict[str, Any]:
-    """A compaction the provider ran on its own thread and Hermes only observed."""
+    """A compaction the provider ran on its own thread and Cybr Agent only observed."""
     return _payload(
         kind="provider_native", scope="provider", official=False, trigger="provider", outcome="committed",
         method="provider", failure_class="none", session_id=session_id, compression_count=_int(compression_count),
     )
 
 
+def fire_post_compaction(
+    *, session_id: str, old_session_id: str = "", kind: str | None, reason: str | None,
+    before_tokens: int | None, after_tokens: int | None, messages_removed: int | None,
+) -> None:
+    """The ``post_compaction`` plugin hook, gated on a listener. Callbacks are isolated by the dispatcher."""
+    from hermes_cli.lifecycle import has_hook, invoke_hook
+
+    if has_hook("post_compaction"):
+        invoke_hook(
+            "post_compaction", session_id=session_id, old_session_id=old_session_id, kind=kind, reason=reason,
+            before_tokens=before_tokens, after_tokens=after_tokens, messages_removed=messages_removed,
+        )
+
+
+def _fire_for(payload: dict[str, Any], session_id: str) -> None:
+    before, after = payload["messages_before"], payload["messages_after"]
+    fire_post_compaction(
+        session_id=session_id, old_session_id=payload["session_id"] if payload["session_id"] != session_id else "",
+        kind=payload["kind"], reason=payload["trigger"], before_tokens=payload["tokens_before"],
+        after_tokens=payload["tokens_after"],
+        messages_removed=before - after if before is not None and after is not None else None,
+    )
+
+
 def _publish(
     build: Any, *args: Any, turn_session_id: str | None = None, require_target_session_id: str | None = None,
-    **kwargs: Any,
+    live_session_id: str | None = None, **kwargs: Any,
 ) -> None:
-    """Build one record and fan it out to the built-in Relay integration. Never raises into compaction: the
-    first failure logs at WARNING with its traceback, later ones at DEBUG."""
+    """Build one record, fire ``post_compaction`` for a committed one, and fan it out to the built-in Relay
+    integration. ``live_session_id`` is the session holding the compacted transcript now (a rotating commit
+    moved it off the record's session). Never raises into compaction: the first failure logs at WARNING with
+    its traceback, later ones at DEBUG."""
     global _warned
     try:
+        relay = True
         if require_target_session_id is not None:
             from agent.relay_compaction import compaction_target_available
 
-            if not compaction_target_available(require_target_session_id, turn_session_id=turn_session_id):
-                return
+            relay = compaction_target_available(require_target_session_id, turn_session_id=turn_session_id)
+        from hermes_cli.lifecycle import has_hook
+
+        hook = has_hook("post_compaction")
+        if not (relay or hook):
+            return
         payload = build(*args, **kwargs)
+        name = event_name(payload)
+        if hook and name == COMPACTION_MARK:
+            _fire_for(payload, live_session_id or payload["session_id"])
+        if not relay:
+            return
         from agent.relay_compaction import emit_compaction_mark
 
-        emit_compaction_mark(payload["session_id"], event_name(payload), payload, turn_session_id=turn_session_id)
+        emit_compaction_mark(payload["session_id"], name, payload, turn_session_id=turn_session_id)
     except Exception:
         with _warned_lock:
             first, _warned = not _warned, True
@@ -275,7 +312,7 @@ def publish_attempt(agent: Any, record: dict[str, Any]) -> None:
     if _publishes_for(agent):
         _publish(lambda: attempt_payload(
             record, compression_count=getattr(getattr(agent, "context_compressor", None), "compression_count", None),
-        ), turn_session_id=_turn_session_id(agent))
+        ), turn_session_id=_turn_session_id(agent), live_session_id=getattr(agent, "session_id", None))
 
 
 def publish_micro(record: dict[str, Any], *, turn_session_id: str | None = None) -> None:
@@ -298,7 +335,7 @@ def publish_prune(agent: Any, messages: list, pruned: list, tool_results_pruned:
 
 
 def publish_provider_native(agent: Any) -> None:
-    """Publish one provider-native compaction Hermes observed but did not run."""
+    """Publish one provider-native compaction Cybr Agent observed but did not run."""
     if _publishes_for(agent):
         _publish(
             provider_native_payload, session_id=getattr(agent, "session_id", None) or "",

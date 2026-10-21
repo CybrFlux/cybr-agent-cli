@@ -28,6 +28,11 @@ class TestIsOAuthToken:
     def test_api_key(self):
         assert _is_oauth_token("sk-ant-api03-abcdef1234567890") is False
 
+    def test_user_scoped_api_key(self):
+        # sk-ant-usr* is a pay-per-token API key accepted as x-api-key — not an OAuth/setup
+        # token (#133856): classifying it as OAuth rides the Claude Code identity on it.
+        assert _is_oauth_token("sk-ant-usr01-abcdef1234567890") is False
+
 
 def test_missing_sdk_error_reports_why_the_lazy_install_did_not_land(monkeypatch):
     """A completed install that needs a restart must not tell the user to install it again."""
@@ -35,7 +40,7 @@ def test_missing_sdk_error_reports_why_the_lazy_install_did_not_land(monkeypatch
     from agent import anthropic_adapter
     from pm.package import InstallError
 
-    restart = InstallError("venv", "anthropic installed; restart Hermes to activate the new dependency environment")
+    restart = InstallError("venv", "anthropic installed; restart Cybr Agent to activate the new dependency environment")
 
     def ensure_import(extra):
         raise restart
@@ -83,7 +88,7 @@ class TestBuildAnthropicClient:
             kwargs = mock_sdk.Anthropic.call_args[1]
             headers = kwargs["default_headers"]
             assert headers["HTTP-Referer"] == "https://hermes-agent.nousresearch.com"
-            assert headers["X-Title"] == "Hermes Agent"
+            assert headers["X-Title"] == "Cybr Agent"
             from hermes_cli.version_info import get_version_info
             assert headers["User-Agent"] == f"HermesAgent/{get_version_info().base_version}"
             # Auth branch is unchanged: x-api-key via api_key, betas kept.
@@ -280,7 +285,7 @@ class TestResolveAnthropicToken:
         monkeypatch.setattr("agent.anthropic_credentials.Path.home", lambda: tmp_path)
         # Isolate source #5 (credential_pool): ensure source #4 (Claude Code
         # creds, incl. the macOS keychain read which Path.home does not cover)
-        # returns nothing, mirroring a Hermes-PKCE-only setup.
+        # returns nothing, mirroring a Cybr Agent-PKCE-only setup.
         monkeypatch.setattr("agent.anthropic_credentials.read_claude_code_credentials", lambda: None)
 
         pool_entry = PooledCredential.from_dict("anthropic", {
@@ -1808,7 +1813,7 @@ def test_oauth_system_prompt_sanitizer_preserves_docs_url():
             {
                 "role": "system",
                 "content": (
-                    "Hermes Agent by Nous Research uses hermes-agent skills. "
+                    "Cybr Agent by Nous Research uses hermes-agent skills. "
                     "Docs: https://hermes-agent.nousresearch.com/docs ; "
                     "interpreter ~/.hermes/hermes-agent/venv/bin/python ; "
                     "source github.com/NousResearch/hermes-agent ; mail hermes-agent@example.com ; "

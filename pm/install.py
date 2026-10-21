@@ -136,7 +136,7 @@ def installed_package(name: str, *, allow_outdated: bool = False) -> InstalledPa
 
 def uv_launcher(name: str) -> Path | None:
     """PM's installed ``uv``/``uvx`` for a user-declared MCP stdio ``command:``, so a bare
-    ``uvx`` server runs the packaged uv, never the user's. Read-only; Hermes's own Python
+    ``uvx`` server runs the packaged uv, never the user's. Read-only; Cybr Agent's own Python
     work still goes through PM operations, not this executable."""
     if name not in ("uv", "uvx"):
         raise ValueError(f"{name!r} is not a uv launcher")
@@ -251,7 +251,7 @@ _SET_ASIDE_PREFIX = ".reclaim-"
 def _discard_entry(store: Store, entry_name: str) -> None:
     """Drop a tree a finished publish or restore left behind as garbage.
 
-    A running Hermes process can keep the replaced interpreter's DLLs mapped
+    A running Cybr Agent process can keep the replaced interpreter's DLLs mapped
     far past the retry window, and failing here reports a completed install
     as broken (#124807). Windows still allows renaming a tree with mapped
     images, so it moves to a `.reclaim-*` name: its slot is free for the next
@@ -713,7 +713,7 @@ def _venv_install_lock(*, patient: bool):
         if not held:
             error = InstallError(
                 "venv",
-                f"another Hermes process is installing dependencies (waited {INSTALL_LOCK_TIMEOUT_SECONDS:.0f}s)",
+                f"another Cybr Agent process is installing dependencies (waited {INSTALL_LOCK_TIMEOUT_SECONDS:.0f}s)",
                 "retry in a moment, or run `hermes pm install` to install explicitly",
             )
             receipt.record_refusal("install-busy", str(error))
@@ -902,9 +902,30 @@ def check(*, include_venv: bool = True) -> list[str]:
     return [f"{name}: {reason}" for name, reason in drift(include_venv=include_venv).items()]
 
 
+def _dependents_first(names: list[str]) -> list[str]:
+    """*names* with each package moved ahead of the packages it depends on.
+
+    A package that extends its dependency must win on PATH: node's own dir also holds node's
+    bundled npm and npx, so with node first every ``npm`` ran that copy, not the pinned npm.
+    Unrelated packages keep their order.
+    """
+    order = list(names)
+    for name in names:
+        try:
+            deps = {package.name for package in walk([name])} - {name}
+        except KeyError:
+            continue
+        positions = [order.index(dep) for dep in deps if dep in order]
+        if positions and min(positions) < order.index(name):
+            order.remove(name)
+            order.insert(min(positions), name)
+    return order
+
+
 def _store_path_dirs() -> list[str]:
     """Composed PATH dirs of all installed (non-internal, on_path) store
-    packages, deps-first, deduped. Includes optional packages that are
+    packages, each package ahead of its dependencies (``_dependents_first``),
+    deduped. Includes optional packages that are
     *installed* (facts say so) — an installed git/gh must be on PATH even
     though it's not in the root closure. A package whose dependency chain is
     not fully installed contributes nothing: store npm over a missing store
@@ -920,7 +941,7 @@ def _store_path_dirs() -> list[str]:
         return locations[package.name]
 
     dirs: list[str] = []
-    for name in lockfile.names():
+    for name in _dependents_first(lockfile.names()):
         try:
             package = get_package(name)
             chain = walk([name])
@@ -980,7 +1001,7 @@ def activate(*, allow_incomplete: bool = False) -> list[str]:
 
 def store_first_path(path: str) -> str:
     """``path`` with the installed store's tool dirs moved to the front, for
-    Hermes's own children whose PATH gets other dirs prepended after activate."""
+    Cybr Agent's own children whose PATH gets other dirs prepended after activate."""
     import os
 
     dirs = _store_path_dirs()

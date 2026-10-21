@@ -12,7 +12,7 @@ A seeded property / matrix layer over every surface that writes ``config.yaml`` 
 * P3  a failed read never results in a clobbering write: for every single config read an
       operation performs, a transient ``EMFILE`` on exactly that read, plus unreadable, truncated
       and non-mapping files, must leave every section the operation did not target intact;
-* P4  Hermes's ``.env`` loaders are idempotent (self-references, placeholders, quoting), the
+* P4  Cybr Agent's ``.env`` loaders are idempotent (self-references, placeholders, quoting), the
       sanitizer is a fixed point, and ``save_env_value`` changes exactly one line;
 * P5  every config migration is idempotent from every historical ``_config_version`` and never
       clobbers user-set values;
@@ -286,6 +286,10 @@ def gen_case(seed: int, *, long: bool = False, n_sections: tuple = (5, 11), excl
         sec = sections[0]
         leaf = next(p for p in _leaves(tree) if p[0] == sec)
         _set(tree, leaf, "A" * 76 + "D:\\CentBrowserPortable " + "B" * 60)
+    if null_leaves and not any(v is None for v in _leaves(tree).values()):
+        # The draw depends on DEFAULT_CONFIG's leaf population, so a new default key reshuffles
+        # every seed; the explicit-null property must not hinge on which seed happened to roll one.
+        _set(tree, next(p for p in _leaves(tree) if p[0] == sections[0]), None)
     if "providers" not in exclude_top:  # a provider name with a literal dot (#84064 family)
         tree["providers"] = {f"acme.v{seed % 7}": {"base_url": f"http://127.0.0.1:9/v{seed}", "api_mode": "chat_completions"}}
     if "c18_custom_root" not in exclude_top:
@@ -342,7 +346,7 @@ def _reset_config_caches(*, keep_lkg: bool = False) -> None:
 
 
 def _write_file(path: Path, text: str) -> None:
-    """Atomic replace (new inode), like every Hermes writer, so no cache can serve stale bytes."""
+    """Atomic replace (new inode), like every Cybr Agent writer, so no cache can serve stale bytes."""
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(f".{path.name}.c18tmp")
     tmp.write_text(text, encoding="utf-8")

@@ -534,13 +534,25 @@ def _backup_db_file(db_path: Path) -> tuple[Optional[Path], Optional[str]]:
         return None, f"backup copy failed: {exc}"
 
 
-def preflight_db_writability(db_path: Path, *, db_label: str = "state.db") -> None:
+def _rw_or_vanished(p: Path) -> bool:
+    """True when *p* is read-write for this user OR no longer exists.
+
+    The preflight lists the files first and checks them after, and a live sibling connection's last ``close()``
+    unlinks ``-wal``/``-shm`` in between (a concurrent quarantine can rename ``state.db`` aside the same way).
+    ``os.access`` on the vanished path returns False, which is "gone", not "read-only". The final re-check covers
+    a sidecar that vanished and was recreated by the next opener before ``exists()`` ran.
+    """
+    mode = os.R_OK | os.W_OK
+    return os.access(p, mode) or not p.exists() or os.access(p, mode)
+
+
+def preflight_db_writability(db_path: Path, *, db_label: str = "state.db", directory_only: bool = False) -> None:
     """Refuse-or-repair read-only DB files BEFORE the first connection opens.
 
     A stray read-only ``state.db`` / ``-wal`` / ``-shm`` (sudo run, restored backup, copied dotfiles) otherwise
     surfaces as an opaque "attempt to write a readonly database" inside ``_init_schema``, and the obvious wrong
-    "fix" (deleting the ``-wal``) loses committed transactions. ``chmod u+rw`` repair only inside the Hermes home
-    tree (Hermes owns those files; ``chmod`` fails on files the user doesn't own, bounding the repair exactly);
+    "fix" (deleting the ``-wal``) loses committed transactions. ``chmod u+rw`` repair only inside the Cybr Agent home
+    tree (Cybr Agent owns those files; ``chmod`` fails on files the user doesn't own, bounding the repair exactly);
     otherwise fail fast naming the file and command. Never deletes/truncates a WAL sidecar — once writable, the
     normal open checkpoints it. ``:memory:``/``file:`` skipped. Shared with ``kanban_db``.
 
@@ -553,8 +565,9 @@ def preflight_db_writability(db_path: Path, *, db_label: str = "state.db") -> No
         home = Path(get_hermes_home()).resolve()
     # SQLite needs a writable directory in every journal mode (WAL/SHM sidecars, or the DELETE-mode journal).
     sidecars = (db_path.with_name(db_path.name + "-wal"), db_path.with_name(db_path.name + "-shm"))
-    for p, is_dir in [(db_path.parent, True), *((p, False) for p in (db_path, *sidecars) if p.is_file())]:
-        if (is_dir and not p.is_dir()) or os.access(p, os.R_OK | os.W_OK):
+    files = () if directory_only else tuple((p, False) for p in (db_path, *sidecars) if p.is_file())
+    for p, is_dir in [(db_path.parent, True), *files]:
+        if (is_dir and not p.is_dir()) or _rw_or_vanished(p):
             continue
         x = "x" if is_dir else ""
         in_scope = False
@@ -568,7 +581,7 @@ def preflight_db_writability(db_path: Path, *, db_label: str = "state.db") -> No
         wal_note = (" Do NOT delete the -wal file — it contains committed data that "
                     "will be merged into the database once it is writable." if p.name.endswith("-wal") else "")
         raise sqlite3.OperationalError(
-            f"{db_label} is not writable: {'directory' if is_dir else 'file'} {p} is read-only for this user. Hermes "
+            f"{db_label} is not writable: {'directory' if is_dir else 'file'} {p} is read-only for this user. Cybr Agent "
             f"needs read-write access to open the database. Fix with: chmod u+rw{x} '{p}' (files owned by another "
             f"user may need sudo/chown).{wal_note}")
 
@@ -697,7 +710,7 @@ def _schema_not_built(exc: BaseException) -> bool:
     return any(m in str(exc).lower() for m in ("no such table", "no such column"))
 
 
-# Hermes-owned FTS5 objects: the virtual tables and their shadow b-trees. Full-matched, so a
+# Cybr Agent-owned FTS5 objects: the virtual tables and their shadow b-trees. Full-matched, so a
 # user-created lookalike (``archive_fts_data``) is not swept into the rebuildable set.
 _FTS_OBJECT_RE = re.compile(
     r"messages_fts(_trigram|_cjk)?(_data|_idx|_content|_docsize|_config|_segdir|_segments)?"

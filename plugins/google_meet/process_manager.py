@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from hermes_constants import get_hermes_home
+from plugins.google_meet._jsonfile import say_queue_lock
 
 from utils import atomic_json_write
 
@@ -61,7 +62,7 @@ _NO_ACTIVE = {"ok": False, "reason": "no active meeting"}
 
 
 def start(url: str, *, out_dir: Optional[Path] = None, headed: bool = False,
-          auth_state: Optional[str] = None, guest_name: str = "Hermes Agent", duration: Optional[str] = None,
+          auth_state: Optional[str] = None, guest_name: str = "Cybr Agent", duration: Optional[str] = None,
           session_id: Optional[str] = None, mode: str = "transcribe", realtime_model: Optional[str] = None,
           realtime_voice: Optional[str] = None, realtime_instructions: Optional[str] = None,
           realtime_api_key: Optional[str] = None) -> dict[str, Any]:
@@ -174,7 +175,7 @@ def enqueue_say(text: str) -> dict[str, Any]:
         return {"ok": False, "reason": f"out_dir missing: {out_dir}"}
     queue_path = out_dir / "say_queue.jsonl"
     entry = {"id": uuid.uuid4().hex[:12], "text": text}
-    with queue_path.open("a", encoding="utf-8") as f:
+    with say_queue_lock(queue_path), queue_path.open("a", encoding="utf-8") as f:
         f.write(json.dumps(entry) + "\n")
     return {"ok": True, "meetingId": active.get("meeting_id"), "enqueued_id": entry["id"],
             "queue_path": str(queue_path)}

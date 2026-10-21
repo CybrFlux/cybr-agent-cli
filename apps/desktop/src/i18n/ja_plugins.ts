@@ -18,7 +18,7 @@ export const jaPluginSettings = {
     openFolder: 'デスクトッププラグインフォルダーを開く',
     installModal: {
       installUncertain:
-        'Hermes はインストール結果の待機を終了しましたが、プラグインのインストールはまだ進行中の可能性があります。この画面を閉じ、再インストールする前にプラグイン一覧を再スキャンしてください。',
+        'Cybr Agent はインストール結果の待機を終了しましたが、プラグインのインストールはまだ進行中の可能性があります。この画面を閉じ、再インストールする前にプラグイン一覧を再スキャンしてください。',
       installFromGit: 'Git からインストール',
       reviewRepository: 'リポジトリを確認',
       repoPlaceholder: 'https://github.com/owner/repo',
@@ -27,7 +27,17 @@ export const jaPluginSettings = {
         names.length === 1 ? `スキル ${names[0]} の準備ができました` : `${names.length} 個のスキルの準備ができました`,
       nextChat: 'ほかのツールは次のチャットで使えます',
       serverNotConnected: (server, reason) =>
-        `MCP サーバー ${server} は接続されていません${reason ? `: ${reason}` : '。'}`
+        `MCP サーバー ${server} は接続されていません${reason ? `: ${reason}` : '。'}`,
+      verified: '確認済み',
+      unverified: '未確認',
+      reviewedByNous: 'Nous がレビュー済み。',
+      installsAndEnables: profile => `${profile} にインストールし、すぐに有効になります。`,
+      installsOnly: profile => `${profile} にインストールします。`,
+      advanced: '詳細設定',
+      versionLabel: 'バージョン',
+      reviewedPin: sha => (sha ? `レビュー済みのピン ${sha}` : 'レビュー済みのピン'),
+      latestCommit: '最新のコミット',
+      nothingToInstall: 'このパッケージにはここでインストールするものがありません。'
     }
   }
 } satisfies Pick<SettingsOverrides, 'pluginPages' | 'plugins'>

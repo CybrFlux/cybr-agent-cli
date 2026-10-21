@@ -1,7 +1,7 @@
 import os
 import sys
 
-# Stop a ``utils/``-style package in the launch directory from shadowing Hermes's own
+# Stop a ``utils/``-style package in the launch directory from shadowing Cybr Agent's own
 # top-level modules; ``hermes_bootstrap``'s name can't collide, so importing it first is safe.
 import hermes_bootstrap
 
@@ -270,7 +270,37 @@ def _write_or_exit(payload: dict, reason: str) -> None:
         sys.exit(0)
 
 
+def _claim_launch_home():
+    """Reserve the launch home exactly as the gateway does, or None when it is already owned.
+
+    No product surface launches this standalone stdio server any more: Ink and Desktop attach to
+    the profile's gateway over WS (``ui-tui/scripts/gateway_bootstrap.py``). Dev harnesses still
+    run it against a sandbox home (``apps/desktop/e2e/real-session-builder.ts``), and it opens that
+    home's ``state.db`` as a writer, so it must be the home's only owner: the gateway's
+    ``gateway.lock`` reservation refuses it beside a live gateway (or a second entry), and holding
+    that lock keeps a gateway from starting on the home while this process writes."""
+    from gateway.runtime_ownership import OwnershipConflict, process_ownership
+    home = server._launch_home()
+    try:
+        process_ownership.reserve([home])
+    except OwnershipConflict:
+        return None
+    return home
+
+
 def main():
+    home = _claim_launch_home()
+    if home is None:
+        _log_exit(f"refused: {server._launch_home()} is owned by a running gateway; attach to it instead")
+        sys.exit(1)
+    try:
+        _serve()
+    finally:
+        from gateway.runtime_ownership import process_ownership
+        process_ownership.release(home)
+
+
+def _serve():
     # stdout is this process's JSON-RPC client channel: peer-less global broadcasts belong on it.
     server._stdio_is_rpc_channel = True
     try:
@@ -314,7 +344,7 @@ def main():
             "skin": resolve_skin(), "change_events": True, "replay_epoch": replay_epoch()}}},
         "startup write failed (broken stdout pipe before first event)")
 
-    # Live-apply skins Hermes activates mid-conversation.
+    # Live-apply skins Cybr Agent activates mid-conversation.
     server._ensure_skin_watcher()
 
     # Warm the /model picker's provider-models cache in this idle window (fire-and-forget).

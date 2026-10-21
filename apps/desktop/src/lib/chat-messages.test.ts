@@ -329,6 +329,23 @@ describe('toChatMessages', () => {
     expect(chatMessageText(message)).toBe('Here you go.\n\n')
   })
 
+  it('hydrates canonical native image suffixes without changing durable history or caption prose', () => {
+    const caption = 'Explain [Image attached at: /not/an/attachment.png] in this sentence.'
+    const paths = ['/cache/native-inputs/hash/a [1].png', 'https://example.test/image.png']
+    const content = `${caption}\n\n[Image attached at: ${paths[0]}]\n[Image attached: ${paths[1]}]\n[screenshot]\n[screenshot]`
+    const stored = { role: 'user' as const, content, timestamp: 1, row_id: 23 }
+    const [message] = toChatMessages([stored])
+
+    expect(chatMessageText(message)).toBe(caption)
+    expect(message.attachmentRefs).toEqual([`@image:\`${paths[0]}\``, `@image:${paths[1]}`])
+    expect(stored.content).toBe(content)
+    const [prose] = toChatMessages([{ ...stored, content: `${caption}\n\n[Image attached at: /literal.png]` }])
+    expect(chatMessageText(prose)).toBe(`${caption}\n\n[Image attached at: /literal.png]`)
+    expect(prose.attachmentRefs).toBeUndefined()
+    const [assistant] = toChatMessages([{ ...stored, role: 'assistant' }])
+    expect(chatMessageText(assistant)).toBe(content)
+  })
+
   it('lifts @image directive lines into attachmentRefs instead of inline text', () => {
     const [message] = toChatMessages([
       {
@@ -362,7 +379,7 @@ describe('toChatMessages', () => {
     // How a turn sent to a natively-vision-capable model comes back out of the
     // session store: a backtick-quoted ref (the path has spaces) and the
     // `[screenshot]` stand-in left by flattening the parts list.
-    const ref = '@image:`/Users/me/Library/Application Support/Hermes/composer-images/a.png`'
+    const ref = '@image:`/Users/me/Library/Application Support/Cybr Agent/composer-images/a.png`'
 
     const [message] = toChatMessages([
       {
@@ -562,9 +579,9 @@ describe('toChatMessages', () => {
     ])
   })
 
-  // Hermes closes a failed turn with an assistant-role row (agent/turn_failure_copy.py);
+  // Cybr Agent closes a failed turn with an assistant-role row (agent/turn_failure_copy.py);
   // painted as the model's reply it read as the assistant refusing the request.
-  it('renders the failed-turn boundary as a Hermes notice, not a model reply', () => {
+  it('renders the failed-turn boundary as a Cybr Agent notice, not a model reply', () => {
     const messages = toChatMessages([
       { role: 'user', content: 'do the thing', timestamp: 1 },
       { role: 'assistant', content: 'Your request was not processed.', display_kind: 'failed_turn', timestamp: 2 }

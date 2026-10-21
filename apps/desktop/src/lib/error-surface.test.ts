@@ -73,9 +73,16 @@ describe('formatErrorDiagnostics', () => {
     expect(text).not.toContain('some/other-model')
   })
 
+  it('stamps the recorded failure time, never the copy time (#141348)', () => {
+    expect(formatErrorDiagnostics({ errorText: 'boom', failedAt: 1_792_000_000 })).toContain(
+      'time: 2026-10-14T17:46:40.000Z'
+    )
+  })
+
   it('omits absent fields without leaving blank lines', () => {
     const text = formatErrorDiagnostics({ errorText: 'boom' })
 
+    expect(text).not.toContain('time:')
     expect(text).not.toContain('layer:')
     expect(text).not.toContain('model:')
     expect(text.split('\n').every(line => line.trim().length > 0)).toBe(true)
@@ -159,13 +166,13 @@ describe('free-tier refusals', () => {
   const surface = parseErrorSurface({
     code: 'free_tier_disabled',
     layer: 'provider',
-    message: '  Using Hermes without signing in is switched off right now. To sign in: /login. ',
+    message: '  Using Cybr Agent without signing in is switched off right now. To sign in: /login. ',
     provider: 'nous',
     retryable: false
   })!
 
   it('carries the backend sentence and offers the free sign-in, never an OAuth re-login', () => {
-    expect(surface.message).toBe('Using Hermes without signing in is switched off right now. To sign in: /login.')
+    expect(surface.message).toBe('Using Cybr Agent without signing in is switched off right now. To sign in: /login.')
     const plan = errorRecoveryPlan(surface)
     expect(plan.signInFreeTier).toBe(true)
     expect(plan.signInAgain).toBe(false)
@@ -185,6 +192,15 @@ describe('free-tier refusals', () => {
       en.assistant.thread.errorCodes.free_tier_rate_limited.body
     )
     expect(errorRecoveryPlan(bare).retry).toBe(true)
+  })
+})
+
+describe('cron session read-only (#141348)', () => {
+  it('renders its own copy and offers a new chat instead of Retry', () => {
+    const surface = parseErrorSurface({ layer: 'gateway', code: 'cron_session_read_only', retryable: false })
+
+    expect(errorCardText(en.assistant.thread, surface)).toEqual(en.assistant.thread.errorCodes.cron_session_read_only)
+    expect(errorRecoveryPlan(surface)).toMatchObject({ retry: false, startNewSession: true })
   })
 })
 

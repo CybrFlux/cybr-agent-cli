@@ -116,6 +116,11 @@ def clarify_cb(questions):
         answers[entry["qid"]] = match or ans
     return {"answers": answers, "outcome": "submitted"}
 
+def theme_cb(payload):
+    CALLBACK_LOG.append({"name": "theme", "payload": payload})
+    return {"success": True, "applied": {k: v for k, v in payload.items() if k != "picker"}}
+
+
 def tour_cb(payload):
     CALLBACK_LOG.append({"name": "tour", "payload": payload})
     action = payload.get("action", "")
@@ -224,6 +229,7 @@ agent = AIAgent(
     max_iterations=40,
     clarify_callback=clarify_cb,
     tour_callback=tour_cb,
+    theme_callback=theme_cb,
     read_terminal_callback=read_terminal_cb,
     read_preview_callback=read_preview_cb,
     drive_preview_callback=drive_preview_cb,
@@ -231,7 +237,7 @@ agent = AIAgent(
     connection_callback=connection_cb,
 )
 
-PREAMBLE = ("You are running inside the Hermes desktop app on the user's machine. "
+PREAMBLE = ("You are running inside the Cybr Agent desktop app on the user's machine. "
             f"Your working directory (the workspace) is: {workspace}\n\nTask: ")
 
 t0 = time.time()

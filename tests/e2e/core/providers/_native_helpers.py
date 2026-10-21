@@ -5,8 +5,8 @@ subprocess with a hermetic fake HOME / HERMES_HOME, a config.yaml that selects a
 and the provider's endpoint redirected to a loopback fake from ``tests/fakes/providers/``. Only the
 vendor boundary is faked; runtime resolution, the adapter, the agent loop, tools and SQLite are real.
 
-What a test asserts: the NEXT wire request Hermes sends (captured by the fake), the persisted
-``state.db`` rows, and the CLI's user-visible output — never Hermes source text.
+What a test asserts: the NEXT wire request Cybr Agent sends (captured by the fake), the persisted
+``state.db`` rows, and the CLI's user-visible output — never Cybr Agent source text.
 """
 
 from __future__ import annotations
@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 import hermes_yaml as yaml
+from hermes_cli.observability.shared_metrics_consent import OFFER_VERSION
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 TURN_TIMEOUT = 180.0
@@ -93,6 +94,9 @@ def make_home(root: Path, model: dict[str, Any], *, env_file: dict[str, str] | N
         "updates": {"check": False},
         "auxiliary": {"title_generation": {"enabled": False}},
         "memory": {"memory_enabled": False, "user_profile_enabled": False},
+        # Answered at the current offer version (as write_hermes_home does), so an interactive
+        # chat never stops on the shared-metrics offer before the UI takes the terminal.
+        "telemetry": {"shared_metrics": {"enabled": False, "send": False, "offer_version": OFFER_VERSION}},
     }
     for key, value in (extra_config or {}).items():
         if isinstance(value, dict) and isinstance(cfg.get(key), dict):

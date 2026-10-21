@@ -14,7 +14,7 @@ These guard the contract:
     fallback — no crash, no empty list.
 
 Merging is what lets new models (e.g. ``mimo-v2.5-pro`` on opencode-go)
-appear in ``/model`` without a Hermes release.
+appear in ``/model`` without a Cybr Agent release.
 """
 
 from unittest.mock import patch
@@ -139,3 +139,10 @@ class TestProviderModelIdsPreferred:
             _model_flow_kimi({}, current_model="")
 
         assert captured["models"] == _PROVIDER_MODELS["kimi-coding"]
+
+
+def test_setup_menu_merge_leads_with_curated_in_full():
+    from hermes_cli.model_setup_flows_common import _models_dev_merged
+    with patch("agent.models_dev.list_agentic_models", return_value=["a/x", "b/Y", "c/z"]):
+        assert _models_dev_merged("nvidia", ["B/y", "d/w"]) == ["b/Y", "d/w", "a/x", "c/z"]
+        assert _models_dev_merged("opencode-zen", ["B/y", "d/w"]) == ["a/x", "b/Y", "c/z", "d/w"]

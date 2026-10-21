@@ -137,6 +137,16 @@ describe('ModelSettings profile scope', () => {
 })
 
 describe('ModelSettings', () => {
+  it('labels the main provider, model and default controls independently', async () => {
+    renderModelSettings()
+
+    expect(await screen.findByRole('combobox', { name: 'Provider' })).toBeTruthy()
+    expect(screen.getByRole('combobox', { name: 'Model' })).toBeTruthy()
+    expect(await screen.findByRole('combobox', { name: 'Reasoning' })).toBeTruthy()
+    expect(screen.getByText('Provider', { exact: true })).toBeTruthy()
+    expect(screen.getByText('Model', { exact: true })).toBeTruthy()
+    expect(setModelAssignment).not.toHaveBeenCalled()
+  })
   it.each(['custom', 'local', 'custom:lab'])(
     'opens local endpoint setup when %s has no inventory row',
     async provider => {
@@ -1009,7 +1019,7 @@ describe('ModelSettings stale-aux banner dismissal', () => {
 
 describe('ModelSettings code-skew 503', () => {
   const skewError = new Error(
-    'Error invoking remote method \'hermes:api\': Error: 503: {"detail":"Restart required: This process is running code from 08b4875f4a but the checkout on disk is now 48d2528066. The model picker would risk a stale-module crash — restart the Desktop-owned backend to load the new code (use Restart backend in Hermes Desktop, or quit and reopen the app)"}'
+    'Error invoking remote method \'hermes:api\': Error: 503: {"detail":"Restart required: This process is running code from 08b4875f4a but the checkout on disk is now 48d2528066. The model picker would risk a stale-module crash — restart the Desktop-owned backend to load the new code (use Restart backend in Cybr Agent Desktop, or quit and reopen the app)"}'
   )
 
   afterEach(() => {

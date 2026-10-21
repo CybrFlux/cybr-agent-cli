@@ -24,7 +24,7 @@ def _find_stale_dashboard_pids(*, exclude_pids: set[int] | None = None,
                                scope_home: str | None = None) -> list[int]:
     """PIDs of running ``dashboard``/``serve`` backends the caller may stop.
 
-    *scope_home*: keep only backends whose resolved Hermes home (see
+    *scope_home*: keep only backends whose resolved Cybr Agent home (see
     ``_hermes_home_for_pid``) is this home; unreadable ownership is spared, never guessed.
     ``--stop`` and the post-update cleanup pass their own home so another install's or
     profile's backend on the same machine is never a target (#113978).
@@ -103,7 +103,7 @@ def _restart_managed_dashboard_service(reason: str, unit: str = _DASHBOARD_SYSTE
     def _systemctl(*args: str, timeout: int = 10) -> subprocess.CompletedProcess:
         return _run_probe(["systemctl", *args], timeout=timeout)
 
-    # User manager first (Hermes installs Linux services in the user scope by
+    # User manager first (Cybr Agent installs Linux services in the user scope by
     # default), system manager only when the unit isn't there. Keep the selected
     # scope for ALL probes and the restart — a user unit must never be restarted
     # through the system manager (or raw-killed).
@@ -229,6 +229,27 @@ def _extract_scope_from_cgroup(cgroup_entry: str) -> str | None:
 def _get_pid_cgroup_path(pid: int) -> str | None:
     """The unified (``0::``) cgroup path from ``/proc/<pid>/cgroup``, or None."""
     return next(_pid_unified_cgroup_entries(pid), None)
+
+
+def _systemd_owner_for_pid(pid: int) -> tuple[str, str | None] | None:
+    """``(unit, scope)`` of the systemd unit whose live ``MainPID`` is *pid*; ``None`` when no unit
+    provably owns it (see :func:`_get_systemd_service_for_pid`). Scope is ``user``/``system`` or
+    ``None`` when the cgroup path does not say."""
+    unit = _get_systemd_service_for_pid(pid)
+    if unit is None:
+        return None
+    return unit, _extract_scope_from_cgroup(_get_pid_cgroup_path(pid) or "")
+
+
+def _systemd_restart_commands(unit: str, scope: str | None) -> list[str]:
+    """The command(s) that restart *unit* in its scope; both forms when the scope is unknown."""
+    user_cmd, system_cmd = f"systemctl --user restart {unit}", f"sudo systemctl restart {unit}"
+    return {"user": [user_cmd], "system": [system_cmd]}.get(scope or "", [user_cmd, system_cmd])
+
+
+def _format_restart_commands(commands: list[str]) -> str:
+    """Join restart commands as a user-facing hint: each backticked, separated by " or "."""
+    return " or ".join(f"`{c}`" for c in commands)
 
 
 def _try_restart_systemd_service(svc_name: str, cgroup_path: str | None = None) -> bool:
@@ -932,7 +953,7 @@ def _attach_to_host_backend(args, headless_backend: bool) -> None:
     url = f"http://{format_url_host(hr.dial_host(record))}:{record.port}/?profile={wanted}"
 
     kind = "backend" if headless_backend else "dashboard"
-    print(f"Hermes {kind} already running on this host: PID {record.pid}, port {record.port}.")
+    print(f"Cybr Agent {kind} already running on this host: PID {record.pid}, port {record.port}.")
     print(f"  Managing profile '{wanted}': {url}")
     if not headless_backend and not args.no_open:
         with contextlib.suppress(Exception):

@@ -1,16 +1,16 @@
 ---
 sidebar_label: "Build a Plugin"
 slug: /developer-guide/plugins
-title: "Build a Hermes Plugin"
-description: "Step-by-step guide to building a complete Hermes plugin with tools, hooks, data files, and skills"
+title: "Build a Cybr Agent Plugin"
+description: "Step-by-step guide to building a complete Cybr Agent plugin with tools, hooks, data files, and skills"
 ---
 
-# Build a Hermes Plugin
+# Build a Cybr Agent Plugin
 
-This guide walks through building a complete Hermes plugin from scratch. By the end you'll have a working plugin with multiple tools, lifecycle hooks, shipped data files, and a bundled skill — everything the plugin system supports.
+This guide walks through building a complete Cybr Agent plugin from scratch. By the end you'll have a working plugin with multiple tools, lifecycle hooks, shipped data files, and a bundled skill — everything the plugin system supports.
 
 :::info Not sure which guide you need?
-Hermes has several distinct pluggable interfaces — some use Python `register_*` APIs, others are config-driven or drop-in directories. Use this map first:
+Cybr Agent has several distinct pluggable interfaces — some use Python `register_*` APIs, others are config-driven or drop-in directories. Use this map first:
 
 | If you want to add… | Read |
 |---|---|
@@ -33,7 +33,7 @@ Hermes has several distinct pluggable interfaces — some use Python `register_*
 | **External tools via MCP** (filesystem, GitHub, Linear, any MCP server) | [MCP](../../user-guide/features/mcp.md) — declare `mcp_servers.<name>` in `config.yaml` |
 | **Gateway event hooks** (fire on startup, session events, commands) | [Event Hooks](../../user-guide/features/hooks.md#gateway-event-hooks) — drop `HOOK.yaml` + `handler.py` into `~/.hermes/hooks/<name>/` |
 | **Shell hooks** (run a shell command on events) | [Shell Hooks](../../user-guide/features/hooks.md#shell-hooks) — declare under `hooks:` in `config.yaml` |
-| **Additional skill sources** (custom GitHub repos, private skill indexes) | [Skills](../../user-guide/features/skills.md) — `hermes skills tap add <repo>` · [Publishing a tap](../../user-guide/features/skills.md#publishing-a-custom-skill-tap) |
+| **Additional skill sources** (custom GitHub repos, private skill indexes) | [Skills](../../user-guide/features/skills.md) — `cybr skills tap add <repo>` · [Publishing a tap](../../user-guide/features/skills.md#publishing-a-custom-skill-tap) |
 | A first-class **core** inference provider (not a plugin) | [Adding Providers](../adding-providers.md) |
 
 See the full [Pluggable interfaces table](../../user-guide/features/plugins.md#pluggable-interfaces--where-to-go-for-each) for a consolidated view of every extension surface including config-driven (TTS, STT, MCP, shell hooks) and drop-in directory (gateway hooks) styles.
@@ -44,11 +44,11 @@ Plugins that integrate **someone else's product or project** — observability/m
 :::
 
 :::tip Already built in: check here before you hand-roll it
-Hermes already ships these for plugin authors:
+Cybr Agent already ships these for plugin authors:
 
-- **Run the catalog check locally:** `hermes plugins validate /path/to/your-plugin --install-deps` runs the same check catalog CI runs. See [Submitting to the Plugin Catalog](./catalog-submission.md).
-- **Test your plugin in isolation:** `hermes plugins doctor [path-or-id]` runs the same discovery, manifest parser, `register(ctx)` and registries Hermes uses, with a temporary `HERMES_HOME`. See [Validate with Plugin Doctor](#validate-with-plugin-doctor).
-- **Keep state across updates:** `plugin_data_dir()` and `plugin_db()` give your plugin a data directory that survives `hermes plugins update` and `remove` and follows the active profile. See [Store durable state](#store-durable-state).
+- **Run the catalog check locally:** `cybr plugins validate /path/to/your-plugin --install-deps` runs the same check catalog CI runs. See [Submitting to the Plugin Catalog](./catalog-submission.md).
+- **Test your plugin in isolation:** `cybr plugins doctor [path-or-id]` runs the same discovery, manifest parser, `register(ctx)` and registries Cybr Agent uses, with a temporary `HERMES_HOME`. See [Validate with Plugin Doctor](#validate-with-plugin-doctor).
+- **Keep state across updates:** `plugin_data_dir()` and `plugin_db()` give your plugin a data directory that survives `cybr plugins update` and `remove` and follows the active profile. See [Store durable state](#store-durable-state).
 - **Declare Python dependencies:** list them under `python_dependencies` in `plugin.yaml`, or in a `pyproject.toml` next to it. See [Python dependencies](#python-dependencies).
 - **Ship skills with your plugin:** register them with `ctx.register_skill()`. See [Bundle skills](#bundle-skills).
 - **Ask for privileged host surfaces:** declare them under `capabilities:` so users get a single consent screen. See [Declaring capabilities](#declaring-capabilities).
@@ -57,9 +57,9 @@ Hermes already ships these for plugin authors:
 
 ## Portable Agent Plugins v1 packages
 
-Hermes can also install and load directory packages that target the Agent
+Cybr Agent can also install and load directory packages that target the Agent
 Plugins v1.0.0 format. This is a compatibility adapter for the portable
-components Hermes already owns. It does not replace native `plugin.yaml` plus
+components Cybr Agent already owns. It does not replace native `plugin.yaml` plus
 `register(ctx)` plugins.
 
 ```text
@@ -75,9 +75,9 @@ my-portable-plugin/
 Install and activate a portable package through the normal workflow:
 
 ```bash
-hermes plugins install owner/repository --no-enable
-hermes plugins list
-hermes plugins enable <plugin-name>
+cybr plugins install owner/repository --no-enable
+cybr plugins list
+cybr plugins enable <plugin-name>
 ```
 
 Portable packages are disabled after installation unless you explicitly enable
@@ -95,17 +95,23 @@ name is a load-time conflict: a `config.yaml` server wins over a package, and th
 first-loaded package wins over the next; the loser is skipped with a warning
 naming both.
 
-Hermes validates `plugin.json`, Agent Skills frontmatter, fixed component
+Cybr Agent validates `plugin.json`, Agent Skills frontmatter, fixed component
 locations, `mcp.json`, resolved paths, and symlink containment locally. It does
 not fetch JSON schemas while loading a package. A bad skill or MCP entry is
 skipped at its own boundary when valid sibling components can still load.
 `PLUGIN_ROOT` points to the resolved package root. `PLUGIN_DATA` points to a
-profile-scoped writable directory managed by Hermes.
+profile-scoped writable directory managed by Cybr Agent.
 Values declared in portable MCP `env` are visible package data, not a secret
 storage mechanism. Do not place credentials in `mcp.json`.
+To pass a user's variable through to a stdio server (Cybr Agent otherwise hands MCP
+servers a filtered environment), declare it as `"NAME": "${NAME}"`. The value
+comes from the user's shell or profile `.env`; when the variable is unset (or
+empty), the entry is treated as if it weren't there: the server doesn't get the
+literal `${NAME}`, and `NAME` keeps whatever value the server would have without
+that line (usually unset). Optional variables are safe to forward.
 
 The current portable subset supports stdio and Streamable HTTP MCP entries.
-Portable `streamable-http` entries are routed through Hermes' existing native
+Portable `streamable-http` entries are routed through Cybr Agent' existing native
 remote MCP client (the same runtime that powers URL-based `mcp_servers`
 config), with the v1 boundary rules enforced: the URL must be absolute
 http(s) with no user information or fragment, plain HTTP is accepted only
@@ -113,9 +119,9 @@ for `localhost`/loopback hosts, and configured headers are never forwarded
 across a cross-origin redirect. Legacy `sse` entries are reported and
 skipped. Agent Plugins v1 does not define trust, permissions, provenance, or a
 sandbox. Enabling a package grants its instructions and local executable the
-same full-trust posture as other installed Hermes plugins.
+same full-trust posture as other installed Cybr Agent plugins.
 
-A package can ask Hermes to gate one of its MCP servers, the same way a user's
+A package can ask Cybr Agent to gate one of its MCP servers, the same way a user's
 `trust: untrusted` does in `config.yaml`. Use it for servers whose tools spend
 money, trade, send messages or change accounts, so the user approves each
 write-capable call instead of relying on the skill's instructions alone:
@@ -137,24 +143,95 @@ call to that server that is not annotated `readOnlyHint: true` asks the user
 first, and fails closed where nobody can answer (cron, unattended runs). The
 only other accepted value is `full`, the default, so a package can narrow
 access but never widen it. A `config.yaml` server with the same name replaces
-the package's entry, including its trust. Other harnesses ignore this extension.
+the package's entry, including its trust, but keeps the package's declared costs
+and spend limit (below) unless it sets its own. Other harnesses ignore this extension.
 `trust` can sit beside `app`, `requires` and `liveness` in the same server
 entry (see [Application declarations](./application-declarations.md)).
+
+A server whose tools spend money or credits can declare what each call costs
+and a budget per chat. Cybr Agent then names the cost in the approval prompt along
+with the chat's running total, and a call that would take the chat past
+`spend_limit` asks first even when the user has made the server trusted:
+
+```json
+{
+  "extensions": {
+    "com.nousresearch.hermes": {
+      "servers": {
+        "renders": {
+          "trust": "untrusted",
+          "costs": {
+            "create_image": 20,
+            "animate": { "credits": [5, 20], "note": "per animation" }
+          },
+          "spend_limit": 100,
+          "cost_unit": "credits"
+        }
+      }
+    }
+  }
+}
+```
+
+Keys of `costs` are MCP tool names as the server lists them. A cost is a
+non-negative number, a `[min, max]` range, or an object with `credits` (number
+or range) and a short `note`. `spend_limit` is optional (`0` or absent = no
+limit) and `cost_unit` defaults to `credits`. A malformed table makes the
+package fail to load with an error naming the key. These map to the native
+`tool_costs`, `spend_limit` and `cost_unit` keys (see
+[Tool costs and spend limits](../../user-guide/features/mcp.md#tool-costs-and-spend-limits)).
+Costs are facts about the server, so they survive a user's same-name
+`config.yaml` entry (the way a user widens trust) unless that entry sets the
+key itself; the user's `spend_limit` wins, including `0` to turn it off.
+
+A long-running server can also declare a Cybr Agent-specific tool-call `timeout`
+(in seconds) in `plugin.json`, without changing other servers' defaults:
+
+```json
+{
+  "extensions": {
+    "com.nousresearch.hermes": {
+      "servers": { "analysis": { "timeout": 1000 } }
+    }
+  }
+}
+```
+
+The value must be a positive finite number within the platform's thread-wait
+limit. It maps to the native per-server `timeout`; omission preserves the
+existing `timeouts.mcp.tool_call` fallback. A same-name native `mcp_servers`
+entry still replaces the entire package entry, including its timeout. This
+extends the wait budget, not the cancellation or permission policy. Configure
+any server-internal analysis deadline separately and leave time for its result
+to reach the client. Other harnesses ignore this extension.
+
+A server entry key this Cybr Agent does not know (one a newer release added) is
+ignored with a warning, which `cybr plugins validate` lists, and the package
+still installs. Releases from before this rule reject the package instead, and a
+release that ignores a key may behave less safely than intended, so declare a new
+key together with a catalog `requires_hermes` floor.
+
+An explicit per-server MCP call budget also reaches Cybr Agent' outer tool executor. A call
+whose budget exceeds the shared concurrent-batch deadline becomes a sequential
+barrier, whether called directly or through tool search. It gets its own budget
+without extending unrelated tools in the same model response. Existing shorter
+MCP calls retain their normal parallel-admission policy; interruption and
+approval handling are unchanged.
 
 The [rendered specification](https://agent-plugins.org/specification) currently
 labels v1.0.0 a Working Draft, while the
 [versioned specification repository](https://github.com/agentplugins/agent-plugins-spec/blob/main/spec/1.0.0.md)
-records it as Published. Hermes keys behavior on the canonical v1.0.0 schema
+records it as Published. Cybr Agent keys behavior on the canonical v1.0.0 schema
 identifiers and normative text, not either mutable status label. This is an
 explicit supported subset, not a claim of full Agent Plugins conformance.
 
 ## Native plugin compatibility contract
 
 Native `plugin.yaml` plus `register(ctx)` plugins are protected by behavior,
-not by one global plugin API number. Hermes does not expose a
+not by one global plugin API number. Cybr Agent does not expose a
 `PLUGIN_API_VERSION`, require a manifest-wide `api:` match, or attach an API
 version to unrelated values. A plugin that uses a documented behavior should
-continue to work after a normal Hermes upgrade.
+continue to work after a normal Cybr Agent upgrade.
 
 The compatibility rules are:
 
@@ -163,12 +240,12 @@ The compatibility rules are:
   keyword-only. Existing return fields are not removed or silently retyped.
 - **Hook payloads are keyword payloads.** New hook data is added as keyword
   fields, never by changing the meaning or position of an existing field.
-  Hermes inspects callback signatures: a legacy callback receives the fields it
+  Cybr Agent inspects callback signatures: a legacy callback receives the fields it
   declares, while a callback with `**kwargs` receives the complete current
   payload. New plugins should accept `**kwargs` so they can opt into additive
   data without another signature change.
 - **Manifests are open to additions.** Unknown `plugin.yaml` fields are ignored.
-  Older Hermes releases can therefore load a plugin whose manifest contains
+  Older Cybr Agent releases can therefore load a plugin whose manifest contains
   metadata introduced by a newer release, provided the plugin code itself uses
   supported runtime behavior.
 - **Provider interfaces grow through defaults.** New provider methods have a
@@ -186,10 +263,10 @@ The compatibility rules are:
 
 The contract covers documented surfaces only. Replacing or wrapping core
 functions, methods, module attributes or private tables at runtime (assigning
-`AIAgent.<method>`, `setattr` on a Hermes module, writing into
+`AIAgent.<method>`, `setattr` on a Cybr Agent module, writing into
 `sys.modules` or a core dict) is not a supported extension point. It breaks
 whenever the internals move, and it collides with every other plugin patching
-the same seam. The plugin catalog refuses it at admission (`hermes plugins
+the same seam. The plugin catalog refuses it at admission (`cybr plugins
 validate`, `no core override` check). If a public hook you need is missing,
 open an issue describing it.
 
@@ -211,17 +288,17 @@ Removal after the window must include any migration needed for persisted data
 or resumable sessions. In practice, additive aliases and adapters are preferred
 to removal.
 
-Hermes enforces this contract with frozen external-plugin fixtures discovered
+Cybr Agent enforces this contract with frozen external-plugin fixtures discovered
 from an isolated `HERMES_HOME`. Those tests load and invoke the plugin through
 `PluginManager`; they assert real registration and callback outcomes rather
 than internal symbol lists or source-code shape.
 
 ### Sep 2026 module decomposition: old import paths removed
 
-Hermes's internals were split into `<stem>_<topic>` sibling modules in Sep 2026 (PR #102117). **Internal
+Cybr Agent's internals were split into `<stem>_<topic>` sibling modules in Sep 2026 (PR #102117). **Internal
 import paths were never part of the plugin contract** above. A temporary compatibility layer kept the old
 paths resolving until 2026-09-14; it has been removed, so a plugin that still imports an old path fails to
-load with an `ImportError` (the reason shows in `hermes plugins list`).
+load with an `ImportError` (the reason shows in `cybr plugins list`).
 
 To fix such a plugin, import the name from the module that defines it now, or better, use `ctx` and the
 documented ABCs instead of internals. The full old-to-new map is the
@@ -247,9 +324,9 @@ cd ~/.hermes/plugins/calculator
 
 ### Validate with Plugin Doctor
 
-`hermes plugins doctor [path-or-id]` runs the same directory discovery,
+`cybr plugins doctor [path-or-id]` runs the same directory discovery,
 manifest parser, namespaced import, `register(ctx)`, hook registry, and tool
-registry used by Hermes itself. It reports invalid hook names, callbacks that do
+registry used by Cybr Agent itself. It reports invalid hook names, callbacks that do
 not accept `**kwargs`, registration failures, and drift between declared and
 registered tools/hooks. For a package with a `desktop/plugin.js`, it also warns
 when the Desktop app is running a stale copy of it (see
@@ -257,7 +334,7 @@ when the Desktop app is running a stale copy of it (see
 Pass `--ci` to exit non-zero on an error:
 
 ```bash
-hermes plugins doctor . --ci
+cybr plugins doctor . --ci
 ```
 
 Doctor uses a temporary `HERMES_HOME`, restores plugin registration state after
@@ -281,13 +358,13 @@ provides_hooks:
   - post_tool_call
 ```
 
-This tells Hermes: "I'm a plugin called calculator, I provide tools and hooks." The `provides_tools` and `provides_hooks` fields are lists of what the plugin registers.
+This tells Cybr Agent: "I'm a plugin called calculator, I provide tools and hooks." The `provides_tools` and `provides_hooks` fields are lists of what the plugin registers.
 
 List every tool your `register()` registers in `provides_tools`. The field does **not** decide whether a user-installed plugin's tools load: once the plugin is enabled, everything `register()` registers is available, declared or not. What it does drive:
 
-- **`hermes plugins validate`**: the "declared tools" check fails when the registered tools don't match the list, which blocks catalog admission.
+- **`cybr plugins validate`**: the "declared tools" check fails when the registered tools don't match the list, which blocks catalog admission.
 - **Catalog listing**: the "N tools" chips and tool-name search in the catalog and the dashboard/Desktop Plugins page.
-- **Dashboard auth hint**: only declared tools' availability checks are used to show "needs auth" and the `hermes auth <name>` command.
+- **Dashboard auth hint**: only declared tools' availability checks are used to show "needs auth" and the `cybr auth <name>` command.
 - **Bundled `kind: platform` plugins only**: the field is the switch that loads `tools.py` in CLI/TUI sessions while the adapter stays deferred. See [Outbound client tools](../adding-platform-adapters.md#outbound-client-tools-provides_tools).
 
 Optional fields you could add:
@@ -344,18 +421,18 @@ calculator = "my_pkg:register"
 "calculator.tools.override" = "my_pkg:register"
 ```
 
-Hermes reads these from installed metadata without importing your code, so
-`hermes plugins capabilities` and the consent flow stay accurate for pip
+Cybr Agent reads these from installed metadata without importing your code, so
+`cybr plugins capabilities` and the consent flow stay accurate for pip
 installs.
 
 ### Use the user's Codex sign-in (core-made requests)
 
 A plugin that needs the user's ChatGPT / Codex subscription (minting an OpenAI
 Realtime client secret, calling a Codex backend endpoint) must **not** read,
-refresh or rewrite `~/.codex/auth.json` or Hermes's `auth.json`. Codex refresh
-tokens are single-use: a plugin that refreshes on its own races Hermes's locked
+refresh or rewrite `~/.codex/auth.json` or Cybr Agent's `auth.json`. Codex refresh
+tokens are single-use: a plugin that refreshes on its own races Cybr Agent's locked
 refresh, and the loser's rotation chain gets revoked, signing the user out.
-Ask Hermes to make the request instead. Hermes resolves the credential through
+Ask Cybr Agent to make the request instead. Cybr Agent resolves the credential through
 its own refresh path, attaches `Authorization` itself and returns only the
 response. Your code never sees the token.
 
@@ -395,7 +472,7 @@ returns a `ProviderResponse` (`status`, `headers`, `body`, `.text`, `.json()`).
 The rules:
 
 - **Declared plugins only.** The caller is the plugin whose file is on the call
-  stack. Hermes finds it under the plugins directory and reads its
+  stack. Cybr Agent finds it under the plugins directory and reads its
   `plugin.yaml`. A plugin that does not list the provider in `requires_auth`,
   and code outside any installed plugin, gets `PermissionError`. Call the helper
   from your own function. Handing the bare helper to `run_in_executor` leaves no
@@ -408,13 +485,13 @@ The rules:
 - **No redirects.** A 3xx response comes back as-is and is never followed, so
   the header cannot reach a third host.
 - **Profile-scoped.** The credential is the active profile's Codex sign-in, the
-  same one chat uses (`hermes auth add openai-codex`, or the Codex sign-in in the
+  same one chat uses (`cybr auth add openai-codex`, or the Codex sign-in in the
   desktop app). When there is none you get `ProviderNotSignedIn`, whose message
   names the sign-in command.
 - Your own `headers` are sent too, except any that would replace the
-  `Authorization` (or account) headers Hermes attaches.
+  `Authorization` (or account) headers Cybr Agent attaches.
 
-`requires_auth` appears in `hermes plugins show <name>` and at install time, and
+`requires_auth` appears in `cybr plugins show <name>` and at install time, and
 a catalog re-pin that adds it asks the user before updating. Like capabilities,
 this is consent and visibility. It is **not a sandbox**: in-process plugin code
 can still read any file the user can, and reviewers reject plugins that do.
@@ -423,8 +500,100 @@ can still read any file the user can, and reviewers reject plugins that do.
 `agent.account_usage.fetch_account_usage("openai-codex", read_only=True)`. It
 returns an `AccountUsageSnapshot` (plan, session/weekly windows with
 `used_percent` and `reset_at`) and never refreshes or rotates a credential.
-**Sign-out** belongs to Hermes, not to a plugin: point users at
-`hermes auth logout openai-codex` instead of deleting credential files.
+**Sign-out** belongs to Cybr Agent, not to a plugin: point users at
+`cybr auth logout openai-codex` instead of deleting credential files.
+
+### Use your own OAuth client (Google and other APIs)
+
+A plugin that calls a third-party API with the user's own OAuth client (a
+Google Cloud "Desktop app" client, for example) does not run the
+consent flow, store the refresh token or refresh it. Declare the client and
+Cybr Agent owns the grant:
+
+```yaml
+name: gemini-voice
+requires_env:
+  - name: GEMINI_VOICE_CLIENT_ID
+  - name: GEMINI_VOICE_CLIENT_SECRET
+    secret: true
+oauth:
+  - id: google
+    authorize_url: https://accounts.google.com/o/oauth2/v2/auth
+    token_url: https://oauth2.googleapis.com/token
+    scopes:
+      - https://www.googleapis.com/auth/calendar.events.owned
+      - https://www.googleapis.com/auth/documents
+    client_id_env: GEMINI_VOICE_CLIENT_ID
+    client_secret_env: GEMINI_VOICE_CLIENT_SECRET  # optional: a public PKCE client has none
+    hosts: [www.googleapis.com, docs.googleapis.com]
+    authorize_params: {access_type: offline, prompt: consent}  # Google issues a refresh token only with these
+```
+
+The user signs in once from a terminal with `cybr auth add gemini-voice:google`
+(the plugin's key, a colon, the entry's `id`). That is the same PKCE login the
+model-provider helper runs: a loopback redirect on `127.0.0.1`, with an SSH
+tunnel hint when Cybr Agent runs on a remote host. If the IdP grants fewer scopes
+than declared, nothing is saved. `cybr auth status|refresh|logout
+gemini-voice:google` show, refresh and remove the grant. It lives in the active
+profile's `auth.json`; Cybr Agent refreshes it on use once less than two minutes
+remain and never starts a sign-in under the gateway or cron.
+
+The plugin calls the API through the same helper, with the entry's `id` as the
+provider:
+
+```python
+from hermes_cli.auth_constants import AuthError
+from hermes_cli.plugin_provider_requests import ProviderNotSignedIn, credentialed_provider_request
+
+def create_document(title: str) -> dict:
+    try:
+        resp = credentialed_provider_request(
+            "google", "POST", "https://docs.googleapis.com/v1/documents", json={"title": title}, timeout=20)
+    except ProviderNotSignedIn as exc:
+        return {"ok": False, "error": str(exc)}  # names `cybr auth add gemini-voice:google`
+    except AuthError as exc:
+        return {"ok": False, "error": f"{exc.code}: {exc}"}
+    return {"ok": resp.status < 300, "status": resp.status, "body": resp.json()}
+```
+
+The Codex rules above apply, plus:
+
+- **HTTPS only.** `authorize_url`, `token_url` and every `hosts` entry are
+  `https` (there is no loopback exception); `cybr plugins validate` and
+  catalog admission fail anything else.
+- **Declared hosts only.** The bearer goes to `https://<host>` (port 443) for
+  the entry's `hosts`, matched exactly (no subdomains). Any other URL, `http`,
+  or a URL with user info raises `PermissionError` before a request is made.
+  A host outside the sign-in provider's domains is a warning reviewers check.
+- **Your own client variables.** `client_id_env` and `client_secret_env` name
+  the plugin's own variables; a variable Cybr Agent itself uses (a provider API key,
+  a platform token) is refused, since Cybr Agent sends these to `token_url`.
+- **The plugin's own grant.** The grant is stored under the calling plugin's
+  key, so another plugin declaring the same `id` cannot use it, and the plugin's
+  own entry wins over a Cybr Agent sign-in of the same name.
+- **The grant follows the declaration.** It remembers the entry it was made
+  for: a plugin version that changes the token URL, hosts, scopes or client
+  variables gets `ProviderNotSignedIn` until the user signs in again, and a
+  catalog re-pin that adds an `oauth` entry or changes its authorize host, token
+  host, hosts or scopes asks before updating.
+- **Errors.** `ProviderNotSignedIn`: not signed in, revoked, or the entry
+  changed since sign-in. `AuthError` codes: `oauth_client_id_missing` and
+  `oauth_client_secret_missing` (the variable is not set), `invalid_client`,
+  `unauthorized_client` and `invalid_scope` (the IdP rejected the client; the
+  user has to fix it), `oauth_refresh_failed` (network or server error; try
+  later). A revoked grant (`invalid_grant`) is retired: nothing goes to the
+  network until the next sign-in. Errors reach the plugin without a traceback,
+  chain or request object, so none leads back to the token, refresh token or
+  client secret.
+- **Sign-in and removal.** `cybr auth add` prints which hosts get the code,
+  the client secret and the token before opening the browser, and refuses to
+  run from the gateway, cron or an agent session. `cybr plugins remove` drops
+  the plugin's grants, and `cybr auth logout <plugin>:<id>` still works after
+  the plugin is gone.
+
+`cybr plugins validate` checks the `oauth:` block and that its client
+variables are declared, and warns when plugin code names the token URL. Like
+`requires_auth`, this is consent and visibility, not a sandbox.
 
 ### Manifest v2 reference
 
@@ -432,7 +601,7 @@ returns an `AccountUsageSnapshot` (plan, session/weekly windows with
 optional; a manifest without `manifest_version` is a v1 manifest and stays
 fully supported forever. Unknown fields never break loading — they are ignored
 with a warning (forward compatibility), and a `manifest_version` newer than
-this Hermes understands still loads with a warning.
+this Cybr Agent understands still loads with a warning.
 
 | Field | Type | Meaning |
 |---|---|---|
@@ -440,13 +609,14 @@ this Hermes understands still loads with a warning.
 | `api_version` | int | Runtime **plugin API generation** the plugin targets (ctx surface / hook signatures). Deliberately a separate axis from `manifest_version` — an `api_version: 1` plugin can use a v2 manifest. |
 | `requires_plugins` | list | Inter-plugin dependencies: `- id: other-plugin` with optional `version_range: ">=1.0,<2"`. **Advisory**: a missing dependency logs a clear warning but the plugin still loads — probe at runtime with `ctx.has_plugin("other-plugin")`. Load **order** honors these edges: when A requires B, B's `register()` runs before A's (topological sort, alphabetical tiebreak; cycles warn and fall back to alphabetical order). |
 | `python_dependencies` | list of str | Declared Python requirements (e.g. `"requests>=2.0,<3"`). Installation requests consent; enabling admits the candidate through PM with the existing core, extras, and enabled-plugin union. Successful preparation publishes the environment and configuration transactionally; failure preserves the previous selection and enabled set. Declining leaves the installed plugin disabled. Pin upper bounds. |
-| `python_runtime` | str | `external` — the plugin manages its own interpreter/venv (sidecar pattern); Hermes installs nothing and leaves any `pyproject.toml` alone. |
+| `python_runtime` | str | `external` — the plugin manages its own interpreter/venv (sidecar pattern); Cybr Agent installs nothing and leaves any `pyproject.toml` alone. |
 | `config_schema` | mapping | JSON-schema-ish description of keys under `plugins.entries.<id>.settings`: `api_url: {type: str, default: "", description: "...", required: false}`. Validated at load; mismatches log actionable warnings naming the key and expected type — never load failures. Types: `str`, `int`, `float`, `bool`, `list`, `dict` (plus JSON-schema aliases) and `secret`. Also drives the settings form in the Desktop Plugins tab — see [Settings form in the Desktop](#settings-form-in-the-desktop). |
 | `license` | str | SPDX-style license id (e.g. `MIT`). |
 | `homepage` | str | Project URL. |
 | `tags` | list of str | Free-form discovery tags (e.g. `[gateway, telegram]`). |
 | `provides_locales` | list | Language pack declaration: ids (`- pl`) or `{id, endonym, rtl}` mappings whose `locales/<id>[.tui\|.desktop].yaml` the loader registers automatically — see [Ship a language pack](#ship-a-language-pack). |
-| `requires_auth` | list of str | Providers whose sign-in the plugin uses through Hermes (today: `openai-codex`). Required by `credentialed_provider_request`; shown at install and in `hermes plugins show`. See [Use the user's Codex sign-in](#use-the-users-codex-sign-in-core-made-requests). |
+| `requires_auth` | list of str | Providers whose sign-in the plugin uses through Cybr Agent (today: `openai-codex`). Required by `credentialed_provider_request`; shown at install and in `cybr plugins show`. See [Use the user's Codex sign-in](#use-the-users-codex-sign-in-core-made-requests). |
+| `oauth` | list of mappings | OAuth clients the plugin uses through Cybr Agent: `id`, `authorize_url`, `token_url`, `scopes`, `client_id_env`, optional `client_secret_env`, `hosts`, optional `authorize_params`. Signed in with `cybr auth add <plugin>:<id>`, used through `credentialed_provider_request`. See [Use your own OAuth client](#use-your-own-oauth-client-google-and-other-apis). |
 
 ```yaml
 # plugin.yaml — manifest v2 example
@@ -493,7 +663,7 @@ dependencies = [
 ]
 ```
 
-When both exist the `pyproject.toml` wins. What Hermes does with them:
+When both exist the `pyproject.toml` wins. What Cybr Agent does with them:
 
 - **Install / enable** — PM resolves core, selected extras, and the enabled plugin union
   across every profile sharing the dependency home, including custom `HERMES_HOME` roots.
@@ -502,12 +672,12 @@ When both exist the `pyproject.toml` wins. What Hermes does with them:
 - **Atomic publication** — PM prepares a fresh environment generation before publishing
   an enablement or an active plugin replacement. Resolution, download, or build failure
   preserves the previous environment and plugin selection; no existing plugin is sacrificed.
-- **Updates retain the union** — `hermes update` includes enabled plugins while preparing
-  its new generation. There is no post-update pip reinstall. `hermes plugins update` prepares
+- **Updates retain the union** — `cybr update` includes enabled plugins while preparing
+  its new generation. There is no post-update pip reinstall. `cybr plugins update` prepares
   active replacements before swapping their code and dependency generation together.
 - **Requirement hygiene** — malformed PEP 508 requirements are refused. Environment markers
   remain intact for the target interpreter to evaluate. `hermes-agent` self-dependencies are
-  omitted because the checkout supplies Hermes. Direct-URL requirements are not managed;
+  omitted because the checkout supplies Cybr Agent. Direct-URL requirements are not managed;
   use a plugin-owned external runtime for them.
 - **`--no-deps`** downloads a new plugin without dependency consent and leaves it disabled,
   even with `--enable`. It cannot bypass PM admission when replacing an active plugin.
@@ -515,26 +685,28 @@ When both exist the `pyproject.toml` wins. What Hermes does with them:
   automation, a container entrypoint) prepares the declared dependencies instead of being refused.
   It is mutually exclusive with `--no-deps`.
 - **`python_runtime: external`** keeps a sidecar's dependencies out of the shared union.
-  Hermes does not install that Python runtime or modify its declaration.
-- **Nothing to load is an error** — `hermes plugins validate` rejects `plugin.yaml` without
+  Cybr Agent does not install that Python runtime or modify its declaration.
+- **Nothing to load is an error** — `cybr plugins validate` rejects `plugin.yaml` without
   `__init__.py`, `desktop/plugin.js`, or `plugin.json` beside it. Pip-layout packages need
   a directory-plugin wrapper.
 - `security.allow_lazy_installs: false` blocks on-demand acquisition. Explicit dependency
   consent and explicit enablement authorize PM preparation; discovery never installs.
 
-`HERMES_HOME/plugins/` survives `hermes update` and Desktop updates: the updater only rebuilds the
+`HERMES_HOME/plugins/` survives `cybr update` and Desktop updates: the updater only rebuilds the
 venv and the checkout, never the home directory.
 
 ### Dependency security policy
 
-Hermes quarantines **its own** dependencies: the checkout's `[tool.uv] exclude-newer = "14 days"`
-keeps a freshly published release of any package Hermes itself depends on out of `hermes update`
-and the built-in lazy installs for two weeks, so a hijacked upload is caught upstream before it
-reaches users. **That quarantine does not apply to your plugin's dependencies.** When Hermes
-resolves your plugin into its environment, the cutoff stays on the packages Hermes itself locks
-and nowhere else, so a plugin can floor on a release published yesterday and install today — and the
-plugin's author, not Hermes, is responsible for what that pulls in. (A plugin that needs a newer
-version of a package Hermes itself depends on still waits out that package's window.)
+Cybr Agent checks the age of **its own** dependencies when it locks them: the checkout's
+`[tool.uv] exclude-newer = "3 days"` keeps any release younger than three days out of `uv.lock`,
+so a hijacked upload has time to be caught upstream before it reaches users. Users install from
+that vetted lock; their machines never re-check dates. **The check does not apply to your
+plugin's dependencies.** When Cybr Agent resolves your plugin into its environment, Cybr Agent's exact
+pins stay put, other packages Cybr Agent uses may move within the ranges Cybr Agent declares, and
+everything else follows your requirements, so a plugin can floor on a release published
+yesterday and install today. The plugin's author, not Cybr Agent, is responsible for what that pulls
+in. A plugin that requires a different version of a package Cybr Agent pins exactly fails to install
+until Cybr Agent's pin moves.
 
 Set your own policy and hold yourself to it. Strongly recommended:
 
@@ -543,8 +715,8 @@ Set your own policy and hold yourself to it. Strongly recommended:
 - **Floor on the oldest API-compatible version**, not the release of the week. A floor on a
   fresh wheel forces every installer onto it the day it appears; `>=old,!=broken,<next` keeps the
   wide range and skips the one bad release.
-- **Adopt a new-release quarantine of your own** — wait ~14 days before floors move to a new
-  release, and resolve with `uv --exclude-newer "14 days"` (or `UV_EXCLUDE_NEWER`) in your own CI so
+- **Adopt a release-age check of your own**: wait a few days before floors move to a new
+  release, and resolve with `uv --exclude-newer "3 days"` (or `UV_EXCLUDE_NEWER`) in your own CI so
   the lock you test is the one users get.
 - **Pin your lock, review your bumps.** Treat a dependency bump as a code change: read the
   upstream diff, then re-pin.
@@ -701,7 +873,7 @@ def unit_convert(args: dict, **kwargs) -> str:
 1. **Signature:** `def my_handler(args: dict, **kwargs) -> str`
 2. **Return:** Always a JSON string. Success and errors alike.
 3. **Never raise:** Catch all exceptions, return error JSON instead.
-4. **Accept `**kwargs`:** Hermes injects context keywords (`task_id`, `session_id`, `user_task`,
+4. **Accept `**kwargs`:** Cybr Agent injects context keywords (`task_id`, `session_id`, `user_task`,
    `parent_agent`, ...) and only forwards the ones your signature names, so `def handler(args)`
    works; `**kwargs` is how you opt into the full, additively growing context.
 
@@ -744,11 +916,11 @@ def register(ctx):
 - Called exactly once at startup
 - `ctx.register_tool()` puts your tool in the registry — the model sees it immediately
 - `ctx.register_hook()` subscribes to lifecycle events
-- `ctx.register_cli_command()` registers a CLI subcommand (e.g. `hermes my-plugin <subcommand>`)
+- `ctx.register_cli_command()` registers a CLI subcommand (e.g. `cybr my-plugin <subcommand>`)
 - `ctx.register_command()` registers an in-session slash command (e.g. `/myplugin <args>` inside CLI / gateway chat) — see [Register slash commands](#register-slash-commands) below
 - `ctx.dispatch_tool(name, arguments)` — call any other tool (built-in or from another plugin) with the parent agent's context (approvals, credentials, task_id) wired up automatically. Useful from slash-command handlers that need to invoke `terminal`, `read_file`, or any other tool as if the model had called it directly.
 - `ctx.get_config()` / `ctx.set_config()` access only this plugin's settings namespace; `ctx.state` stores plugin-owned runtime data under the active profile.
-- If this function crashes, the plugin is disabled but Hermes continues fine
+- If this function crashes, the plugin is disabled but Cybr Agent continues fine
 
 **`dispatch_tool` example — a slash command that runs a tool:**
 
@@ -771,7 +943,7 @@ The dispatched tool goes through the normal approval, redaction, and budget pipe
 
 ### Store settings and runtime state
 
-Use plugin-relative config keys for user-visible behavior. Hermes resolves them
+Use plugin-relative config keys for user-visible behavior. Cybr Agent resolves them
 under `plugins.entries.<plugin-id>.settings` and rejects global, cross-plugin,
 and traversal paths:
 
@@ -840,9 +1012,38 @@ Never read `.env`, `auth.json` or another tool's credential files yourself (cata
 The `plugins.manage settings` action refuses secret keys and any value whose type
 or `choices` disagree with the schema.
 
+**Portable packages (`plugin.json`)** declare the same schema under the Cybr Agent
+vendor namespace, since Agent Plugins v1 rejects unknown top-level fields:
+
+```json
+{
+  "extensions": {
+    "com.nousresearch.hermes": {
+      "config_schema": {
+        "api_key": { "type": "secret", "env": "MY_PLUGIN_API_KEY" },
+        "show_chip": { "type": "bool", "default": true, "label": "Show the status-bar chip" }
+      }
+    }
+  }
+}
+```
+
+A secret whose `env` names a variable your `mcp.json` passes through
+(`"env": { "MY_PLUGIN_API_KEY": "${MY_PLUGIN_API_KEY}" }`) reaches the MCP server
+right away: after a save, Cybr Agent reconnects the plugin's servers whose resolved
+launch inputs changed (a new key does, a toggle does not), so the form is also
+where users set the server's key.
+
+**React to a save without polling.** Every save broadcasts
+`plugin.<id>.settings.changed` (payload `{ written: [...keys] }`; a secret-only
+save sends an empty list), so a Desktop half re-reads its preferences at once:
+`ctx.onEvent('plugin.my-plugin.settings.changed', reload)`. Read the values from
+your own `plugin_api.py` with `load_config_readonly()` from `hermes_cli.config`
+(`plugins.entries.<id>.settings`), falling back to the schema defaults.
+
 ## Step 6: Test it
 
-Start Hermes:
+Start Cybr Agent:
 
 ```bash
 hermes
@@ -874,7 +1075,7 @@ Plugins (1):
 If your plugin doesn't show up — or shows up but isn't loading — set `HERMES_PLUGINS_DEBUG=1` to get verbose discovery logs on stderr:
 
 ```bash
-HERMES_PLUGINS_DEBUG=1 hermes plugins list
+HERMES_PLUGINS_DEBUG=1 cybr plugins list
 ```
 
 You'll see, for every plugin source (bundled, user, project, entry-points):
@@ -889,12 +1090,12 @@ You'll see, for every plugin source (bundled, user, project, entry-points):
 The same logs are always written to `~/.hermes/logs/agent.log` at WARNING level (failures only) and DEBUG level (everything) when the env var is set. So if you can't run with the env var (e.g. from inside the gateway), tail the log file instead:
 
 ```bash
-hermes logs --level WARNING | grep -i plugin
+cybr logs --level WARNING | grep -i plugin
 ```
 
 Common reasons a plugin doesn't appear:
 
-- **Not enabled in config** — plugins are opt-in. Run `hermes plugins enable <name>` (the name comes from the `plugins list` output, which can be `<category>/<plugin>` for nested layouts).
+- **Not enabled in config** — plugins are opt-in. Run `cybr plugins enable <name>` (the name comes from the `plugins list` output, which can be `<category>/<plugin>` for nested layouts).
 - **Wrong directory layout:** Native packages use `~/.hermes/plugins/<plugin-name>/plugin.yaml` (flat) or one category level. Portable packages use root `plugin.json` in the same locations. Anything deeper is ignored.
 - **Missing `__init__.py`:** Native packages need both `plugin.yaml` and `__init__.py` with a `register(ctx)` function. Portable packages do not import Python and do not require `__init__.py`.
 - **Wrong `kind`** — gateway adapters need `kind: platform` in their manifest. Memory providers are auto-detected as `kind: exclusive` and routed through the `memory.provider` config instead of `plugins.enabled`.
@@ -939,7 +1140,7 @@ section.
 ### Store durable state
 
 Never write runtime state into your plugin directory: that's the install
-tree, and `hermes plugins update` / `remove` git-pull or delete it — your
+tree, and `cybr plugins update` / `remove` git-pull or delete it — your
 users' data dies with it. The sanctioned home is the per-plugin data root,
 which survives both and follows the active profile:
 
@@ -1001,10 +1202,44 @@ skill_view("my-workflow")              # → built-in version (unchanged)
 The old `shutil.copy2` pattern (copying a skill into `~/.hermes/skills/`) still works but creates name collision risk with built-in skills. Prefer `ctx.register_skill()` for new plugins.
 :::
 
+### Read the skill catalog
+
+A plugin that shows which skills the agent can see (a catalog view, "open this skill", drift checks
+against the installed copy) should call the same helpers the `skills_list` and `skill_view` tools use,
+not walk the skill directories itself. These names are public and covered by the compatibility
+contract:
+
+| Import | What it gives you |
+|---|---|
+| `tools.skills_tool.find_all_skills(*, skip_disabled=False)` | Loadable skills as `{"name", "description", "category"}` dicts: the cached, first-wins, platform/environment-gated walk `skills_list` uses. `name` is what `skill_view()` accepts. |
+| `tools.skills_tool.sort_skills(skills)` | The one listing order (category, then name). |
+| `tools.skills_tool.skill_search_dirs()` | `(roots, active_dir)`: `(tier, dir)` roots in precedence order (project, local, `create_dir`, external) and the live profile's skills dir. |
+| `tools.skills_tool.skill_lookup_path_error(name)` | An error string if `name` is absolute or contains `..`, else `None`. Check it before any lookup. |
+| `tools.skills_tool.locate_skill(name, local_category_name, roots)` | `(error_json, skill_dir, skill_md)` for one name over `roots`: tier precedence, same-tier collision refusal and the project-skill quarantine gate. `local_category_name` is an extra relative path to try (it is not a category filter), so pass `None` unless you need one. `skill_md` is set only when `error_json` is `None`. |
+| `tools.skills_sync.dir_hash(directory)` | The package hash the bundled-skill sync stores, so you can tell whether a user's copy still matches what was installed. |
+| `tools.skill_usage.read_skill_name(skill_md, fallback)` | The frontmatter `name:` of a `SKILL.md`, else `fallback`. |
+
+```python
+from tools.skills_tool import find_all_skills, locate_skill, skill_lookup_path_error, skill_search_dirs, sort_skills
+
+def list_skills():
+    return sort_skills(find_all_skills())
+
+def open_skill(name):
+    if err := skill_lookup_path_error(name):
+        return err
+    roots, _active = skill_search_dirs()
+    error, _skill_dir, skill_md = locate_skill(name, None, roots)
+    return error or skill_md.read_text(encoding="utf-8-sig", errors="replace")
+```
+
+Plugin-registered skills (`ctx.register_skill`) are not on disk under these roots; `find_all_skills()`
+returns the on-disk catalog only.
+
 ### Ship a language pack
 
 A plugin can add a UI language or override the wording of an existing one for every surface at once —
-Python (`agent.i18n.t()`: approval prompts, gateway replies, tool verbs, tips), the `hermes --tui`
+Python (`agent.i18n.t()`: approval prompts, gateway replies, tool verbs, tips), the `cybr --tui`
 interface and the Desktop app. Declare `provides_locales` and ship the YAML; **no Python is needed**:
 
 ```
@@ -1045,7 +1280,7 @@ def register(ctx):
     ctx.register_locale_dir(here / "locales")                                         # every <lang>[.surface].yaml
 ```
 
-`hermes plugins validate` checks each declared id has a parseable, text-only `locales/<id>.yaml`
+`cybr plugins validate` checks each declared id has a parseable, text-only `locales/<id>.yaml`
 (a non-text leaf is an error) and **warns** with the names of keys absent from the English catalog of
 that surface. Renderers fetch the pack layer through the `i18n.languages` / `i18n.catalog` RPCs.
 User-facing guide: [Language Packs](../../user-guide/features/language-packs.md).
@@ -1062,7 +1297,7 @@ requires_env:
 
 If `WEATHER_API_KEY` isn't set, the plugin is disabled with a clear message. No crash, no error in the agent — just "Plugin weather disabled (missing: WEATHER_API_KEY)".
 
-When users run `hermes plugins install`, they're **prompted interactively** for any missing `requires_env` variables. Values are saved to `.env` automatically.
+When users run `cybr plugins install`, they're **prompted interactively** for any missing `requires_env` variables. Values are saved to `.env` automatically.
 
 For a better install experience, use the rich format with descriptions and signup URLs:
 
@@ -1086,7 +1321,7 @@ Both formats can be mixed in the same list. Already-set variables are skipped si
 
 ### Lazy-install optional Python dependencies
 
-For an SDK covered by a Hermes project extra, use `pm.ensure_import` at the
+For an SDK covered by a Cybr Agent project extra, use `pm.ensure_import` at the
 operation that needs it. Use `pm.available` for a read-only availability check.
 Do not install dependencies from a frequently polled `check_fn`.
 
@@ -1148,7 +1383,7 @@ def get_client():
     return _client
 ```
 
-This is a footgun. Hermes runs multiple threads in one process (delegated tool calls, background workers, the self-improvement fork), so two threads can hit `get_client()` before `_client` is set, **both** pass the `is not None` check, **both** run the expensive build, and the second write clobbers the first — leaking whatever resource the loser opened (connection, file handle, background thread).
+This is a footgun. Cybr Agent runs multiple threads in one process (delegated tool calls, background workers, the self-improvement fork), so two threads can hit `get_client()` before `_client` is set, **both** pass the `is not None` check, **both** run the expensive build, and the second write clobbers the first — leaking whatever resource the loser opened (connection, file handle, background thread).
 
 Don't hand-roll the lock. Use the helpers in `plugins/plugin_utils.py`:
 
@@ -1222,26 +1457,26 @@ tools, so the registration order is correct: your handler replaces the
 built-in one.
 
 **Non-bundled plugins also need an operator grant.** For any plugin that
-does not ship with Hermes core (user, project, or pip source),
+does not ship with Cybr Agent core (user, project, or pip source),
 `override=True` against an existing built-in tool additionally requires a
 per-plugin opt-in in `config.yaml`:
 
 ```yaml
 plugins:
   entries:
-    my-plugin:                    # the plugin's registry key from `hermes plugins list`
+    my-plugin:                    # the plugin's registry key from `cybr plugins list`
       allow_tool_override: true
 ```
 
 Without the grant, `ctx.register_tool(..., override=True)` raises
 `PluginToolOverrideError`; since `register()` exceptions are caught by the
-loader, the plugin is disabled and Hermes continues. The gate exists
+loader, the plugin is disabled and Cybr Agent continues. The gate exists
 because an enabled plugin that silently replaces a privileged built-in
 like `shell_exec` or `write_file` could intercept everything the model
 routes through it. Bundled plugins are exempt: an override there is a
 maintainer decision. If config cannot be loaded, the gate fails closed.
 
-You normally never edit this key by hand. `hermes plugins enable <name>`
+You normally never edit this key by hand. `cybr plugins enable <name>`
 asks whether to grant the capability only when the plugin's manifest
 declares it under `capabilities:` (the consent screen, defaulting to no);
 a plugin that declares no capabilities is enabled without any grant
@@ -1282,6 +1517,8 @@ Each hook is documented in full on the **[Event Hooks reference](../../user-guid
 | [`on_session_end`](../../user-guide/features/hooks.md#on_session_end) | End of every `run_conversation` call + CLI exit | `session_id: str, completed: bool, interrupted: bool, model: str, platform: str` | ignored |
 | [`on_session_finalize`](../../user-guide/features/hooks.md#on_session_finalize) | CLI/gateway tears down an active session | `session_id: str \| None, platform: str` | ignored |
 | [`on_session_reset`](../../user-guide/features/hooks.md#on_session_reset) | Gateway swaps in a new session key (`/new`, `/reset`) | `session_id: str, platform: str` | ignored |
+| [`on_session_delete`](../../user-guide/features/hooks.md#on_session_delete) | A session delete or deliberate archive commits (every surface, sweeps, prune) | `session_id: str, reason: str, profile: str \| None`, optional `deleted_ids: list[str]`, `sessions_dir: str` | ignored |
+| [`post_compaction`](../../user-guide/features/hooks.md#post_compaction) | A compaction committed (any path: auto, `/compress`, gateway, Codex, micro, prune) | `session_id: str, old_session_id: str, kind: str, reason: str, before_tokens: int \| None, after_tokens: int \| None, messages_removed: int \| None` | ignored |
 | [`gateway_platform_event`](../../user-guide/features/hooks.md#gateway_platform_event) | An authorized platform-native event is normalized at the gateway boundary (Telegram reactions currently) | `platform: str, event_type: str, payload: dict` | ignored |
 | `kanban_task_claimed` | A kanban task is claimed (dispatcher process, before the worker spawns) | `task_id: str, board: str \| None, assignee: str \| None, run_id: int \| None, profile_name: str` | ignored |
 | `kanban_task_completed` | A kanban task completes (worker process) | `task_id, board, assignee, run_id, profile_name, summary: str \| None` | ignored |
@@ -1297,7 +1534,7 @@ The **API request hooks** are observers for the raw provider request, one level 
 
 ### `pre_llm_call` context injection
 
-This is the only hook whose return value matters. When a `pre_llm_call` callback returns a dict with a `"context"` key (or a plain string), Hermes injects that text into the **current turn's user message**. This is the mechanism for memory plugins, RAG integrations, guardrails, and any plugin that needs to provide the model with additional context.
+This is the only hook whose return value matters. When a `pre_llm_call` callback returns a dict with a `"context"` key (or a plain string), Cybr Agent injects that text into the **current turn's user message**. This is the mechanism for memory plugins, RAG integrations, guardrails, and any plugin that needs to provide the model with additional context.
 
 #### Return format
 
@@ -1334,7 +1571,7 @@ Injected context is appended to the **user message**, not the system prompt. Thi
 
 - **Prompt cache preservation** — the system prompt stays identical across turns. Anthropic and OpenRouter cache the system prompt prefix, so keeping it stable saves 75%+ on input tokens in multi-turn conversations. If plugins modified the system prompt, every turn would be a cache miss.
 - **Ephemeral** — the injection happens at API call time only. The original user message in the conversation history is never mutated, and nothing is persisted to the session database.
-- **The system prompt is Hermes's territory** — it contains model-specific guidance, tool enforcement rules, personality instructions, and cached skill content. Plugins contribute context alongside the user's input, not by altering the agent's core instructions.
+- **The system prompt is Cybr Agent's territory** — it contains model-specific guidance, tool enforcement rules, personality instructions, and cached skill content. Plugins contribute context alongside the user's input, not by altering the agent's core instructions.
 
 #### Example: Memory recall plugin
 
@@ -1431,7 +1668,7 @@ The canonical list of kinds is `VALID_MIDDLEWARE` in `hermes_cli/middleware.py`:
 | Kind | Receives | Return contract |
 |------|----------|-----------------|
 | `tool_request` | `tool_name`, `args`, `original_args`, context kwargs | Return `{"args": {...}}` to replace the effective tool arguments before hooks, guardrails, approvals, and execution see them. Return `None` to leave the call unchanged. |
-| `llm_request` | `request`, `original_request`, context kwargs | Return `{"request": {...}}` to replace the effective provider kwargs before Hermes sends them. |
+| `llm_request` | `request`, `original_request`, context kwargs | Return `{"request": {...}}` to replace the effective provider kwargs before Cybr Agent sends them. |
 | `tool_execution` | the payload plus `next_call` | Wraps tool execution. Call `next_call(payload)` exactly once to run the downstream chain (or skip it to short-circuit) and return the result. |
 | `llm_execution` | the payload plus `next_call` | Same shape, wrapping the provider call. |
 
@@ -1442,11 +1679,11 @@ The canonical list of kinds is `VALID_MIDDLEWARE` in `hermes_cli/middleware.py`:
 - `next_call` in execution middleware is **single-use**. Calling it twice raises, because it would re-run the provider or tool.
 - A middleware callback that raises is logged and skipped; the chain continues. A downstream failure raised after your `next_call` propagates as itself. Middleware can never break the base runtime path.
 - Middleware payloads carry `middleware_schema_version` (`hermes.middleware.v1`) alongside the observer telemetry fields.
-- Unknown kinds register with a warning instead of failing, so a plugin written against a newer Hermes still loads on an older one.
+- Unknown kinds register with a warning instead of failing, so a plugin written against a newer Cybr Agent still loads on an older one.
 
 ### Register CLI commands
 
-Plugins can add their own `hermes <plugin>` subcommand tree:
+Plugins can add their own `cybr <plugin>` subcommand tree:
 
 ```python
 def _my_command(args):
@@ -1476,7 +1713,7 @@ def register(ctx):
     )
 ```
 
-After registration, users can run `hermes my-plugin status`, `hermes my-plugin config`, etc.
+After registration, users can run `cybr my-plugin status`, `cybr my-plugin config`, etc.
 
 **Memory provider plugins** use a convention-based approach instead: add a `register_cli(subparser)` function to your plugin's `cli.py` file. The memory plugin discovery system finds it automatically — no `ctx.register_cli_command()` call needed. See the [Memory Provider Plugin guide](../memory-provider-plugin.md#adding-cli-commands) for details.
 
@@ -1508,29 +1745,54 @@ After registration, users can type `/mystatus` in any session. The command appea
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `name` | `str` | Command name without the leading slash (e.g. `"lcm"`, `"mystatus"`) |
-| `handler` | `Callable[[str], str \| None]` | Called with the raw argument string. May also be `async`. |
+| `handler` | `Callable[[str], str \| None]` | Called with the raw argument string, plus any calling-session keywords it declares (see below). May also be `async`. |
 | `description` | `str` | Shown in `/help`, autocomplete, and Telegram bot menu |
 
 **Key differences from `register_cli_command()`:**
 
 | | `register_command()` | `register_cli_command()` |
 |---|---|---|
-| Invoked as | `/name` in a session | `hermes name` in a terminal |
+| Invoked as | `/name` in a session | `cybr name` in a terminal |
 | Where it works | CLI sessions, Telegram, Discord, etc. | Terminal only |
-| Handler receives | Raw args string | argparse `Namespace` |
+| Handler receives | Raw args string (+ opt-in session context) | argparse `Namespace` |
 | Use case | Diagnostics, status, quick actions | Complex subcommand trees, setup wizards |
 
 **Conflict protection:** If a plugin tries to register a name that conflicts with a built-in command (`help`, `model`, `new`, etc.), the registration is silently rejected with a log warning. Built-in commands always take precedence.
 
-**Async handlers:** The gateway dispatch automatically detects and awaits async handlers, so you can use either sync or async functions:
+**Calling-session context:** a handler can learn which chat and session invoked it by declaring any of these keyword parameters (or `**kwargs` for all of them). Handlers that declare none keep the one-argument `handler(raw_args)` call, so existing plugins are unaffected:
+
+| Keyword | Value |
+|---|---|
+| `session_id` | The calling session's id (the one `on_session_reset` later reports as `old_session_id`). Empty when the chat has no session yet. |
+| `session_key` | The routing key of the calling chat. |
+| `platform` | Where the command came from: `telegram`, `discord`, …, `local` (CLI/Desktop sessions owned by the gateway), `cli`, `tui`, `desktop`. |
+| `source` | The adapter-derived `gateway.session.SessionSource` (`user_id`, `chat_id`, `chat_type`, `thread_id`, …) when the gateway dispatched the command, else `None`. |
+
+Every surface passes them: messaging platforms, the classic CLI, the TUI and Desktop. Sync handlers run in the gateway executor and async handlers are awaited, as before.
 
 ```python
-async def _handle_check(raw_args: str) -> str:
-    result = await some_async_operation()
-    return f"Check result: {result}"
+def _handle_whoami(raw_args: str, *, session_id: str = "", platform: str = "", source=None) -> str:
+    user = source.user_id if source is not None else "local user"
+    return f"{user} on {platform}, session {session_id or '(none yet)'}"
 
 def register(ctx):
-    ctx.register_command("check", handler=_handle_check, description="Run async check")
+    ctx.register_command("whoami", handler=_handle_whoami, description="Show the calling session")
+```
+
+`source` is transport identity, not an authorization grant: authorize from stable ids (`source.user_id`, `source.chat_id`), never from display names or the command text, and fail closed when a sensitive command gets `source=None`. Handler exceptions propagate; Cybr Agent never retries the call with fewer arguments.
+
+**Where handlers run:** a slash command handler runs in the gateway process that owns the session, also when the user types the command in the classic `cybr chat` CLI. The handler is not running in the user's terminal or directory, so:
+
+- Return the text to show. `print()` writes to the gateway's stdout, and the user never sees it.
+- Take the session's working directory from `agent.runtime_cwd.resolve_agent_cwd()`, not `os.getcwd()`, which is the gateway's own directory. Resolve relative paths against it.
+- Read session identity with `gateway.session_context.get_session_env("HERMES_SESSION_PLATFORM")` and the other `HERMES_SESSION_*` names, not `os.environ`.
+
+```python
+from agent.runtime_cwd import resolve_agent_cwd
+
+def _handle_todo(raw_args: str) -> str:
+    todo = resolve_agent_cwd() / "TODO.md"  # the session's folder, not the gateway's
+    return todo.read_text() if todo.exists() else "No TODO.md here."
 ```
 
 ### Dispatch tools from slash commands
@@ -1574,7 +1836,7 @@ This is the public, stable interface for tool dispatch from plugin commands. Plu
 
 ### Act from inside a hook (profile + tools)
 
-`ctx._cli_ref` is only populated in an **interactive CLI** session. It is `None` in the gateway, in non-interactive `hermes chat -q` runs, and in **kanban-spawned worker sessions** — so any plugin logic that reaches through `_cli_ref` silently no-ops in exactly those contexts. Two stable, session-agnostic APIs cover what hooks actually need:
+`ctx._cli_ref` is only populated in an **interactive CLI** session. It is `None` in the gateway, in non-interactive `cybr chat -q` runs, and in **kanban-spawned worker sessions** — so any plugin logic that reaches through `_cli_ref` silently no-ops in exactly those contexts. Two stable, session-agnostic APIs cover what hooks actually need:
 
 - **`ctx.profile_name`** — the active profile name (e.g. `"default"`, or the assignee profile in a kanban worker). Derived from `HERMES_HOME`, so it works everywhere with no `_cli_ref` dependency.
 - **`ctx.dispatch_tool(name, args)`** — invoke any registered tool (built-in or plugin), including the `kanban_*` tools, `delegate_task`, `terminal`, `read_file`, etc. Works from hook callbacks regardless of which process the hook fires in.
@@ -1592,7 +1854,7 @@ def register(ctx):
     ctx.register_hook("kanban_task_blocked", on_blocked)
 ```
 
-For running a full `hermes <subcommand>` (e.g. `hermes kanban show`), shell out with the `terminal` tool via `ctx.dispatch_tool("terminal", {"command": "hermes kanban show ..."})` — there is no in-process slash-command bridge for headless worker sessions, and tools are the supported way to drive Hermes from a hook.
+For running a full `cybr <subcommand>` (e.g. `cybr kanban show`), shell out with the `terminal` tool via `ctx.dispatch_tool("terminal", {"command": "cybr kanban show ..."})` — there is no in-process slash-command bridge for headless worker sessions, and tools are the supported way to drive Cybr Agent from a hook.
 
 ### Send raw CDP commands to the agent's browser
 
@@ -1613,13 +1875,13 @@ it performs no origin, consent or ownership checks for you. Full contract:
 | Field | Meaning |
 |---|---|
 | `job_id`, `job_name` | The cron job. |
-| `execution_id` | This run's row in the executions ledger (`hermes cron runs`). |
-| `source` | Which path fired the run: `"builtin"` (the built-in scheduler), `"direct"` (a run fired outside it, e.g. `hermes cron run`), or an external scheduler's name. |
+| `execution_id` | This run's row in the executions ledger (`cybr cron runs`). |
+| `source` | Which path fired the run: `"builtin"` (the built-in scheduler), `"direct"` (a run fired outside it, e.g. `cybr cron run`), or an external scheduler's name. |
 | `scheduled_instant` | The schedule occurrence this run fires. `None` for a manual or other off-schedule run, so check this field to tell a scheduled run from a manual one. |
 | `started_at` | When the run started. |
 | `profile` | The profile that owns the job. |
 
-The scheduler sets it only after the run has won its execution claim, and clears it when the run ends. It is per-run, so two jobs or profiles firing at the same time never see each other's value. The model cannot forge it: hook arguments come from Hermes, and tool subprocesses (terminal, `execute_code`) run in a separate interpreter. Subagents spawned with `delegate_task` get `None` because they are not the scheduled run itself.
+The scheduler sets it only after the run has won its execution claim, and clears it when the run ends. It is per-run, so two jobs or profiles firing at the same time never see each other's value. The model cannot forge it: hook arguments come from Cybr Agent, and tool subprocesses (terminal, `execute_code`) run in a separate interpreter. Subagents spawned with `delegate_task` get `None` because they are not the scheduled run itself.
 
 ```python
 def register(ctx):
@@ -1657,7 +1919,7 @@ Users then run `/blueprint teamtools:standup` (or just `/blueprint standup`) or 
 
 - **Keys are namespaced.** The catalog key is `<plugin>:<key>` (`teamtools:standup`), so a plugin can never replace a built-in or another plugin's blueprint. Pass the bare key; a key containing `:` is rejected.
 - **Slots and templates.** Slot `type` is `time` (`HH:MM`), `enum`, `weekdays`, or `text`. `prompt_template` may use any slot as `{name}`. `schedule_template` may use slot names plus `{minute}`/`{hour}` (from a slot named `time`) and `{dow}` (from a `recurrence`/`day` slot, else `*`). A slot named `deliver` gets the profile's real delivery targets in the Desktop and dashboard forms.
-- **Validated at registration.** An unknown placeholder, bad slot type, duplicate key, or schedule that does not parse logs a warning and skips that blueprint; the rest of your plugin still loads. When every slot has a default, Hermes fills the blueprint once at load, so a broken template fails then instead of on the user's first *Schedule it*.
+- **Validated at registration.** An unknown placeholder, bad slot type, duplicate key, or schedule that does not parse logs a warning and skips that blueprint; the rest of your plugin still loads. When every slot has a default, Cybr Agent fills the blueprint once at load, so a broken template fails then instead of on the user's first *Schedule it*.
 - **Per profile.** Plugins load per profile, so the blueprint is listed only in profiles where your plugin is enabled.
 - **Jobs outlive the plugin.** Scheduling a blueprint creates an ordinary cron job with the prompt and schedule already filled in. Disabling or uninstalling the plugin removes the blueprint from the catalog but leaves those jobs running. If a job's `skills` name a skill your plugin bundles, the job skips that skill (and logs it) while the plugin is disabled.
 
@@ -1776,7 +2038,7 @@ def register(ctx):
 
 ### Mid-run plugin loading: what activates now vs next session
 
-A plugin can load while the gateway (or the TUI/Desktop server) is already running: `hermes plugins
+A plugin can load while the gateway (or the TUI/Desktop server) is already running: `cybr plugins
 install`/`enable`, a Desktop or dashboard install, a catalog re-pin, or a tool-triggered force
 re-discovery. Every one of those paths runs a **real forced rescan** (`discover_plugins(force=True)`) and
 `PluginManager.on_plugin_loaded(callback)` fires from inside it with one summary per **newly** loaded plugin
@@ -1800,7 +2062,7 @@ re-discovery. Every one of those paths runs a **real forced rescan** (`discover_
 - There is no un-wire: disabling a plugin mid-run keeps its already-wired handlers until the gateway
   restarts, and the surfaces say so.
 
-Install surfaces report exactly this split: `hermes plugins install/enable` prints it after nudging the running
+Install surfaces report exactly this split: `cybr plugins install/enable` prints it after nudging the running
 gateway (`reload-plugins` control-socket verb), `plugins.manage install/toggle/update` returns `activation` +
 `gateway_reloaded` (`restart_required` is true only when no gateway answered).
 
@@ -1810,7 +2072,7 @@ This guide covers **general plugins** (tools, hooks, slash commands, CLI command
 
 ## Specialized plugin types
 
-Hermes has five specialized plugin types beyond the general surface. Each ships as a directory under `plugins/<category>/<name>/` (bundled) or `~/.hermes/plugins/<category>/<name>/` (user). The contract differs by category — pick the one you need, then read its full guide.
+Cybr Agent has five specialized plugin types beyond the general surface. Each ships as a directory under `plugins/<category>/<name>/` (bundled) or `~/.hermes/plugins/<category>/<name>/` (user). The contract differs by category — pick the one you need, then read its full guide.
 
 ### Model provider plugins — add an LLM backend
 
@@ -1877,7 +2139,7 @@ def register(ctx):
         check_fn=check_requirements,
         required_env=["MYPLATFORM_TOKEN"],
         # Auto-populate PlatformConfig.extra from env so env-only setups
-        # show up in `hermes gateway status` without SDK instantiation.
+        # show up in `cybr gateway status` without SDK instantiation.
         env_enablement_fn=_env_enablement,
         # Opt in to cron delivery: `deliver=myplatform` routes to this var.
         cron_deliver_env_var="MYPLATFORM_HOME_CHANNEL",
@@ -2046,7 +2308,7 @@ class MyDriverProvider(ComputerUseProvider):
     def is_available(self):                 # gates the tool; cheap, no network
         return True
 
-    def doctor(self):                       # optional: `hermes computer-use doctor`
+    def doctor(self):                       # optional: `cybr computer-use doctor`
         print("my-driver: ok")
         return 0
 
@@ -2061,7 +2323,7 @@ version: 1.0.0
 description: Alternative computer-use driver   # shown in the picker
 ```
 
-Select it in `hermes tools` → Computer Use (installed providers are listed under cua-driver, in the
+Select it in `cybr tools` → Computer Use (installed providers are listed under cua-driver, in the
 CLI and in the Desktop toolset panel), or set it directly. No `plugins.enabled` entry is needed:
 
 ```yaml
@@ -2076,24 +2338,24 @@ Rules:
   providers that aren't selected stay on disk and are only listed (from `plugin.yaml`) as options. A
   provider never activates itself.
 - **Selection is per profile and read when a session starts its driver.** If the configured name
-  doesn't resolve, the call fails with an error naming it and the installed providers. Hermes never
+  doesn't resolve, the call fails with an error naming it and the installed providers. Cybr Agent never
   falls back to another driver.
 - **The model-facing schema is the same for every provider**, so the prompt cache survives a driver
   swap. Report gaps per action with `ActionResult(ok=False, code="unsupported_action", ...)`.
 - Approval gating, the Bot Desktop lease, screenshot dedup, element caps and vision routing all run
   in the tool, above the backend. The backend only drives the screen.
-- `hermes computer-use status`/`doctor`/`permissions` run cua-driver checks only when `cua` is
+- `cybr computer-use status`/`doctor`/`permissions` run cua-driver checks only when `cua` is
   selected. For any other provider they report its `is_available()` and run its `doctor()` if it has one.
 - Providers return live driver sessions, so they load in-process only. Under
   `plugins.isolation: host`, a user provider is refused and the call reports that it could not be loaded.
 
 ## Non-Python extension surfaces
 
-Hermes also accepts extensions that aren't Python plugins at all. These are shown in the [Pluggable interfaces table](../../user-guide/features/plugins.md#pluggable-interfaces--where-to-go-for-each); the sections below sketch each authoring style briefly.
+Cybr Agent also accepts extensions that aren't Python plugins at all. These are shown in the [Pluggable interfaces table](../../user-guide/features/plugins.md#pluggable-interfaces--where-to-go-for-each); the sections below sketch each authoring style briefly.
 
 ### MCP servers — register external tools
 
-Model Context Protocol (MCP) servers register their own tools into Hermes without any Python plugin. Declare them in `~/.hermes/config.yaml`:
+Model Context Protocol (MCP) servers register their own tools into Cybr Agent without any Python plugin. Declare them in `~/.hermes/config.yaml`:
 
 ```yaml
 mcp_servers:
@@ -2108,7 +2370,7 @@ mcp_servers:
       type: "oauth"
 ```
 
-Hermes connects to each server at startup, lists its tools, and registers them alongside built-ins. The LLM sees them exactly like any other tool. **Full guide:** [MCP](../../user-guide/features/mcp.md).
+Cybr Agent connects to each server at startup, lists its tools, and registers them alongside built-ins. The LLM sees them exactly like any other tool. **Full guide:** [MCP](../../user-guide/features/mcp.md).
 
 ### Gateway event hooks — fire on lifecycle events
 
@@ -2155,9 +2417,9 @@ Supports all the same events as Python plugin hooks (`pre_tool_call`, `post_tool
 If you maintain a GitHub repo of skills (or want to pull from a community index beyond the built-in sources), add it as a **tap**:
 
 ```bash
-hermes skills tap add myorg/skills-repo
-hermes skills search my-workflow --source myorg/skills-repo
-hermes skills install myorg/skills-repo/my-workflow
+cybr skills tap add myorg/skills-repo
+cybr skills search my-workflow --source myorg/skills-repo
+cybr skills install myorg/skills-repo/my-workflow
 ```
 
 Publishing your own tap is just a GitHub repo with `skills/<skill-name>/SKILL.md` directories — no server or registry signup needed.
@@ -2197,9 +2459,9 @@ Entry-point discovery remains supported when the distribution is present in the
 environment supplied by the installation owner (for example, a Nix derivation).
 It is discovery, not permission to inject packages into a PM-selected generation.
 For managed installs, distribute a directory plugin with `pyproject.toml` or
-manifest Python requirements and use `hermes plugins install` / `enable` so PM
-can admit it transactionally. Restart Hermes after a new environment is selected.
-`hermes pm install` accepts managed tool names, not arbitrary PyPI packages.
+manifest Python requirements and use `cybr plugins install` / `enable` so PM
+can admit it transactionally. Restart Cybr Agent after a new environment is selected.
+`cybr pm install` accepts managed tool names, not arbitrary PyPI packages.
 
 ## Distribute for NixOS
 

@@ -52,9 +52,9 @@ hermes teams-pipeline maintain-subscriptions --dry-run
 
 你**必须**按计划运行 `maintain-subscriptions`。从以下三种方式中选择一种：
 
-#### 方式一：Hermes cron（若已运行 Hermes gateway，推荐此方式）
+#### 方式一：Cybr Agent cron（若已运行 Cybr Agent gateway，推荐此方式）
 
-Hermes 内置 cron 调度器。`--no-agent` 模式以脚本作为任务执行（而非使用 LLM），`--script` 必须指向 `~/.hermes/scripts/` 下的文件。首先创建脚本：
+Cybr Agent 内置 cron 调度器。`--no-agent` 模式以脚本作为任务执行（而非使用 LLM），`--script` 必须指向 `~/.hermes/scripts/` 下的文件。首先创建脚本：
 
 ```bash
 mkdir -p ~/.hermes/scripts
@@ -68,7 +68,7 @@ chmod +x ~/.hermes/scripts/maintain-teams-subscriptions.sh
 然后注册一个每 12 小时运行一次的纯脚本 cron 任务（相对于 72 小时过期窗口有 6 倍余量）：
 
 ```bash
-hermes cron create "0 */12 * * *" \
+cybr cron create "0 */12 * * *" \
   --name "teams-pipeline-maintain-subscriptions" \
   --no-agent \
   --script maintain-teams-subscriptions.sh \
@@ -78,8 +78,8 @@ hermes cron create "0 */12 * * *" \
 验证注册情况并查看下次运行时间：
 
 ```bash
-hermes cron list
-hermes cron status        # 调度器状态
+cybr cron list
+cybr cron status        # 调度器状态
 ```
 
 #### 方式二：systemd timer（推荐用于 Linux 生产部署）
@@ -88,7 +88,7 @@ hermes cron status        # 调度器状态
 
 ```ini
 [Unit]
-Description=Hermes Teams pipeline subscription maintenance
+Description=Cybr Agent Teams pipeline subscription maintenance
 After=network-online.target
 
 [Service]
@@ -102,7 +102,7 @@ ExecStart=/usr/local/bin/hermes teams-pipeline maintain-subscriptions
 
 ```ini
 [Unit]
-Description=Run Hermes Teams pipeline subscription maintenance every 12 hours
+Description=Run Cybr Agent Teams pipeline subscription maintenance every 12 hours
 
 [Timer]
 OnBootSec=5min
@@ -182,14 +182,14 @@ hermes teams-pipeline show <job-id>
 
 ### 每日或定期检查
 
-- 运行 `hermes teams-pipeline maintain-subscriptions --dry-run`
-- 检查 `hermes teams-pipeline list --status failed`
+- 运行 `cybr teams-pipeline maintain-subscriptions --dry-run`
+- 检查 `cybr teams-pipeline list --status failed`
 - 确认 Teams 投递目标仍为正确的聊天或频道
 
 ### 变更 webhook URL 或投递目标前
 
 - 更新公共通知 URL 或 Teams 目标配置
-- 运行 `hermes teams-pipeline validate`
+- 运行 `cybr teams-pipeline validate`
 - 续期或重新创建受影响的订阅
 - 确认新事件落入预期的接收端
 
@@ -223,7 +223,7 @@ hermes teams-pipeline show <job-id>
 ### 重复或意外的重放
 
 检查：
-- 是否手动通过 `hermes teams-pipeline run` 重放了任务
+- 是否手动通过 `cybr teams-pipeline run` 重放了任务
 - 该会议的 sink 记录是否已存在
 - 是否在本地配置中有意启用了重发路径
 
@@ -237,9 +237,9 @@ hermes teams-pipeline show <job-id>
 - [ ] 若启用录制回退，`ffmpeg` 已安装
 - [ ] Teams 出站投递目标已配置并验证
 - [ ] Notion 和 Linear 接收端仅在实际需要时配置
-- [ ] `hermes teams-pipeline validate` 返回 OK 快照
-- [ ] `hermes teams-pipeline token-health --force-refresh` 执行成功
-- [ ] **`maintain-subscriptions` 已配置计划任务**（Hermes cron、systemd timer 或 crontab——参见[自动化订阅续期](#automating-subscription-renewal-required-for-production)）。若未配置，Graph 订阅将在 72 小时内静默过期。
+- [ ] `cybr teams-pipeline validate` 返回 OK 快照
+- [ ] `cybr teams-pipeline token-health --force-refresh` 执行成功
+- [ ] **`maintain-subscriptions` 已配置计划任务**（Cybr Agent cron、systemd timer 或 crontab——参见[自动化订阅续期](#automating-subscription-renewal-required-for-production)）。若未配置，Graph 订阅将在 72 小时内静默过期。
 - [ ] 一个真实的端到端会议事件已生成存储任务
 - [ ] 至少一条摘要已到达预期的投递接收端
 

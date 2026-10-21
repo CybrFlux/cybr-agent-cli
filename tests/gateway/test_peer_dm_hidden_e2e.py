@@ -1,7 +1,7 @@
 """E2E: ``hermes peer dm`` against a REAL api_server gateway whose canonical
 Bot Chat session is HIDDEN (issue #91583).
 
-Two real HERMES homes in spirit: the "peer" side is a real
+Two real CYBR homes in spirit: the "peer" side is a real
 :class:`APIServerAdapter` bound to a real loopback TCP socket over a real
 SQLite ``state.db`` (its own tmp HERMES_HOME) containing a hidden
 ``Bot Chat`` row — exactly what Bot Mode leaves behind. The "local" side is

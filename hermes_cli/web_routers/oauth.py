@@ -6,6 +6,7 @@ Extracted from ``hermes_cli.web_server``; helpers/state that tests monkeypatch o
 
 import asyncio
 import contextlib
+import contextvars
 import logging
 import os
 import secrets
@@ -75,7 +76,7 @@ def _codex_device_code_start_error(resp: Any) -> str:
     if "device" in lower and ("authori" in lower or "enable" in lower):
         message = (
             "OpenAI rejected the device-code login request. Your OpenAI "
-            "account may need device-code authorization enabled before Hermes "
+            "account may need device-code authorization enabled before Cybr Agent "
             "can start this dashboard login. Enable device-code authorization "
             "in OpenAI, then return here and click Login again."
         )
@@ -118,7 +119,11 @@ def _start_poller(target, sid: str, prefix: str = "oauth-poll") -> None:
             from hermes_cli.observability.shared_metrics_setup import settle_oauth_setup
             settle_oauth_setup(sess)
 
-    threading.Thread(target=run, daemon=True, name=f"{prefix}-{sid[:6]}").start()
+    # The poller saves credentials under ``_profile_scope(sess['profile'])``; an implicit
+    # selector (None) must resolve in the REQUEST's home (a secondary-profile native ticket's
+    # override), so the thread runs in a copy of the starting request's context.
+    context = contextvars.copy_context()
+    threading.Thread(target=context.run, args=(run,), daemon=True, name=f"{prefix}-{sid[:6]}").start()
 
 
 def _track_oauth_setup(flow, session_id: str) -> None:
@@ -159,7 +164,7 @@ async def _httpx_call(fn: Callable[[Any], Any], timeout: float = 15.0, **client_
         ) as client:
             return fn(client)
 
-    return await asyncio.get_running_loop().run_in_executor(None, _call)
+    return await asyncio.to_thread(_call)
 
 
 # OpenAI Codex device-code worker. Codex's own deviceauth/usercode (returns
@@ -440,7 +445,7 @@ async def _start_nous_device_code(profile: Optional[str]) -> dict[str, Any]:
         os.getenv("HERMES_PORTAL_BASE_URL") or os.getenv("NOUS_PORTAL_BASE_URL") or pconfig.portal_base_url
     ).rstrip("/")
     with _profile_scope(_oauth_profile_name(profile)):
-        guest = anon_auth.current_nous_state() if anon_auth.guest_enabled() else None
+        guest = anon_auth.current_nous_state() if anon_auth.guest_allowed() else None
 
     if not anon_auth.is_guest_state(guest):
         device_data = await _httpx_call(lambda client: _request_device_code(
@@ -641,14 +646,14 @@ def _oauth_provider_disconnect_command(
 
 def _oauth_provider_disconnect_hint(provider: dict[str, Any], status: dict[str, Any]) -> Optional[str]:
     """Return the manual disconnect path when the API cannot clear this provider."""
-    # "anthropic" is flow == "external" (no in-dashboard login) but Hermes still
+    # "anthropic" is flow == "external" (no in-dashboard login) but Cybr Agent still
     # OWNS its credential (the PKCE file ~/.hermes/.anthropic_oauth.json and its
     # credential-pool entry, written by `hermes auth add anthropic`), so it is
     # excluded from the "external providers can't be auto-disconnected" rule.
     if provider.get("flow") == "external" and provider.get("id") != "anthropic":
         if _oauth_provider_disconnect_command(provider):
             # Fallback wording for surfaces without the one-click "run in terminal" path.
-            return "Managed outside Hermes — run the disconnect command to remove it."
+            return "Managed outside Cybr Agent — run the disconnect command to remove it."
         return "Managed by that provider's CLI; remove it there."
     if status.get("source") == "env_var":
         return "Remove the API key from Settings → Keys instead."
@@ -708,7 +713,7 @@ def _reject_if_not_disconnectable(provider: dict[str, Any], status: dict[str, An
 
 
 def _clear_anthropic_auth() -> bool:
-    """Clear only the Hermes-managed PKCE file and auth-store entry (never ~/.claude/*)."""
+    """Clear only the Cybr Agent-managed PKCE file and auth-store entry (never ~/.claude/*)."""
     cleared = False
     try:
         from agent.anthropic_credentials import _get_hermes_oauth_file
@@ -826,7 +831,7 @@ async def start_oauth_login(provider_id: str, request: Request, profile: Optiona
         _log.exception("oauth/start %s failed", provider_id)
         raise HTTPException(status_code=500, detail=str(e))
     if flow is not None:
-        await asyncio.get_running_loop().run_in_executor(None, _track_oauth_setup, flow, body["session_id"])
+        await asyncio.to_thread(_track_oauth_setup, flow, body["session_id"])
     return body
 
 
@@ -839,7 +844,7 @@ async def _begin_oauth_setup_metric(provider_id: str, profile: Optional[str]):
         home = _resolve_profile_dir(profile_name) if profile_name else None
         if not collection_enabled(home):
             return None
-        return await asyncio.get_running_loop().run_in_executor(None, begin_oauth_setup, provider_id, home)
+        return await asyncio.to_thread(begin_oauth_setup, provider_id, home)
     except Exception:
         return None
 
@@ -853,7 +858,7 @@ async def _end_oauth_setup_metric(flow, exc: Exception) -> None:
         # provider not answering in time.
         status = exc.status_code if isinstance(exc, HTTPException) else None
         failure = {401: "auth", 403: "auth", 504: "network"}.get(status) or setup_failure_class(exc)
-        await asyncio.get_running_loop().run_in_executor(None, finish_provider_setup, flow, "failed", failure)
+        await asyncio.to_thread(finish_provider_setup, flow, "failed", failure)
 
 
 @router.post("/api/providers/oauth/{provider_id}/submit")
@@ -911,5 +916,5 @@ async def cancel_oauth_session(session_id: str, request: Request, profile: Optio
         return {"ok": False, "message": "session not found"}
     # Recorded now, not when the poller next wakes: a Nous/xAI poll can block for the code's lifetime.
     from hermes_cli.observability.shared_metrics_setup import settle_oauth_setup
-    await asyncio.get_running_loop().run_in_executor(None, settle_oauth_setup, sess)
+    await asyncio.to_thread(settle_oauth_setup, sess)
     return {"ok": True, "session_id": session_id}

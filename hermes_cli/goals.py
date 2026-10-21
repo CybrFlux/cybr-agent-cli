@@ -1,4 +1,4 @@
-"""Persistent session goals — the Ralph loop for Hermes.
+"""Persistent session goals — the Ralph loop for Cybr Agent.
 
 A goal is a free-form objective that stays active across turns; after each turn an auxiliary-model
 judge decides whether it is satisfied. The continuation prompt is a normal user message appended via
@@ -1098,6 +1098,10 @@ class GoalManager:
         self.session_id = session_id
         self.default_max_turns = int(default_max_turns or DEFAULT_MAX_TURNS)
         self._state: Optional[GoalState] = load_goal(session_id)
+
+    def refresh(self) -> None:
+        """Re-read state from the DB (another writer, e.g. a tool, moved it)."""
+        self._state = load_goal(self.session_id)
 
     # --- introspection ------------------------------------------------
 

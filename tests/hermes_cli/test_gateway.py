@@ -260,9 +260,10 @@ def _run_status_with_snapshot(monkeypatch, snapshot) -> str:
     monkeypatch.setattr(gateway, "_installed_service_kind_for", lambda probe: None)
     monkeypatch.setattr(gateway, "named_profile_served_by_running_multiplexer", lambda: False)
     for name in ("_print_runtime_health", "_print_multiplex_standalone_reason", "_print_served_ingress_urls",
-                 "_print_duplicate_credential_warnings", "_print_other_profiles_gateway_status",
-                 "_print_standalone_by_config"):
+                 "_print_duplicate_credential_warnings", "_print_other_profiles_gateway_status"):
         monkeypatch.setattr(gateway, name, lambda *a, **k: None)
+    monkeypatch.setattr("hermes_cli.gateway_status_notes.print_standalone_by_config", lambda: None)
+    monkeypatch.setattr("hermes_cli.gateway_status_notes._incompatible_owner_verdict", lambda: None)
     buf = io.StringIO()
     with redirect_stdout(buf):
         gateway._cmd_status(SimpleNamespace(deep=False, full=False, system=False))
@@ -552,6 +553,15 @@ class TestRestartWaitsForApiServerPort:
 
 
 class TestStopProfileGateway:
+
+    @pytest.fixture(autouse=True)
+    def owned_process_home(self, monkeypatch):
+        # These signal/reaping tests simulate an independently owned process.
+        # Ambiguous/shared ownership is exercised by the lifecycle regressions.
+        from gateway import host_attach
+        from hermes_cli import dashboard_procs
+        monkeypatch.setattr(host_attach, '_probe_host_gateway', lambda wait: None)
+        monkeypatch.setattr(dashboard_procs, '_hermes_home_for_pid', lambda pid, **kw: str(gateway.get_hermes_home()))
     @pytest.mark.platforms("windows")
     def test_windows_stop_drains_marker_before_force_termination(self, monkeypatch):
         """Windows must let the marker watcher run before escalating (#112750)."""
@@ -709,7 +719,7 @@ class TestReapUnsupervisedGatewayOrphansMacOS:
 
     Regression guard: without the ``is_macos()`` exclusion of
     ``_get_service_pids()``, the reaper would SIGTERM the launchd-supervised
-    gateway every time Hermes Desktop opens (``hermes serve`` calls
+    gateway every time Cybr Agent Desktop opens (``hermes serve`` calls
     ``_reap_unsupervised_gateway_orphans`` during startup).
     """
 
@@ -758,7 +768,7 @@ class TestReapUnsupervisedGatewayOrphansWindows:
 
     Regression guard: without the Windows exemption of the recorded healthy
     gateway PID (and its parent chain), the reaper would SIGTERM/SIGKILL a
-    Scheduled-Task-supervised gateway every time Hermes Desktop opens
+    Scheduled-Task-supervised gateway every time Cybr Agent Desktop opens
     (``hermes serve`` calls ``_reap_unsupervised_gateway_orphans`` during
     startup). The Scheduled-Task bootstrap's argv matches the gateway scan,
     so it is reaped as an "orphan" — and when the bootstrap dies, the
@@ -984,7 +994,7 @@ class TestWindowsScheduledTaskSupervisorGuard:
 def test_find_windows_gateway_services_ignores_task_scheduler_ancestor(monkeypatch):
     """gateway <- cmd.exe <- svchost.exe(Schedule) <- services.exe: the Task Scheduler host is not the
     gateway's supervisor, so a task-launched gateway is a plain process (#97208); the same tree under a
-    Hermes-owned service (by binary path) stays SCM-supervised."""
+    Cybr Agent-owned service (by binary path) stays SCM-supervised."""
     import psutil
     from hermes_cli import gateway_windows
 
@@ -1024,7 +1034,7 @@ def test_find_windows_gateway_services_ignores_task_scheduler_ancestor(monkeypat
     assert [(s.name, s.service_pid, s.gateway_pid) for s in owned] == [("gw", 2360, 18480)]
 
     # QueryServiceConfig unreadable to this user (hardened or malformed third-party service): not
-    # Hermes's, and never a reason to abort; a Hermes-NAMED service is settled without asking binpath.
+    # Cybr Agent's, and never a reason to abort; a Cybr Agent-NAMED service is settled without asking binpath.
     class UnreadableConfigService(FakeService):
         def __init__(self, name, error):
             super().__init__(name, "")

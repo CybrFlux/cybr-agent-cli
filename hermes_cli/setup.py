@@ -1,4 +1,4 @@
-"""Interactive setup wizard for Hermes Agent (config lives in ~/.hermes/).
+"""Interactive setup wizard for Cybr Agent (config lives in ~/.hermes/).
 
 Independently-runnable sections: Model & Provider, Terminal Backend, Agent Settings, Messaging
 Platforms, Tools. Section bodies live in sibling setup_* modules and are re-exported here; they
@@ -85,12 +85,12 @@ def is_interactive_stdin() -> bool:
 def print_noninteractive_setup_guidance(reason: str | None = None) -> None:
     """Print guidance for headless/non-interactive setup flows."""
     print()
-    print(color("☤ Hermes Setup — Non-interactive mode", Colors.CYAN, Colors.BOLD))
+    print(color("∿ Cybr Setup — Non-interactive mode", Colors.CYAN, Colors.BOLD))
     print()
     if reason:
         print_info(reason)
     _info("The interactive wizard cannot be used here.", None,
-          "Configure Hermes using environment variables or config commands:",
+          "Configure Cybr Agent using environment variables or config commands:",
           "  hermes config set model.provider custom",
           "  hermes config set model.base_url http://localhost:8080/v1",
           "  hermes config set model.default your-model-name", None,
@@ -511,7 +511,7 @@ def setup_tools(config: dict, first_install: bool = False):
 
 
 _SEND_CONSENT_EXPLAINER = (
-    "", "Sending uploads each daily package to the Nous telemetry",
+    "", "Sharing uploads each daily package to the Nous telemetry",
     "service. Packages carry your profile-scoped install ID, a",
     "stable random UUID that identifies this profile across days",
     "(it contains no personal information and is reset by deleting",
@@ -519,13 +519,13 @@ _SEND_CONSENT_EXPLAINER = (
     "collection period falls inside a recorded consent window are",
     "ever sent. Apart from the fresh-install note (noted on this",
     "machine and counted only once you opt in), data from before",
-    "you opt in, or from any gap while sending was off, stays on",
-    "this machine. Sending can be turned off again at any time.",
+    "you opt in is never sent. Sharing can be turned off again at",
+    "any time.",
 )
 
 
 def setup_telemetry(config: dict):
-    """Configure the local shared-metrics subscriber and optional sending."""
+    """Turn shared metrics on (collect and send to Nous) or off: one answer sets both keys."""
     print_header("Shared Metrics")
     _info("Shared metrics contain only bounded counters: activity, session length,",
           "outcomes, error classes (with a fixed-list reason when a memory write or",
@@ -534,32 +534,26 @@ def setup_telemetry(config: dict):
           "counts, update and install results and timing (with a fixed-list reason",
           "and the stage when one fails; a fresh install is noted on this machine and",
           "counted only once you opt in), crashes,",
-          "startup and reply speed, messaging-platform health, how Hermes gets used",
+          "startup and reply speed, messaging-platform health, how Cybr Agent gets used",
           "(agent accuracy and efficiency, active time per surface, which features and",
           "settings are used or switched off, provider setup outcomes), and coarse",
           "machine facts (RAM range, GPU type, version age and channel, updates behind,",
           "local model server yes/no). Never prompts, files, paths, setting values or",
-          "error text.",
-          "Collection is local. Sending them to Nous is a separate opt-in.")
+          "error text.")
+    _info(*_SEND_CONSENT_EXPLAINER)
     # The answer is written to config.yaml here, not by the caller's later save: that save strips
     # values equal to the defaults, so a "no" would vanish and every surface would ask again.
     from hermes_cli.observability.shared_metrics_consent import save_consent
 
     shared_metrics = _sub_dict(_sub_dict(config, "telemetry"), "shared_metrics")
-    if not prompt_yes_no("Enable local shared metrics?", default=shared_metrics.get("enabled") is True):
-        print_info("Local shared metrics disabled.")
-        # Sending cannot outlive collection; turning collection off withdraws send consent too.
-        if shared_metrics.get("send") is True:
-            print_info("Sending shared metrics disabled as well.")
-        save_consent(False, False, config)
-        return
-    print_success("Local shared metrics enabled.")
-    _info(*_SEND_CONSENT_EXPLAINER)
-    save_consent(True, prompt_yes_no("Send shared metrics to Nous?", default=shared_metrics.get("send") is True), config)
-    if shared_metrics["send"]:
-        print_success("Sending shared metrics enabled.")
+    sharing = shared_metrics.get("enabled") is True and shared_metrics.get("send") is True
+    # One answer for both keys: off also withdraws send consent and stops collection.
+    share = prompt_yes_no("Send shared metrics to Nous?", default=sharing)
+    save_consent(share, share, config)
+    if share:
+        print_success("Shared metrics sent to Nous once a day.")
     else:
-        print_info("Sending shared metrics disabled (collection stays local).")
+        print_info("Shared metrics off.")
 
 
 def _record_send_consent_change(*, enabled: bool) -> None:
@@ -618,7 +612,7 @@ def _run_setup_section(config: dict, section: str) -> None:
         print_info(f"Available sections: {', '.join(k for k, _, _ in SETUP_SECTIONS)}")
         return
     label, func = entry
-    _print_banner(f"│     ☤ Hermes Setup — {label:<34s} │")
+    _print_banner(f"│     ∿ Cybr Setup — {label:<34s} │")
     _run_setup_steps([(label, lambda: func(config))])
     save_config(config)
     print()
@@ -647,10 +641,9 @@ def _run_full_setup(config: dict, hermes_home, *, is_existing: bool, migration_r
         if not _skip("gateway", "Messaging Platforms"):
             setup_gateway(config)
             return
-        # A skipped (migrated) gateway section still needs its service so imported platforms
-        # and cron jobs become active.
-        from hermes_cli.gateway import ensure_gateway_service
-        ensure_gateway_service(context="setup")
+        # Migration does not imply consent to install a persistent service.
+        from hermes_cli.gateway_setup_service import ensure_gateway_service
+        ensure_gateway_service(context="setup", interactive=True, config=config)
 
     def _step(key: str, label: str, run) -> tuple:
         return label, lambda: None if _skip(key, label) else run()
@@ -709,9 +702,9 @@ def _run_setup_wizard_impl(args):
     from hermes_cli.auth import get_active_provider
     is_existing = bool(get_env_value("OPENROUTER_API_KEY") or get_env_value("OPENAI_BASE_URL")
                        or get_active_provider() is not None)
-    _print_banner("│             ☤ Hermes Agent Setup Wizard                │",
+    _print_banner("│             ∿ Cybr Agent Setup Wizard                │",
                   "├─────────────────────────────────────────────────────────┤",
-                  "│  Let's configure your Hermes Agent installation.       │",
+                  "│  Let's configure your Cybr Agent installation.       │",
                   "│  Press Ctrl+C at any time to exit.                     │")
     migration_ran = False
     if is_existing:
@@ -723,7 +716,7 @@ def _run_setup_wizard_impl(args):
             _record_setup_completed(config)
             return
         print_header("Reconfigure", gap=True)
-        print_success("You already have Hermes configured.")
+        print_success("You already have Cybr Agent configured.")
         _info("Running the full wizard — each prompt shows your current value.",
               "Press Enter to keep it, or type a new value to change it.", "",
               "Tip: jump straight to a section with 'hermes setup model|terminal|",
@@ -736,7 +729,7 @@ def _run_setup_wizard_impl(args):
         migration_ran = _offer_openclaw_migration(hermes_home)  # before configuration begins
         if migration_ran:
             config = load_config()
-        setup_mode = prompt_choice("How would you like to set up Hermes?", [label for label, _ in _FIRST_TIME_MODES], 0)
+        setup_mode = prompt_choice("How would you like to set up Cybr Agent?", [label for label, _ in _FIRST_TIME_MODES], 0)
         label, runner = _FIRST_TIME_MODES[setup_mode]
         if runner is not None:
             from hermes_cli import setup_quick

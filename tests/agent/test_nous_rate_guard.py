@@ -52,6 +52,21 @@ class TestRecordNousRateLimit:
         assert state["reset_at"] == pytest.approx(future_reset, abs=1)
 
 
+    def test_the_429_bodys_wait_outranks_the_hourly_window_end(self, rate_guard_env):
+        # A welcome-tier fair-share 429 said retry after 410 s; the hourly bucket's reset header (its
+        # window end, ~1 h) turned that into an hour-long block on the next turns.
+        from agent.nous_rate_guard import record_nous_rate_limit, _state_path
+
+        record_nous_rate_limit(
+            headers={"x-ratelimit-remaining-requests-1h": "37", "x-ratelimit-reset-requests-1h": "3594"},
+            error_context={"reset_at": time.time() + 410},
+            anonymous=True,
+        )
+
+        with open(_state_path(anonymous=True), encoding="utf-8-sig") as f:
+            state = json.load(f)
+        assert state["reset_seconds"] == pytest.approx(410, abs=2)
+
     def test_custom_default_cooldown(self, rate_guard_env):
         from agent.nous_rate_guard import record_nous_rate_limit, _state_path
 
@@ -164,7 +179,7 @@ class TestAuxiliaryClientIntegration:
 class TestIsGenuineNousRateLimit:
     """Tell a real account-level 429 apart from an upstream-capacity 429.
 
-    Nous Portal multiplexes upstreams (DeepSeek, Kimi, MiMo, Hermes).
+    Nous Portal multiplexes upstreams (DeepSeek, Kimi, MiMo, Cybr Agent).
     A 429 from an upstream out of capacity should NOT trip the
     cross-session breaker; a real user-quota 429 should.
     """

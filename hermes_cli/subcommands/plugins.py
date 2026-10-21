@@ -11,7 +11,7 @@ def build_plugins_parser(subparsers, *, cmd_plugins: Callable) -> None:
     """Attach the ``plugins`` subcommand to ``subparsers``."""
     plugins_parser = subparsers.add_parser(
         "plugins", help="Manage and validate plugins",
-        description="Install, update, remove, list, or validate native Hermes plugins "
+        description="Install, update, remove, list, or validate native Cybr Agent plugins "
             "and portable Agent Plugins v1 packages. Portable packages install disabled.")
     plugins_subparsers = plugins_parser.add_subparsers(dest="plugins_action")
 
@@ -48,7 +48,7 @@ def build_plugins_parser(subparsers, *, cmd_plugins: Callable) -> None:
     )
 
     plugins_search = plugins_subparsers.add_parser(
-        "search", help="Search the curated Hermes plugin catalog")
+        "search", help="Search the curated Cybr Agent plugin catalog")
     plugins_search.add_argument(
         "term", nargs="?", default="",
         help="Query matched against entry names, descriptions and declared tools (omit to list the whole catalog)")
@@ -66,8 +66,16 @@ def build_plugins_parser(subparsers, *, cmd_plugins: Callable) -> None:
     add_json_flag(plugins_validate, "Print machine-readable JSON (for CI)")
 
     plugins_update = plugins_subparsers.add_parser(
-        "update", help="Pull latest changes for an installed plugin")
-    plugins_update.add_argument("name", help="Plugin name to update")
+        "update", help="Update an installed plugin, or with no name every plugin that has an update")
+    plugins_update.add_argument(
+        "name", nargs="?", help="Plugin name to update (default: list every plugin with an update and offer them all)")
+    plugins_update.add_argument(
+        "--yes", "-y", action="store_true",
+        help="With no name: update everything listed without the confirmation question (required without a terminal)")
+    plugins_update.add_argument(
+        "--force", "-f", action="store_true",
+        help="Apply the update even when the security scan returns a caution verdict (a dangerous verdict "
+             "still blocks). Without it, a terminal asks first")
 
     plugins_adopt = plugins_subparsers.add_parser(
         "adopt",

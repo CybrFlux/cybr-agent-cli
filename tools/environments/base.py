@@ -1,4 +1,4 @@
-"""Base class for all Hermes execution environment backends.
+"""Base class for all Cybr Agent execution environment backends.
 
 Unified spawn-per-call model: every command spawns a fresh ``bash -c`` process.
 A session snapshot (env vars, functions, aliases) is captured once at init and
@@ -29,7 +29,7 @@ from tools.environments.base_session_env import (
     _wrap_command_script,
 )
 from tools.environments.base_wait import _WaitTrace
-from utils import env_var_enabled
+from utils import atomic_json_write, env_var_enabled, file_signature
 
 logger = logging.getLogger(__name__)
 
@@ -203,16 +203,47 @@ def _load_json_store(path: Path) -> dict:
 
 
 def _save_json_store(path: Path, data: dict) -> None:
-    """Write *data* as pretty-printed JSON to *path*."""
+    """Write *data* as pretty-printed JSON to *path* atomically (readers never see a torn file)."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    atomic_json_write(path, data, indent=2)
 
 
-def _file_mtime_key(host_path: str) -> tuple[float, int] | None:
-    """Return ``(mtime, size)`` for cache comparison, or ``None`` if unreadable."""
+_JSON_STORE_LOCK_HOLDER = threading.local()
+
+
+def _update_json_store(path: Path, update: Callable[[dict], None]) -> None:
+    """Read-modify-write the JSON store at *path* under a cross-process lock.
+
+    Concurrent sandbox cleanups (delegate children, gateway sessions, the idle reaper) each
+    record a snapshot id; an unlocked load/mutate/save lets one cleanup drop the other's entry.
+    An unusable lock (no flock on the filesystem, a wedged holder) degrades to an unlocked
+    update: a sandbox lifecycle step (modal's restore fallback included) must not abort on it."""
+    from contextlib import ExitStack
+
+    from hermes_cli.auth import _file_lock
+
+    lock_path = path.with_name(f"{path.name}.lock")
+    with ExitStack() as stack:
+        try:
+            stack.enter_context(_file_lock(
+                lock_path, _JSON_STORE_LOCK_HOLDER, 10.0, f"Timed out waiting for the snapshot store lock ({path})",
+            ))
+        except (OSError, TimeoutError):
+            logger.warning("Updating %s without its lock", path, exc_info=True)
+        data = _load_json_store(path)
+        before = dict(data)
+        update(data)
+        if data != before:
+            _save_json_store(path, data)
+
+
+def _file_mtime_key(host_path: str) -> tuple[int, int, int, int] | None:
+    """Return the ``file_signature`` change key, or ``None`` if unreadable.
+
+    mtime + size alone miss a same-size credential refresh landing in the same mtime tick;
+    inode and ctime catch the atomic replace / rewrite."""
     try:
-        st = Path(host_path).stat()
-        return (st.st_mtime, st.st_size)
+        return file_signature(Path(host_path).stat())
     except OSError:
         return None
 
@@ -223,7 +254,7 @@ def _file_mtime_key(host_path: str) -> tuple[float, int] | None:
 
 
 class BaseEnvironment(ABC):
-    """Common interface and unified execution flow for all Hermes backends. Subclasses
+    """Common interface and unified execution flow for all Cybr Agent backends. Subclasses
     implement ``_run_bash()`` and ``cleanup()``; the base provides ``execute()`` with
     snapshot sourcing, CWD tracking, interrupt handling and timeout enforcement."""
 
@@ -233,12 +264,15 @@ class BaseEnvironment(ABC):
     # "heredoc" (embedded in the command; no built-in backend, plugins only).
     _stdin_mode: str = "pipe"  # "pipe" | "payload" | "heredoc"
 
-    # True only when commands execute on the SAME host as the Hermes process
+    # True only when commands execute on the SAME host as the Cybr Agent process
     # (LocalEnvironment); controller-host facts then describe the execution target.
     is_local: bool = False
 
     # Snapshot creation timeout (override for slow cold-starts).
     _snapshot_timeout: int = 30
+
+    # Re-dump exported env into the snapshot after each command (see __init__).
+    _persist_env: bool = True
 
     # Opt in only when a timed-out probe can kill its command without tearing
     # down the whole backend. SDK adapters cancel by stopping the sandbox.
@@ -257,10 +291,13 @@ class BaseEnvironment(ABC):
         """
         return "/tmp"  # no-tmp: ok — sandbox-side (remote container) temp dir, not the host
 
-    def __init__(self, cwd: str, timeout: int, env: dict | None = None):
+    def __init__(self, cwd: str, timeout: int, env: dict | None = None, persist_env: bool = True):
         self.cwd = cwd
         self.timeout = timeout
         self.env = env or {}
+        # False: each command sources only the login-time snapshot, so exported vars do not
+        # carry over (terminal.persistent_shell / TERMINAL_LOCAL_PERSISTENT). CWD still does.
+        self._persist_env = persist_env
 
         self._session_id = uuid.uuid4().hex[:12]
         temp_dir = self.get_temp_dir().rstrip("/") or "/"
@@ -420,6 +457,7 @@ class BaseEnvironment(ABC):
             command,
             passthrough_names=self._snapshot_excluded_passthrough_names(),
             snapshot_ready=self._snapshot_ready,
+            persist_env=self._persist_env,
             **self._snapshot_script_kwargs(cwd))
 
     @staticmethod
@@ -514,7 +552,7 @@ class BaseEnvironment(ABC):
                     rendered = output.render(suffix=f"\n[Command timed out after {timeout}s]")
                     if output.total_chars == 0:
                         rendered = rendered.lstrip()
-                    # The flag tells Hermes' own deadline apart from a command's own ``exit 124``.
+                    # The flag tells Cybr Agent' own deadline apart from a command's own ``exit 124``.
                     return {**self._finalize_wait_result(output, rendered, 124), "hermes_timed_out": True}
                 touch_activity_if_due(_activity_state, "terminal command running")
                 trace.heartbeat()
@@ -743,7 +781,7 @@ class BaseEnvironment(ABC):
 
         Also applies the macOS ``open`` frontmost raise-ladder (a pure string
         rewrite, no-op on non-Darwin) so files opened via tool calls are
-        brought to the front instead of landing behind the Hermes window.
+        brought to the front instead of landing behind the Cybr Agent window.
         """
         from tools.terminal_tool_macos_open import _transform_macos_open_command
         from tools.terminal_tool_sudo import _transform_sudo_command

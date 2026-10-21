@@ -1,4 +1,4 @@
-"""Configuration management for Hermes Agent: config.yaml / .env loading, saving,
+"""Configuration management for Cybr Agent: config.yaml / .env loading, saving,
 validation, migration, and the ``hermes config`` command."""
 
 # Stale-module bridge — must run before ANY import below can bind a root-level symbol.
@@ -79,10 +79,10 @@ _ENV_VAR_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 # Env var names that influence how the next subprocess executes — never writable through
 # ``save_env_value``: dynamic loader (LD_*/DYLD_*: attacker code loads before main()),
-# interpreter init (PYTHON*, NODE_*: Hermes restarts through them), PATH (fix tool lookup
+# interpreter init (PYTHON*, NODE_*: Cybr Agent restarts through them), PATH (fix tool lookup
 # with absolute paths instead), git rewrites (fire on every plugin install/update),
 # implicitly-invoked commands (BROWSER/EDITOR/VISUAL/PAGER = RCE on next $EDITOR), SHELL,
-# and Hermes runtime-location / security-policy flags (config.yaml is the supported surface).
+# and Cybr Agent runtime-location / security-policy flags (config.yaml is the supported surface).
 #
 # ``HERMES_*`` overall is NOT blocked — many integration credentials use that prefix
 # (HERMES_LANGFUSE_PUBLIC_KEY, HERMES_SPOTIFY_CLIENT_ID, ...). The denylist is name-by-name so
@@ -119,7 +119,7 @@ _ENV_VAR_NAME_DENYLIST: frozenset[str] = frozenset({
     "GIT_PROXY_COMMAND", "GIT_TEMPLATE_DIR", "GIT_DIR",
     # Shell init files / interactive hooks — sourced before or during execution
     "BASH_ENV", "ENV", "ZDOTDIR", "PROMPT_COMMAND", "VIMINIT", "EXINIT",
-    # Hermes runtime location
+    # Cybr Agent runtime location
     "HERMES_HOME", "HERMES_PROFILE", "HERMES_CONFIG", "HERMES_ENV",
     "HERMES_CONFIG_PATH", "HERMES_ENV_PATH",
     # MCP catalog trust root; package-manager wrappers may still set it in the process env.
@@ -149,7 +149,7 @@ def validate_env_var_name_for_write(key: str) -> None:
         raise ValueError(
             f"Environment variable {key!r} is on the writer denylist. "
             "Names that influence subprocess execution (LD_PRELOAD, PYTHONPATH, PATH, EDITOR, ...) "
-            "or Hermes runtime location and security policy (HERMES_HOME, HERMES_YOLO_MODE, ...) "
+            "or Cybr Agent runtime location and security policy (HERMES_HOME, HERMES_YOLO_MODE, ...) "
             "cannot be persisted via the env writer. If you really need this, edit ~/.hermes/.env "
             "directly.")
 
@@ -214,11 +214,6 @@ _EXTRA_ENV_KEYS = frozenset({
     "MATRIX_PASSWORD", "MATRIX_ENCRYPTION", "MATRIX_DEVICE_ID", "MATRIX_HOME_ROOM",
     "MATRIX_REQUIRE_MENTION", "MATRIX_FREE_RESPONSE_ROOMS", "MATRIX_AUTO_THREAD", "MATRIX_DM_AUTO_THREAD",
     "MATRIX_RECOVERY_KEY",
-    # Langfuse observability plugin tuning keys + standard SDK vars (activation is via
-    # plugins.enabled; credentials gate the plugin at runtime).
-    "HERMES_LANGFUSE_ENV", "HERMES_LANGFUSE_RELEASE", "HERMES_LANGFUSE_SAMPLE_RATE",
-    "HERMES_LANGFUSE_MAX_CHARS", "HERMES_LANGFUSE_CAPTURE", "HERMES_LANGFUSE_DEBUG",
-    "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY", "LANGFUSE_BASE_URL",
     # ACP (Agent Client Protocol) keys — profile-isolable so profiles can use different backends.
     "HERMES_ACP_AUTH_METHOD", "HERMES_ACP_AUTO_APPROVE", "HERMES_COPILOT_ACP_COMMAND",
     "HERMES_COPILOT_ACP_ARGS", "COPILOT_CLI_PATH", "COPILOT_ACP_BASE_URL"})
@@ -233,14 +228,14 @@ _NIX_STORE = Path("/nix/store")
 
 
 def is_managed() -> bool:
-    """Check if Hermes is running in package-manager-managed mode."""
+    """Check if Cybr Agent is running in package-manager-managed mode."""
     return get_managed_system() is not None
 
 
 # Nix installs arrive by several routes (nix run, nix profile, system flake, home-manager) and
 # the running process cannot tell which, so the text names the routes instead of one command.
 _NIX_UPDATE_MSG = (
-    "Update Hermes through the Nix source that installed it "
+    "Update Cybr Agent through the Nix source that installed it "
     "(e.g. nix profile upgrade, or update your flake input and rebuild with nixos-rebuild or home-manager switch)"
 )
 
@@ -265,7 +260,7 @@ def _install_method_stamp(path: Path) -> Optional[str]:
 
 
 def detect_install_method(project_root: Optional[Path] = None) -> str:
-    """Detect how Hermes was installed: apt/docker/nix/nixos/home-manager/git/unknown.
+    """Detect how Cybr Agent was installed: apt/docker/nix/nixos/home-manager/git/unknown.
     Order: code-scoped ``<install tree>/.install_method`` stamp (authoritative) -> legacy
     ``$HERMES_HOME/.install_method`` -> managed marker -> /nix/store path -> .git dir -> unknown.
     The stamp lives next to the code because HERMES_HOME is shared data: a container and a host
@@ -351,11 +346,11 @@ def recommended_update_command() -> str:
 
 # Shared by ``cmd_update`` and ``_cmd_update_check`` (hermes_cli/main.py) so the wording never
 # forks. The published image excludes ``.git``, so the git update path can never succeed there
-# and the generic "reinstall via install.sh" fallback would install a NEW host-side Hermes.
+# and the generic "reinstall via install.sh" fallback would install a NEW host-side Cybr Agent.
 _DOCKER_UPDATE_MESSAGE = """\
 ✗ ``hermes update`` doesn't apply inside the Docker container.
 
-Hermes Agent runs as a published image (nousresearch/hermes-agent), not a
+Cybr Agent runs as a published image (nousresearch/hermes-agent), not a
 git checkout — the container has no working tree to pull into.  Update by
 pulling a fresh image and restarting your container instead:
 
@@ -387,12 +382,12 @@ def format_docker_update_message() -> str:
     return _DOCKER_UPDATE_MESSAGE
 
 
-def format_managed_message(action: str = "modify this Hermes installation") -> str:
+def format_managed_message(action: str = "modify this Cybr Agent installation") -> str:
     """Build a user-facing error for managed installs."""
     managed_system = get_managed_system() or "a package manager"
     return (
-        f"Cannot {action}: this Hermes installation is managed by {managed_system}.\n"
-        "Use your package manager to upgrade or reinstall Hermes.")
+        f"Cannot {action}: this Cybr Agent installation is managed by {managed_system}.\n"
+        "Use your package manager to upgrade or reinstall Cybr Agent.")
 
 
 def managed_error(action: str = "modify configuration"):
@@ -464,7 +459,7 @@ def require_parseable_user_config(*, ignore_user_config: bool = False) -> None:
     backup_path = backup_config(config_path, "corrupt")
     where = _yaml_error_location(parse_error)
     message = (
-        f"Hermes stopped because your settings file ({config_path}) has a formatting error"
+        f"Cybr Agent stopped because your settings file ({config_path}) has a formatting error"
         f"{f' at {where}' if where else ''}. Fix it with `hermes config edit` and check with "
         "`hermes config check`, or add --ignore-user-config to run once with default settings.")
     if backup_path is not None:
@@ -1168,7 +1163,7 @@ def _validate_quoted_containers(config: dict[str, Any], issues: list[ConfigIssue
             continue
         if isinstance(parsed, (list, dict)):
             _issue(issues, "warning",
-                   f"{key} is the quoted string {value!r} — Hermes expects a YAML {kind} here "
+                   f"{key} is the quoted string {value!r} — Cybr Agent expects a YAML {kind} here "
                    "and every reader ignores the string",
                    f"Run: hermes config set {key} {shlex.quote(value)}  (stores a real {kind}), "
                    "or remove the quotes in config.yaml")
@@ -1199,7 +1194,7 @@ def validate_config_structure(config: Optional[dict[str, Any]] = None) -> list[C
 
     if cp and not config.get("model"):
         _issue(issues, "warning",
-               "custom_providers defined but no 'model' section — Hermes won't know which provider to use",
+               "custom_providers defined but no 'model' section — Cybr Agent won't know which provider to use",
                "Add a model section:\n  model:\n    provider: custom\n    default: your-model-name\n"
                "    base_url: https://...")
 
@@ -1265,7 +1260,7 @@ def _persist_migration(config: dict[str, Any]) -> None:
     persist values that DIFFER from the schema default, plus explicit removals/renames of user
     data. Every migration step MUST write through here (``save_config`` with default-stripping
     ON, no ``merge_existing``) so the invariant cannot regress one migration at a time. A migration
-    is Hermes' own write, never a user turning a feature off."""
+    is Cybr Agent' own write, never a user turning a feature off."""
     from hermes_cli.observability.shared_metrics_disabled import hermes_applied_write
 
     with hermes_applied_write():
@@ -1889,7 +1884,24 @@ def _raw_config_cache_hit(path_key: str, cache_key: tuple[Any, ...]) -> Optional
     return None
 
 
+def _worker_config_snapshot() -> Optional[dict[str, Any]]:
+    """A safe worker's frozen config, or None. Install-time loads run from ``hermes_cli`` alone
+    (the installer's completion step ships no ``agent`` package), and without ``agent`` there
+    is no worker policy to consult."""
+    try:
+        from agent.safe_worker_policy import worker_config_snapshot
+    except ModuleNotFoundError as exc:
+        if exc.name != "agent":
+            raise
+        return None
+    return worker_config_snapshot()
+
+
 def _read_raw_config_impl(*, want_deepcopy: bool) -> dict[str, Any]:
+    snapshot = _worker_config_snapshot()
+    if snapshot is not None:
+        return snapshot
+
     # Lock-free fast path for cache hits — same shape as `_load_config_impl`. `_RAW_CONFIG_CACHE`
     # publishes each entry as ONE `(*sig, data)` tuple replaced wholesale, so a reader sees either
     # the complete old entry or the complete new one; `_CONFIG_LOCK` only serializes the re-parse
@@ -1969,6 +1981,10 @@ def require_readable_config_before_write(config_path: Optional[Path] = None) -> 
     non-mapping root — bare-``except`` loaders treat both as ``{}``, so a subsequent write would
     replace the recoverable file with only the caller's partial dict. Fails closed."""
     if config_path is None:
+        snapshot = _worker_config_snapshot()
+        if snapshot is not None:
+            # A bypass worker's config IS its frozen snapshot; it never reads the profile file.
+            return copy.deepcopy(snapshot)
         config_path = get_config_path()
     try:
         config_path.stat()
@@ -2146,7 +2162,7 @@ def terminal_config_env_var_for_key(key: str) -> Optional[str]:
 
 
 def _is_ssh_remote_tilde_cwd(backend: str, cwd: str) -> bool:
-    """Whether the remote SSH shell must expand *cwd* itself: ``~`` expanded on the Hermes host
+    """Whether the remote SSH shell must expand *cwd* itself: ``~`` expanded on the Cybr Agent host
     would name the host/container home instead of the SSH user's."""
     return (backend or "").strip().lower() == "ssh" and (cwd == "~" or cwd.startswith("~/"))
 
@@ -2307,6 +2323,10 @@ def _load_config_cache_hit(path_key: str, cache_sig: Any) -> Optional[dict[str, 
 
 
 def _load_config_impl(*, want_deepcopy: bool) -> dict[str, Any]:
+    snapshot = _worker_config_snapshot()
+    if snapshot is not None:
+        return _deep_merge(copy.deepcopy(DEFAULT_CONFIG), snapshot)
+
     # Lock-free fast path for cache hits — same publication contract as `_read_raw_config_impl`
     # above (whole-tuple replace, `_CONFIG_LOCK` only serializes rebuilds and writers). A hit costs
     # ~0.024ms; behind a lock held by `save_config()` the same read measured 10010ms, and on a
@@ -2477,8 +2497,8 @@ def save_config(
         # swallows transient stat/open errors into ``{}``, and a ``{}`` at this point makes the
         # strip pass drop every user section whose value matches a default (#113301).
         _raw_for_paths = require_readable_config_before_write(config_path)
-        if merge_existing and _raw_for_paths:
-            config = _merge_partial_save(_raw_for_paths, config)
+        from hermes_cli.config_worker_save import rebase_for_save  # frozen-worker writes + merge_existing
+        config = rebase_for_save(config, _raw_for_paths, merge_existing)
 
         current_normalized = _canonicalize_config(config)
         normalized = current_normalized
@@ -2504,6 +2524,10 @@ def load_env() -> dict[str, str]:
     """Load ~/.hermes/.env as a dict. Memoised inside ``load_env_file`` (``get_env_value()`` runs
     hundreds of times per interactive menu render). Each assignment's value is opaque data for
     boundary discovery."""
+    # A frozen-policy worker never opens the profile's files; its secrets arrive
+    # through the owner-installed scope, so the .env layer is empty here.
+    if _worker_config_snapshot() is not None:
+        return {}
     from agent.secret_scope import load_env_file  # the one .env tokenizer; also installs profile scopes
 
     return load_env_file(get_env_path())
@@ -2856,7 +2880,7 @@ def save_env_value_secure(key: str, value: str) -> dict[str, Any]:
 
 def reload_env() -> int:
     """Re-read ~/.hermes/.env into os.environ; returns count of vars changed.
-    Removes deleted vars only when known to Hermes (OPTIONAL_ENV_VARS and _EXTRA_ENV_KEYS) so
+    Removes deleted vars only when known to Cybr Agent (OPTIONAL_ENV_VARS and _EXTRA_ENV_KEYS) so
     unrelated environment is never clobbered."""
     env_vars = load_env()
     count = 0
@@ -2899,7 +2923,7 @@ def get_env_value(key: str) -> Optional[str]:
 
 
 def get_env_value_prefer_dotenv(key: str) -> Optional[str]:
-    """Resolve a Hermes-managed credential preferring ``~/.hermes/.env`` over ``os.environ``, so a
+    """Resolve a Cybr Agent-managed credential preferring ``~/.hermes/.env`` over ``os.environ``, so a
     deliberate .env edit beats a stale value inherited from the parent shell.
 
     An unresolved ``op://`` reference left in .env yields to the already-resolved value from the
@@ -2964,206 +2988,6 @@ def redact_config_value(value: Any, _depth: int = 0) -> Any:
     if isinstance(value, list):
         return [redact_config_value(v, _depth + 1) for v in value]
     return value
-
-
-def _section(title: str) -> None:
-    print()
-    print(color(f"◆ {title}", Colors.CYAN, Colors.BOLD))
-
-
-def _show_managed_banner() -> None:
-    """Surface administrator-pinned settings so the user knows why a config.yaml value may not
-    be the effective one."""
-    managed_keys = managed_scope.managed_config_keys()
-    managed_env = managed_scope.load_managed_env()
-    if not managed_keys and not managed_env:
-        return
-    print()
-    print(color(
-        f"  ⚷ Some settings are managed by your administrator ({managed_scope.get_managed_dir()}) "
-        f"and cannot be changed", Colors.YELLOW, Colors.BOLD))
-    for label, keys in (("config", managed_keys), ("env", managed_env)):
-        if keys:
-            print(color(f"    Managed {label} keys: {', '.join(sorted(keys))}", Colors.YELLOW))
-
-
-_SHOW_CONFIG_API_KEYS = (
-    ("OPENROUTER_API_KEY", "OpenRouter"),
-    ("VOICE_TOOLS_OPENAI_KEY", "OpenAI (STT/TTS)"),
-    ("EXA_API_KEY", "Exa"),
-    ("PARALLEL_API_KEY", "Parallel"),
-    ("FIRECRAWL_API_KEY", "Firecrawl"),
-    ("TAVILY_API_KEY", "Tavily"),
-    ("PERPLEXITY_API_KEY", "Perplexity"),
-    ("BROWSERBASE_API_KEY", "Browserbase"),
-    ("BROWSER_USE_API_KEY", "Browser Use"),
-    ("FAL_KEY", "FAL"))
-
-
-def _show_model_section(config: dict[str, Any]) -> None:
-    _section("Model")
-    print(f"  Model:        {redact_config_value(config.get('model', 'not set'))}")
-    cfg_max_turns = config.get('agent', {}).get('max_turns', DEFAULT_CONFIG['agent']['max_turns'])
-    print(f"  Max turns:    {cfg_max_turns}")
-    # Read the .env FILE directly so a stale HERMES_MAX_ITERATIONS ghost is caught even when the
-    # gateway bridge already overrode os.environ.
-    try:
-        env_ghost = load_env().get("HERMES_MAX_ITERATIONS")
-    except Exception:
-        env_ghost = None
-    if env_ghost is not None and str(env_ghost).strip() != str(cfg_max_turns).strip():
-        print(color(f"                ⚠ .env has stale HERMES_MAX_ITERATIONS={env_ghost} "
-                    f"(run 'hermes doctor --fix' to remove)", Colors.YELLOW))
-
-
-def _show_display_section(config: dict[str, Any]) -> None:
-    _section("Display")
-    display = config.get('display', {})
-    try:
-        from hermes_cli.personality import active_personality_name
-        active_personality = active_personality_name(config) or 'none'
-    except Exception:
-        active_personality = display.get('personality') or 'none'
-    on_off = lambda flag: 'on' if flag else 'off'
-    print(f"  Personality:  {active_personality}")
-    print(f"  Reasoning:    {on_off(display.get('show_reasoning', True))}")
-    print(
-        f"  Bell:         complete={on_off(display.get('bell_on_complete', False))}, "
-        f"prompt={on_off(display.get('bell_on_prompt', False))}")
-    ump = display.get('user_message_preview', {})
-    ump = ump if isinstance(ump, dict) else {}
-    print(f"  User preview: first {ump.get('first_lines', 2)} line(s), last {ump.get('last_lines', 2)} line(s)")
-
-
-def _show_terminal_section(config: dict[str, Any]) -> None:
-    _section("Terminal")
-    terminal = config.get('terminal', {})
-    print(f"  Backend:      {terminal.get('backend', 'local')}")
-    print(f"  Working dir:  {terminal.get('cwd', '.')}")
-    print(f"  Timeout:      {terminal.get('timeout', 60)}s")
-
-    configured = lambda *names: 'configured' if all(get_env_value(n) for n in names) else '(not set)'
-    from hermes_cli.config_defaults import DEFAULT_SANDBOX_IMAGE as default_img, DEFAULT_VERCEL_IMAGE as _DEFAULT_VERCEL_IMAGE
-    backend_lines = {
-        'docker': lambda: [f"  Docker image: {terminal.get('docker_image', default_img)}"],
-        'singularity': lambda: [f"  Image:        {terminal.get('singularity_image', 'docker://' + default_img)}"],
-        'modal': lambda: [
-            f"  Modal image:  {terminal.get('modal_image', default_img)}",
-            f"  Modal token:  {configured('MODAL_TOKEN_ID')}"],
-        'daytona': lambda: [
-            f"  Daytona image: {terminal.get('daytona_image', default_img)}",
-            f"  API key:      {configured('DAYTONA_API_KEY')}"],
-        'vercel_sandbox': lambda: [
-            f"  Vercel image:   {terminal.get('vercel_runtime') or terminal.get('vercel_image') or _DEFAULT_VERCEL_IMAGE}",
-            f"  Vercel auth:    {'configured' if get_env_value('VERCEL_OIDC_TOKEN') or (get_env_value('VERCEL_TOKEN') and get_env_value('VERCEL_PROJECT_ID') and get_env_value('VERCEL_TEAM_ID')) else '(not set)'}",
-        ],
-        'ssh': lambda: [
-            f"  SSH host:     {get_env_value('TERMINAL_SSH_HOST') or '(not set)'}",
-            f"  SSH user:     {get_env_value('TERMINAL_SSH_USER') or '(not set)'}"]}
-    for line in backend_lines.get(terminal.get('backend'), list)():
-        print(line)
-
-
-def _show_compression_section(config: dict[str, Any]) -> None:
-    _section("Context Compression")
-    compression = config.get('compression', {})
-    enabled = compression.get('enabled', True)
-    print(f"  Enabled:      {'yes' if enabled else 'no'}")
-    if not enabled:
-        return
-    print(f"  Threshold:    {compression.get('threshold', 0.50) * 100:.0f}%")
-    tt = compression.get('threshold_tokens')
-    try:
-        if tt is not None and int(tt) > 0:
-            print(f"  Token cap:    {int(tt):,} tokens (takes lower of ratio vs absolute)")
-    except (TypeError, ValueError):
-        pass
-    print(f"  Target ratio: {compression.get('target_ratio', 0.20) * 100:.0f}% of threshold preserved")
-    print(f"  Protect last: {compression.get('protect_last_n', 20)} messages")
-    print(f"  Protect first: {compression.get('protect_first_n', 3)} non-system head messages")
-    aux_comp = config.get('auxiliary', {}).get('compression', {})
-    print(f"  Model:        {aux_comp.get('model', '') or '(auto)'}")
-    comp_provider = aux_comp.get('provider', 'auto')
-    if comp_provider and comp_provider != 'auto':
-        print(f"  Provider:     {comp_provider}")
-
-
-def _show_aux_overrides(config: dict[str, Any]) -> None:
-    aux_tasks = {"Vision": config.get('auxiliary', {}).get('vision', {})}
-    overrides = {
-        label: (t.get('provider', 'auto'), t.get('model', ''))
-        for label, t in aux_tasks.items()
-        if t.get('provider', 'auto') != 'auto' or t.get('model', '')}
-    if not overrides:
-        return
-    _section("Auxiliary Models (overrides)")
-    for label, (prov, mdl) in overrides.items():
-        parts = [f"provider={prov}"] + ([f"model={mdl}"] if mdl else [])
-        print(f"  {label:12s}  {', '.join(parts)}")
-
-
-def _show_skill_settings() -> None:
-    try:
-        from agent.skill_utils import discover_all_skill_config_vars, resolve_skill_config_values
-        skill_vars = discover_all_skill_config_vars()
-        if not skill_vars:
-            return
-        resolved = resolve_skill_config_values(skill_vars)
-        _section("Skill Settings")
-        for var in skill_vars:
-            value = resolved.get(var["key"], "")
-            display_val = str(value) if value else color("(not set)", Colors.DIM)
-            skill_tag = color(f"[{var.get('skill', '')}]", Colors.DIM)
-            print(f"  {var['key']:<20s} {display_val}  {skill_tag}")
-    except Exception:
-        pass
-
-
-def show_config():
-    """Display current configuration."""
-    config = load_config()
-
-    print()
-    print(color("┌─────────────────────────────────────────────────────────┐", Colors.CYAN))
-    print(color("│              ☤ Hermes Configuration                    │", Colors.CYAN))
-    print(color("└─────────────────────────────────────────────────────────┘", Colors.CYAN))
-    _show_managed_banner()
-
-    _section("Paths")
-    print(f"  Config:       {get_config_path()}")
-    print(f"  Secrets:      {get_env_path()}")
-    print(f"  Install:      {get_project_root()}")
-
-    _section("API Keys")
-    for env_key, name in _SHOW_CONFIG_API_KEYS:
-        print(f"  {name:<14} {redact_key(get_env_value(env_key))}")
-    from hermes_cli.auth import get_anthropic_key
-    print(f"  {'Anthropic':<14} {redact_key(get_anthropic_key())}")
-
-    _show_model_section(config)
-    _show_display_section(config)
-    _show_terminal_section(config)
-
-    _section("Timezone")
-    tz = config.get('timezone', '')
-    print(f"  Timezone:     {tz or color('(server-local)', Colors.DIM)}")
-
-    _show_compression_section(config)
-    _show_aux_overrides(config)
-
-    _section("Messaging Platforms")
-    for label, env_key in (("Telegram", "TELEGRAM_BOT_TOKEN"), ("Discord", "DISCORD_BOT_TOKEN")):
-        state = 'configured' if get_env_value(env_key) else color('not configured', Colors.DIM)
-        print(f"  {label + ':':<13} {state}")
-
-    _show_skill_settings()
-
-    print()
-    print(color("─" * 60, Colors.DIM))
-    print(color("  hermes config edit     # Edit config file", Colors.DIM))
-    print(color("  hermes config set <key> <value>", Colors.DIM))
-    print(color("  hermes setup           # Run setup wizard", Colors.DIM))
-    print()
 
 
 def edit_config():
@@ -3556,7 +3380,7 @@ def _write_user_config(config_path: Path, user_config: dict[str, Any]) -> None:
 def _print_unknown_key_notice(key: str, suggestion: Optional[str]) -> None:
     print(color(
         f"⚠ '{key}' is not a recognized config key — it was saved anyway, "
-        "but Hermes may not read it.", Colors.YELLOW))
+        "but Cybr Agent may not read it.", Colors.YELLOW))
     if suggestion:
         print(color(f"  Did you mean: {suggestion}", Colors.YELLOW))
     # The env bridge covers custom TOP-LEVEL keys only; an unseeded nested path (``stt.provider``)
@@ -3763,7 +3587,7 @@ def get_config_value(key: str, *, as_json: bool = False, raw: bool = False):
         is_known, suggestion = _validate_config_key(key)
         if not is_known:
             print(color(
-                f"⚠ '{key}' is not a recognized config key — Hermes may not read it; the value "
+                f"⚠ '{key}' is not a recognized config key — Cybr Agent may not read it; the value "
                 "printed above comes from your config file.", Colors.YELLOW), file=sys.stderr)
             if suggestion:
                 print(color(f"  Did you mean: {suggestion}", Colors.YELLOW), file=sys.stderr)
@@ -3972,9 +3796,14 @@ def _cmd_config_check(args):
     print()
 
 
+def _cmd_config_show() -> None:
+    from hermes_cli.config_show import show_config
+    show_config()
+
+
 _CONFIG_SUBCOMMANDS = {
-    None: lambda args: show_config(),
-    "show": lambda args: show_config(),
+    None: lambda args: _cmd_config_show(),
+    "show": lambda args: _cmd_config_show(),
     "edit": lambda args: edit_config(),
     "get": _cmd_config_get,
     "set": _cmd_config_set,
@@ -4051,7 +3880,7 @@ def _platform_manifest_paths(home: Optional[Path] = None, source: PlatformManife
     """Yield ``(dir_name, manifest_path, require_kind, stat)`` for every platform plugin manifest.
     ``source`` is ``"bundled"`` (shipped ``plugins/platforms/*``), ``"user"`` (``<home>/plugins/
     platforms/*`` plus flat ``<home>/plugins/*`` installs, which must declare ``kind: platform``,
-    #46600) or ``"all"``. ``home`` defaults to the bound Hermes home. A directory that cannot be
+    #46600) or ``"all"``. ``home`` defaults to the bound Cybr Agent home. A directory that cannot be
     listed or searched yields ``(name, None, require_kind, error)``: a plugin there can't load
     either, so callers skip it. One ``scandir`` per root and one ``stat`` per candidate, because
     the child-env scrub stamps these on every spawn."""
@@ -4108,7 +3937,12 @@ def _platform_plugin_manifests(home: Optional[Path] = None, source: PlatformMani
     flat ``plugins/*`` manifest proves it is one only by its content, so an unreadable one is
     skipped with a warning, as is an unsearchable plugin directory. A manifest that does not
     parse declares nothing (its adapter cannot load either) and is skipped. Every skip is appended
-    to ``skipped``, so a caller can tell a complete scan from a partial one."""
+    to ``skipped``, so a caller can tell a complete scan from a partial one. A safe worker reads
+    no plugin manifest at all."""
+    from agent.safe_worker_policy import safe_worker_enabled
+
+    if safe_worker_enabled():
+        return
     for dir_name, manifest_path, require_kind, st in _platform_manifest_paths(home, source):
         if manifest_path is None:
             logger.warning("Skipping unreadable plugin directory %s: %s", dir_name, st)
