@@ -59,7 +59,7 @@ def _build_full_manifest(
     display_information = {
         "name": bot_name[:35],
         "description": (bot_description or "Your Cybr Agent on Slack")[:140],
-        "background_color": "#1a1a2e"}
+        "background_color": "#0b0d08"}
     if long_description is not None:
         display_information["long_description"] = long_description
 

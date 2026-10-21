@@ -26,9 +26,9 @@ def _primary_hex() -> str:
         from hermes_cli.skin_engine import get_active_skin
 
         skin = get_active_skin()
-        return skin.get_color("ui_primary", "") or skin.get_color("banner_title", "#FFD700")
+        return skin.get_color("ui_primary", "") or skin.get_color("banner_title", "#A6F000")
     except Exception:
-        return "#FFD700"
+        return "#A6F000"
 
 
 @lru_cache(maxsize=1)

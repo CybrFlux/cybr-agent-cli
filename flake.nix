@@ -1,5 +1,5 @@
 {
-  description = "Cybr Agent - AI agent framework by Nous Research";
+  description = "Cybr Agent - AI agent framework by CybrFlux";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";

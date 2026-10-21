@@ -509,7 +509,7 @@ If you find a bug, [open an issue](https://github.com/NousResearch/hermes-agent/
         │   │  │    canva, ...)       │     │
         │   │  └─ hermes-tools ───────┼─────────────────┐
         │   │       (callback to     │     │           │
-        │   │        Cybr Agent' richer  │     │           │
+        │   │        Cybr Agent' richer  │     │       │
         │   │        tools)          │     │           │
         │   └─────────────────────────┘     │           │
         └──────────────────────────────────┘           │

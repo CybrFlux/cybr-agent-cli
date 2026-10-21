@@ -70,28 +70,28 @@ def _skin_color(key: str, fallback: str) -> str:
 from hermes_cli import __release_date__ as RELEASE_DATE
 from hermes_cli.version_info import get_version_info
 
-HERMES_AGENT_LOGO = """[bold #FFFFFF] ██████╗██╗   ██╗██████╗ ██████╗      █████╗  ██████╗ ███████╗███╗   ██╗████████╗[/]
-[bold #F2F2F2]██╔════╝╚██╗ ██╔╝██╔══██╗██╔══██╗    ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝[/]
-[bold #DDDDDD]██║      ╚████╔╝ ██████╔╝██████╔╝    ███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║   [/]
-[bold #C8C8C8]██║       ╚██╔╝  ██╔══██╗██╔══██╗    ██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║   [/]
-[bold #B0B0B0]╚██████╗   ██║   ██████╔╝██║  ██║    ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║   [/]
-[bold #999999] ╚═════╝   ╚═╝   ╚═════╝ ╚═╝  ╚═╝    ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝   [/]"""
+HERMES_AGENT_LOGO = """[bold #D4FF4F] ██████╗██╗   ██╗██████╗ ██████╗      █████╗  ██████╗ ███████╗███╗   ██╗████████╗[/]
+[bold #BFFF1F]██╔════╝╚██╗ ██╔╝██╔══██╗██╔══██╗    ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝[/]
+[bold #A6F000]██║      ╚████╔╝ ██████╔╝██████╔╝    ███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║   [/]
+[bold #8BD600]██║       ╚██╔╝  ██╔══██╗██╔══██╗    ██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║   [/]
+[bold #72B800]╚██████╗   ██║   ██████╔╝██║  ██║    ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║   [/]
+[bold #5A9A00] ╚═════╝   ╚═╝   ╚═════╝ ╚═╝  ╚═╝    ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝   [/]"""
 
-HERMES_CADUCEUS = """[#D9D9D9]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#D9D9D9]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#D9D9D9]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#D9D9D9]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣤⣤⣤⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#D9D9D9]⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⣿⣿⠿⠿⠿⣿⣿⣷⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#D9D9D9]⠀⠀⠀⠀⠀⠀⠀⣠⣿⣿⠟⠁⠀⠀⠀⠀⠙⣿⣿⣦⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#D9D9D9]⠀⣠⣾⣿⣿⣦⣰⣿⣿⠃⠀⠀⠀⠀⠀⠀⠀⠈⢿⣿⣇⠀⠀⠀⠀⠀⠀⣀⡀⠀[/]
-[#D9D9D9]⠀⣿⣿⣿⣿⣿⣿⣿⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⣿⣿⡆⠀⠀⠀⠀⢸⣿⣿⠀[/]
-[#D9D9D9]⠀⠈⠻⠿⠿⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠹⣿⣿⡄⠀⠀⠀⢸⣿⣿⠀[/]
-[#D9D9D9]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠹⣿⣿⣆⠀⢀⣿⣿⡏⠀[/]
-[#D9D9D9]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠿⣿⣿⣿⣿⠟⠀⠀[/]
-[#D9D9D9]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠉⠁⠀⠀⠀[/]
-[#D9D9D9]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#D9D9D9]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
-[#D9D9D9]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]"""
+HERMES_CADUCEUS = """[#A6F000]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#A6F000]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#A6F000]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#A6F000]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣤⣤⣤⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#A6F000]⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⣿⣿⠿⠿⠿⣿⣿⣷⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#A6F000]⠀⠀⠀⠀⠀⠀⠀⣠⣿⣿⠟⠁⠀⠀⠀⠀⠙⣿⣿⣦⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#A6F000]⠀⣠⣾⣿⣿⣦⣰⣿⣿⠃⠀⠀⠀⠀⠀⠀⠀⠈⢿⣿⣇⠀⠀⠀⠀⠀⠀⣀⡀⠀[/]
+[#A6F000]⠀⣿⣿⣿⣿⣿⣿⣿⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⣿⣿⡆⠀⠀⠀⠀⢸⣿⣿⠀[/]
+[#A6F000]⠀⠈⠻⠿⠿⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠹⣿⣿⡄⠀⠀⠀⢸⣿⣿⠀[/]
+[#A6F000]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠹⣿⣿⣆⠀⢀⣿⣿⡏⠀[/]
+[#A6F000]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠿⣿⣿⣿⣿⠟⠀⠀[/]
+[#A6F000]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠉⠁⠀⠀⠀[/]
+[#A6F000]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#A6F000]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+[#A6F000]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]"""
 
 # === Skills scanning ===
 
@@ -605,7 +605,7 @@ def _banner_left_lines(model: str, cwd: str, session_id, context_length, provide
     lines = []
     pin = " (pinned)" if context_pinned else ""
     ctx_str = _dim_sep(f"{_format_context_length(context_length)} context{pin}") if context_length else ""
-    nous_str = _dim_sep("Nous Research")
+    nous_str = _dim_sep("CybrFlux")
     if (provider or "").strip().lower() == "moa":
         # MoA virtual provider: ``model`` is a preset name; show it with its aggregator.
         agg_label = _quiet(lambda: _moa_aggregator_label(model), "")
@@ -692,9 +692,9 @@ def build_welcome_banner(
         availability = compute_toolset_availability(enabled_toolsets)
     _enabled_ts = {str(t) for t in enabled_toolsets}
     # Resolve skin colors once for the entire banner
-    accent = _skin_color("banner_accent", "#FFBF00")
-    dim = _skin_color("banner_dim", "#B8860B")
-    text = _skin_color("banner_text", "#FFF8DC")
+    accent = _skin_color("banner_accent", "#8BD600")
+    dim = _skin_color("banner_dim", "#5E9B00")
+    text = _skin_color("banner_text", "#E9FFD0")
     # Use skin's custom caduceus art if provided
     _bskin = _quiet(_active_skin)
     left_lines = ["", getattr(_bskin, "banner_hero", None) or HERMES_CADUCEUS, ""]
@@ -755,8 +755,8 @@ def build_welcome_banner(
     if release_info:
         version_label = f"[link={release_info[1]}]{version_label}[/link]"
     outer_panel = Panel(
-        layout_table, title=f"[bold {_skin_color('banner_title', '#FFD700')}]{version_label}[/]",
-        border_style=_skin_color("banner_border", "#CD7F32"), padding=(0, 2))
+        layout_table, title=f"[bold {_skin_color('banner_title', '#A6F000')}]{version_label}[/]",
+        border_style=_skin_color("banner_border", "#4F8F00"), padding=(0, 2))
     console.print()
     if shutil.get_terminal_size().columns >= 95:
         console.print(getattr(_bskin, "banner_logo", None) or HERMES_AGENT_LOGO)

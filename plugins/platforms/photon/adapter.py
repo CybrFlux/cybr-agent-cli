@@ -249,13 +249,13 @@ def check_requirements() -> bool:
         if npm_error:
             logger.debug(
                 "photon: spectrum-ts not installed at %s "
-                "(last npm error: %s) — run: hermes photon setup",
+                "(last npm error: %s) — run: cybr photon setup",
                 _sidecar_dir(),
                 npm_error,
             )
         else:
             logger.debug(
-                "photon: spectrum-ts not installed at %s — run: hermes photon setup",
+                "photon: spectrum-ts not installed at %s — run: cybr photon setup",
                 _sidecar_dir(),
             )
         return False
@@ -652,7 +652,7 @@ class PhotonAdapter(BasePlatformAdapter):
         if not self._project_id or not self._project_secret:
             self._set_fatal_error(
                 "MISSING_CREDENTIALS",
-                "PHOTON_PROJECT_ID and PHOTON_PROJECT_SECRET are required. Run: hermes photon setup",
+                "PHOTON_PROJECT_ID and PHOTON_PROJECT_SECRET are required. Run: cybr photon setup",
                 retryable=False)
             return False
         client = httpx.AsyncClient(timeout=30.0, trust_env=False)
@@ -1709,7 +1709,7 @@ def register(ctx) -> None:
         check_fn=check_requirements, validate_config=validate_config, is_connected=is_connected,
         required_env=["PHOTON_PROJECT_ID", "PHOTON_PROJECT_SECRET"],
         install_hint=(
-            "Run: hermes photon setup  (logs in via device flow, creates a "
+            "Run: cybr photon setup  (logs in via device flow, creates a "
             "Spectrum project, links your phone number, installs the "
             "spectrum-ts sidecar)."),
         setup_fn=_cli.gateway_setup,  # surfaces Photon in the unified `cybr gateway setup` wizard

@@ -15,7 +15,7 @@ description: "Build an automated AI code reviewer that monitors your repos, revi
 ```
 ┌───────────────────────────────────────────────────────────────────┐
 │                                                                   │
-│   Cron Timer  ──▶  Cybr Agent  ──▶  GitHub API  ──▶  Review     │
+│   Cron Timer  ──▶  Cybr Agent  ──▶  GitHub API  ──▶  Review       │
 │   (every 2h)       + gh CLI           (PR diffs)       delivery   │
 │                    + skill                             (Telegram, │
 │                    + memory                            Discord,   │

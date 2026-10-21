@@ -187,7 +187,7 @@ Photon iMessage status
 
 Common issues:
 
-- **`sidecar deps : ✗ run hermes photon install-sidecar`** — Node is
+- **`sidecar deps : ✗ run cybr photon install-sidecar`** — Node is
   installed but `spectrum-ts` isn't. Run the suggested command.
 - **`device token : ✗ missing`** — run `cybr photon setup` to log in.
 - **`No iMessage line assigned yet`** — Spectrum is enabled but no line

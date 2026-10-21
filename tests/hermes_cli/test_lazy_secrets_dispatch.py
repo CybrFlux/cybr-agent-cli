@@ -20,7 +20,7 @@ import pytest
 
 
 def _run_hermes(args: list[str], timeout: int = 30) -> subprocess.CompletedProcess[str]:
-    """Run hermes CLI as a subprocess from repo root.
+    """Run cybr CLI as a subprocess from repo root.
 
     The child runs with all git remote URLs rewritten to an unreachable
     local path (GIT_CONFIG_* env overrides). These tests assert the

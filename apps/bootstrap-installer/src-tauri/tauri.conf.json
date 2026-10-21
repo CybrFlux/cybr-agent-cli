@@ -36,8 +36,8 @@
     "category": "DeveloperTool",
     "shortDescription": "Cybr Agent",
     "longDescription": "Installs Cybr Agent on your machine. Drives scripts/install.ps1 (Windows) and scripts/install.sh (macOS/Linux).",
-    "publisher": "Nous Research",
-    "copyright": "Copyright © 2026 Nous Research",
+    "publisher": "CybrFlux",
+    "copyright": "Copyright © 2026 CybrFlux",
     "targets": [
       "app",
       "dmg",

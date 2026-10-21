@@ -193,7 +193,7 @@ print_banner() {
     printf '%s\n' "┌─────────────────────────────────────────────────────────┐"
     printf '%s\n' "│             ☤ Cybr Agent Installer                    │"
     printf '%s\n' "├─────────────────────────────────────────────────────────┤"
-    printf '%s\n' "│  An open source AI agent by Nous Research.              │"
+    printf '%s\n' "│  An open source AI agent by CybrFlux.              │"
     printf '%s\n' "└─────────────────────────────────────────────────────────┘"
     printf '%s\n' "$C_NC"
 }
@@ -1166,6 +1166,10 @@ stage_gateway() {
 }
 
 stage_complete() {
+    # cybr: publish the product command beside the upstream-named launcher
+    if [ -e "$HOME/.local/bin/hermes" ] || [ -L "$HOME/.local/bin/hermes" ]; then
+        ln -sf hermes "$HOME/.local/bin/cybr"
+    fi
     local commit
     commit="$INSTALL_COMMIT"
     [ -n "$commit" ] || commit=$(git -C "$INSTALL_DIR" rev-parse HEAD 2>/dev/null) || commit=""
@@ -1178,7 +1182,7 @@ stage_complete() {
         "$INSTALL_DIR/.hermes/bin/hermes" update --set-channel "$CHANNEL" \
             || fail "could not save the $CHANNEL update channel" other
     fi
-    log_success "Cybr Agent install complete. Run: hermes"
+    log_success "Cybr Agent install complete. Run: cybr"
 }
 
 print_path_reload_hint() {
@@ -1195,7 +1199,7 @@ print_path_reload_hint() {
         bash|"") rc="source ~/.bashrc" ;;
         *) rc=". ~/.profile" ;;
     esac
-    log "Reload your shell to use hermes: open a new terminal, or run: $rc"
+    log "Reload your shell to use cybr: open a new terminal, or run: $rc"
 }
 
 run_stage() (

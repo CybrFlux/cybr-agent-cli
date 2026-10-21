@@ -1846,7 +1846,7 @@ if (IS_WINDOWS) {
 app.setAboutPanelOptions({
   applicationName: APP_NAME,
   applicationVersion: nativeAboutVersion(appVersionInfo(INSTALL_STAMP, '', app.getVersion())),
-  copyright: 'Copyright © 2026 Nous Research'
+  copyright: 'Copyright © 2026 CybrFlux'
 })
 
 // Custom scheme for streaming audio/video into the renderer. Local paths read
@@ -17408,7 +17408,7 @@ function showAboutPanelFresh(): void {
     app.setAboutPanelOptions({
       applicationName: APP_NAME,
       applicationVersion: skew.outOfSync ? `${display} — app build out of date, update the desktop app` : display,
-      copyright: 'Copyright © 2026 Nous Research'
+      copyright: 'Copyright © 2026 CybrFlux'
     })
     app.showAboutPanel()
   })

@@ -624,7 +624,7 @@ function Write-Banner {
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
     Write-Host "|             * Cybr Agent Installer                    |" -ForegroundColor Magenta
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
-    Write-Host "|  An open source AI agent by Nous Research.              |" -ForegroundColor Magenta
+    Write-Host "|  An open source AI agent by CybrFlux.              |" -ForegroundColor Magenta
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
     Write-Host ""
 }
@@ -1385,7 +1385,7 @@ function Write-PathReloadHint {
     # iex'd text always runs in the caller's process, where the prepend in
     # Set-LauncherUserPath already made `cybr` resolvable.
     if (-not $script:RunAsFile -or $script:BinDirOnCallerPath -ne $false) { return }
-    Log 'Restart your terminal to use hermes, or run: $env:Path = [Environment]::GetEnvironmentVariable(''Path'',''User'') + '';'' + [Environment]::GetEnvironmentVariable(''Path'',''Machine'')'
+    Log 'Restart your terminal to use cybr, or run: $env:Path = [Environment]::GetEnvironmentVariable(''Path'',''User'') + '';'' + [Environment]::GetEnvironmentVariable(''Path'',''Machine'')'
 }
 
 function Stage-Config {
@@ -1500,7 +1500,7 @@ function Stage-Complete {
         $marker | ConvertTo-Json -Depth 4 | Set-Content (Join-Path $InstallDir ".hermes-bootstrap-complete") -Encoding UTF8
     }
     if ($Channel) { Invoke-InstalledHermes @('update', '--set-channel', $Channel) }
-    if ($commit) { Write-Ok "Cybr Agent install complete (pinned $commit). Run: hermes" }
+    if ($commit) { Write-Ok "Cybr Agent install complete (pinned $commit). Run: cybr" }
 }
 
 function New-DesktopShortcuts {

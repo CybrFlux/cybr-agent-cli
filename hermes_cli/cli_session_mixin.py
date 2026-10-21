@@ -297,11 +297,11 @@ class CLISessionMixin:
         try:
             from hermes_cli.skin_engine import get_active_skin
             skin = get_active_skin()
-            separator_color = skin.get_color("banner_dim", "#B8860B")
-            accent_color = skin.get_color("ui_accent", "#FFBF00")
-            label_color = skin.get_color("ui_label", "#DAA520")
+            separator_color = skin.get_color("banner_dim", "#5E9B00")
+            accent_color = skin.get_color("ui_accent", "#8BD600")
+            label_color = skin.get_color("ui_label", "#7DC000")
         except Exception:
-            separator_color, accent_color, label_color = "#B8860B", "#FFBF00", "cyan"
+            separator_color, accent_color, label_color = "#5E9B00", "#8BD600", "cyan"
         sep = f" [dim {separator_color}]·[/] "
         toolsets_info = ""
         if self.enabled_toolsets and "all" not in self.enabled_toolsets:

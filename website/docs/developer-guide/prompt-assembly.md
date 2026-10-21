@@ -69,7 +69,7 @@ Here is a simplified view of what the final system prompt looks like when all la
 
 ```
 # Layer 1: Agent Identity (from ~/.hermes/SOUL.md)
-You are Cybr Agent, an AI assistant created by Nous Research.
+You are Cybr Agent, an AI assistant created by CybrFlux.
 You are an expert software engineer and researcher.
 You value correctness, clarity, and efficiency.
 ...

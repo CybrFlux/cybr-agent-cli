@@ -88,8 +88,8 @@ async function stampExeIdentity(
     'version-string': {
       ProductName: 'Cybr Agent',
       FileDescription: 'Cybr Agent',
-      CompanyName: 'Nous Research',
-      LegalCopyright: 'Copyright (c) 2026 Nous Research'
+      CompanyName: 'CybrFlux',
+      LegalCopyright: 'Copyright (c) 2026 CybrFlux'
     }
   }
 

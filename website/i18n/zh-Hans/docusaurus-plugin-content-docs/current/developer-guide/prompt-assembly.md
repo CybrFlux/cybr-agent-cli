@@ -47,7 +47,7 @@ Cybr Agent 刻意将以下内容分离：
 
 ```
 # Layer 1: Agent Identity (from ~/.hermes/SOUL.md)
-You are Cybr Agent, an AI assistant created by Nous Research.
+You are Cybr Agent, an AI assistant created by CybrFlux.
 You are an expert software engineer and researcher.
 You value correctness, clarity, and efficiency.
 ...
