@@ -1,4 +1,4 @@
-"""User-facing wording contracts for ``hermes update`` failure/partial output.
+"""User-facing wording contracts for ``cybr update`` failure/partial output.
 
 Invariants only (what the user must be able to read and act on), never whole-string snapshots.
 """

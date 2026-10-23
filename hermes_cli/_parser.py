@@ -31,7 +31,7 @@ def _cfg_path() -> str:
 
     ``main._apply_profile_override`` builds this parser (via ``top_level_value_flag_sets``) BEFORE
     it re-homes the process to the sticky ``active_profile``; ``get_hermes_home()`` would emit the
-    "[HERMES_HOME fallback] ... wrong profile" warning on every ``hermes`` command for that
+    "[HERMES_HOME fallback] ... wrong profile" warning on every `cybr` command for that
     throwaway help string. Read the process home directly: after the override it IS the profile home.
     """
     from hermes_constants import display_hermes_home, get_process_hermes_home
@@ -108,7 +108,7 @@ Examples:
     hermes auth refresh <p> [t]   Refresh a pooled OAuth credential and clear its cooldown
     hermes model                  Select default model
     hermes fallback [list]        Show fallback provider chain
-    hermes fallback add           Add a fallback provider (same picker as `hermes model`)
+    hermes fallback add           Add a fallback provider (same picker as `cybr model`)
     hermes fallback remove        Remove a fallback provider from the chain
     hermes config                 View configuration
     hermes config edit            Edit config in $EDITOR
@@ -164,7 +164,7 @@ def _add_top_level_flags(parser: argparse.ArgumentParser) -> None:
     inherited(parser, "--provider", default=None, help=(
         "Provider override for this invocation (e.g. openrouter, anthropic). "
         "Applies to -z/--oneshot and --tui. The persistent provider lives in config.yaml "
-        "under model.provider — use `hermes setup` or edit the file to change it."))
+        "under model.provider — use `cybr setup` or edit the file to change it."))
     inherited(parser, "--reasoning", default=None, metavar="LEVEL", help=(
         "Reasoning effort for this invocation: none, minimal, low, medium, "
         "high, xhigh, max, or ultra. Overrides agent.reasoning_effort in "
@@ -219,7 +219,7 @@ def _build_chat_parser(subparsers) -> argparse.ArgumentParser:
     """The ``chat`` subparser (also the implicit default command).
 
     Flags ALSO declared on the top-level parser use ``default=argparse.SUPPRESS``: for
-    ``hermes -m foo chat`` argparse first sets ``args.model`` from the top-level parser, then
+    ``cybr -m foo chat`` argparse first sets ``args.model`` from the top-level parser, then
     dispatches to the chat subparser, which shares the namespace and ``dest`` — a plain ``None``
     default would silently clobber the top-level value. SUPPRESS keeps the subparser action a no-op
     unless the flag is actually passed after the subcommand (tests/hermes_cli/
@@ -343,7 +343,7 @@ def _plugin_command_install_hint(prog: str, value: str):
 
 
 def _moved_command_hint(prog: str, value: str) -> str:
-    """Where a command that left core went (``hermes auth spotify``, ``hermes mcp serve``, ...)."""
+    """Where a command that left core went (``cybr auth spotify``, ``cybr mcp serve``, ...)."""
     from hermes_cli.left_core_migration import moved_command_hint
     return moved_command_hint(prog, value)
 

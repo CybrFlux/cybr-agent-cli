@@ -9417,7 +9417,7 @@ def test_enable_gateway_prompts_sets_gateway_env(monkeypatch):
 
 
 def test_setup_status_answers_from_the_bootstrap_record_once_it_exists(monkeypatch):
-    """Under ``hermes serve`` the boot bootstrap records who carries inference; ``setup.status``
+    """Under ``cybr serve`` the boot bootstrap records who carries inference; ``setup.status``
     reports its record (blocking for it while it is in flight) instead of re-probing, so a client's
     first poll sees the boot's answer rather than racing it."""
     import threading
@@ -16991,13 +16991,13 @@ def test_session_branch_uses_persisted_display_history_after_compaction(monkeypa
 
 
 # --------------------------------------------------------------------------
-# model.options — curated-list parity with `hermes model` and classic /model
+# model.options — curated-list parity with `cybr model` and classic /model
 # --------------------------------------------------------------------------
 
 
 def test_model_options_does_not_overwrite_curated_models(monkeypatch):
     """The TUI model.options handler must surface the same curated model
-    list as `hermes model` and the classic CLI /model picker.
+    list as `cybr model` and the classic CLI /model picker.
 
     Regression: earlier versions of this handler unconditionally replaced
     each provider's curated ``models`` field with ``provider_model_ids()``

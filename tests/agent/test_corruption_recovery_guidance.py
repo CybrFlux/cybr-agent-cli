@@ -79,7 +79,7 @@ def test_format_turn_completion_corrupt_never_names_the_live_db():
     when pointed at a live state.db, splitting the store into two
     generations whose acknowledged writes vanish. The guidance that ships
     in the corruption banner must be the snapshot-copying
-    `hermes sessions recover` lane.
+    `cybr sessions recover` lane.
     """
     from run_agent import AIAgent
 
@@ -99,7 +99,7 @@ def test_format_turn_completion_corrupt_never_names_the_live_db():
 def test_corrupt_guidance_pins_the_failing_profile(tmp_path, monkeypatch):
     """#105887: every `hermes ...` command in the recovery guidance (turn explainer, gateway
     home-channel notice, exhausted-repair diagnostic) carries the active profile selector and
-    names that profile's state.db. A bare `hermes` follows the sticky ``active_profile`` file,
+    names that profile's state.db. A bare `cybr` follows the sticky ``active_profile`` file,
     so with another profile active the operator would repair the wrong database."""
     import asyncio
 
@@ -137,4 +137,4 @@ def test_corrupt_guidance_pins_the_failing_profile(tmp_path, monkeypatch):
     assert f"--source {_default_db_path()} " in sent[0]
 
     exhausted = _persistent_repair_exhausted_error(home / "state.db")
-    assert "`hermes -p research sessions recover --source" in exhausted
+    assert "`cybr -p research sessions recover --source" in exhausted

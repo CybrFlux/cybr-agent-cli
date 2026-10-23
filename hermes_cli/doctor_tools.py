@@ -198,7 +198,7 @@ def _check_docker_backend(terminal_env: str, running_in_container: bool, issues:
     if terminal_env == "docker":
         if not docker_exe:
             _fail_and_issue("Docker or Podman not installed", "(needed for the 'docker' terminal backend)",
-                            "Install Docker or Podman, or run `hermes setup terminal` to switch backend.", issues)
+                            "Install Docker or Podman, or run `cybr setup terminal` to switch backend.", issues)
         else:
             runtime = docker_runtime_name(docker_exe)
             hint = docker_runtime_start_hint(docker_exe)
@@ -210,7 +210,7 @@ def _check_docker_backend(terminal_env: str, running_in_container: bool, issues:
             _require(_run_ok([docker_exe, "version"], timeout=10),
                      (runtime, "(daemon running)" if runtime == "Docker" else "(reachable)"),
                      (unreachable, "(needed for the 'docker' terminal backend)"),
-                     f"{hint[0].upper()}{hint[1:]}, or run `hermes setup terminal` to switch backend.", issues)
+                     f"{hint[0].upper()}{hint[1:]}, or run `cybr setup terminal` to switch backend.", issues)
     elif docker_exe:
         check_ok(docker_runtime_name(docker_exe), "(optional)")
     elif _is_termux():
@@ -223,7 +223,7 @@ def _check_ssh_backend(issues: list[str]) -> None:
     ssh_host = os.getenv("TERMINAL_SSH_HOST")
     if not ssh_host:
         return _fail_and_issue("SSH host not configured", "(needed for the 'ssh' terminal backend)",
-                               "run `hermes setup terminal` and enter the SSH host and user.", issues)
+                               "run `cybr setup terminal` and enter the SSH host and user.", issues)
     ssh_user, ssh_port, ssh_key = (os.getenv(f"TERMINAL_SSH_{k}") for k in ("USER", "PORT", "KEY"))
     cmd = ["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes"]
     if ssh_port:
@@ -244,7 +244,7 @@ def _require(cond, ok, bad, issue: str, issues: list[str]) -> None:
 def _check_daytona_backend(issues: list[str]) -> None:
     _require(os.getenv("DAYTONA_API_KEY"), ("Daytona API key", "(configured)"),
              ("Daytona API key missing", "(needed for the 'daytona' terminal backend)"),
-             "run `hermes setup terminal` (Daytona) to enter it.", issues)
+             "run `cybr setup terminal` (Daytona) to enter it.", issues)
     try:
         from daytona import Daytona
         check_ok("daytona SDK", "(installed)")
@@ -388,7 +388,7 @@ def _check_lightpanda() -> None:
         used, reason = False, f"status check failed: {e}"
     if not used:
         check_warn("browser.engine=lightpanda is shadowed", f"({reason})")
-        check_info("Fix: pick Lightpanda in `hermes tools` → Browser Automation, or set browser.engine: auto")
+        check_info("Fix: pick Lightpanda in `cybr tools` → Browser Automation, or set browser.engine: auto")
     elif not check_bool(find_lightpanda_binary(), ("Lightpanda", f"({reason})"),
                         ("Lightpanda selected but binary not found", "(browser tools will fail until it is installed)")):
         check_info(LIGHTPANDA_INSTALL_HINT)
@@ -419,7 +419,7 @@ def _audit_one(npm_bin: str, npm_dir, label: str, audit_extra: list[str], manual
 
     Every row here audits a tree whose versions come from a COMMITTED lockfile
     (`npm ci` in `_run_npm_install_deterministic` reifies exactly that state on
-    every `hermes update`), so a local `npm audit fix` never persists — the next
+    every `cybr update`), so a local `npm audit fix` never persists — the next
     update's deterministic install restores the pinned (vulnerable) versions and
     the finding reappears. The durable remedy in every case is a lockfile bump
     on main (update `package-lock.json` and ship it); the doctor therefore never
@@ -441,7 +441,7 @@ def _audit_one(npm_bin: str, npm_dir, label: str, audit_extra: list[str], manual
             check_ok(f"{label} deps", "(no known vulnerabilities)")
         elif critical > 0 or high > 0:
             remedy = ("fix is an upstream lockfile bump — a local manual fix does not persist"
-                      " (the next `hermes update` reinstalls from the committed lockfile)")
+                      " (the next `cybr update` reinstalls from the committed lockfile)")
             check_warn(f"{label} deps", f"({critical} critical, {high} high, {moderate} moderate — {remedy})")
             if workspace_scoped:
                 check_info("  ^ workspace audit includes runtime and build dependencies; if manual npm remediation "
@@ -527,4 +527,4 @@ def _check_tool_availability(should_fix: bool, f: Finding) -> None:
     # disabled toolsets may warn above but must not pollute it.
     api_disabled = _missing_api_key_toolsets_for_summary(unavailable)
     if api_disabled or any(status != "ok" for status, _, _ in web_rows):
-        f.issues.append("Run 'hermes setup' to configure missing API keys for full tool access")
+        f.issues.append("Run 'cybr setup' to configure missing API keys for full tool access")

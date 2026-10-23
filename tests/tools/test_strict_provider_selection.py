@@ -1,11 +1,11 @@
-"""Strict tool-provider selection: the `hermes tools` choice always wins.
+"""Strict tool-provider selection: the `cybr tools` choice always wins.
 
 Policy (owner decision): the provider string stored in config.yaml is what
 runs at call time. "nous" → managed Nous Tool Gateway only; a vendor name →
 that vendor direct with the user's own credentials; no key ever written →
 today's credential autodetect. Credential presence must NEVER select or
 reroute; a selected-but-broken provider produces an honest error naming the
-selection and pointing at `hermes tools`.
+selection and pointing at `cybr tools`.
 
 Per category these tests pin the three strict behaviors:
   (a) managed selection + direct key present ⇒ managed route (key ignored)

@@ -64,7 +64,7 @@ def test_db_unavailable_details_line_carries_raw_cause_only_below_the_lead():
 
 def test_db_unavailable_network_drive_cause_does_not_offer_doctor_fix():
     """A locking-protocol failure means the DB sits on a network filesystem that
-    cannot host SQLite's WAL; `hermes doctor --fix` cannot repair a mount, so it
+    cannot host SQLite's WAL; `cybr doctor --fix` cannot repair a mount, so it
     must not be the offered action (only moving the file helps)."""
     hermes_state._set_last_init_error("OperationalError: locking protocol")
     try:

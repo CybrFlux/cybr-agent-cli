@@ -1,19 +1,19 @@
 """The PM runtime lock is where PM commands look for it (PM lifecycle, class 6; #124075).
 
-The field report: after ``hermes gateway install --force`` the gateway crash-looped with "no
-dependency environment is committed" and ``hermes pm repair`` / ``pm doctor`` / ``pm status`` all
+The field report: after ``cybr gateway install --force`` the gateway crash-looped with "no
+dependency environment is committed" and ``cybr pm repair`` / ``pm doctor`` / ``pm status`` all
 died on ``FileNotFoundError: <install>/environments/<env>/workspace/pm/uv.lock``.
 
 ``--force`` was incidental: every generation's ``workspace/`` copy was materialised without
 ``pm/uv.lock`` (the copy dropped every file named ``uv.lock``), so ANY ``hermes pm`` command run
-by the selected generation's own ``hermes`` (the one on PATH for every child a Cybr Agent process
+by the selected generation's own `cybr` (the one on PATH for every child a Cybr Agent process
 spawns, and the one a unit pointing at the managed environment runs) died before it started.
-After a dependency-changing ``hermes update``:
+After a dependency-changing ``cybr update``:
 
 * ``hermes gateway install --force`` (service manager is a failing shim: the unit write is what
-  is exercised) leaves the install bootable: ``hermes pm status`` / ``pm doctor`` run and
-  ``hermes gateway run`` reaches running;
-* ``hermes pm status`` / ``pm doctor`` also run from the managed environment's ``hermes``.
+  is exercised) leaves the install bootable: ``cybr pm status`` / ``pm doctor`` run and
+  ``cybr gateway run`` reaches running;
+* ``cybr pm status`` / ``pm doctor`` also run from the managed environment's `cybr`.
 """
 
 from __future__ import annotations

@@ -4,7 +4,7 @@ Behavioral contracts for the /docs/plugins catalog extractor:
 
 1. Reads ``plugin-catalog/*.yaml`` entries (skipping ``removed.yaml``) and
    emits ``plugins.json`` rows carrying name/repo/sha/tier/capabilities plus
-   a synthesized ``hermes plugins install <name>`` command.
+   a synthesized ``cybr plugins install <name>`` command.
 2. Entries missing any of name/repo/sha are skipped (logged, not fatal).
 3. A missing ``plugin-catalog/`` directory degrades gracefully: empty
    catalog list, zero counts in the meta sidecar, exit 0 — the docs build

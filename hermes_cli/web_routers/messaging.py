@@ -248,7 +248,7 @@ def _messaging_platform_payload(
     elif gateway_running and not state:
         state = "pending_restart"
     elif not gateway_running and not state:
-        # Same verdict /api/status gives: ``hermes gateway stop`` keeps the last failure on disk,
+        # Same verdict /api/status gives: ``cybr gateway stop`` keeps the last failure on disk,
         # and a profile the operator stopped must not wear a "Start failed" badge for it.
         state = "startup_failed" if retained_gateway_state(rt) == "startup_failed" else "gateway_stopped"
 

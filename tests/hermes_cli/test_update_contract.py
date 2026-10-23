@@ -194,7 +194,7 @@ def _sealed_tree(tmp_path: Path, distribution: str) -> Path:
 def test_admission_source_checkout_on_termux_host_refuses_with_apt_hint(tmp_path, monkeypatch):
     """A git checkout is normally admitted, but not on a Termux host: the
     lock has no Android wheels, so a source sync would build sdists on the
-    phone. The refusal must point at the APT package, never `hermes update`."""
+    phone. The refusal must point at the APT package, never `cybr update`."""
     import hermes_cli.image_provenance as ip
 
     monkeypatch.setattr(ip, "IMAGE_PROVENANCE_PATH", tmp_path / "absent.json")
@@ -213,7 +213,7 @@ def test_admission_source_checkout_on_termux_host_refuses_with_apt_hint(tmp_path
 def test_admission_apt_termux_refuses_with_pkg_upgrade(tmp_path, monkeypatch):
     """A sealed apt-termux tree (no .git) is refused by the steward gate:
     the package manager owns the code tree, so remediation is pkg upgrade
-    — never `hermes update`."""
+    — never `cybr update`."""
     import hermes_cli.image_provenance as ip
 
     monkeypatch.setattr(ip, "IMAGE_PROVENANCE_PATH", tmp_path / "absent.json")

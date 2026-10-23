@@ -152,7 +152,7 @@ def test_startup_recovery_never_asks_a_dependency_question(tmp_path, monkeypatch
     said: list[str] = []
     mig.recover_at_startup(name, say=said.append)
     assert [kw["assume_deps_consent"] for kw in seen] == ([True] if installs else [])
-    assert installs or f"`hermes plugins install {name}`" in said[-1]
+    assert installs or f"`cybr plugins install {name}`" in said[-1]
 
 
 def test_update_asks_once_and_names_each_profile(tmp_path, monkeypatch):
@@ -227,7 +227,7 @@ def test_unattended_update_refusal_in_one_profile_does_not_skip_the_others(tmp_p
 
     default, work = _profile_homes(tmp_path, monkeypatch, "work")
     monkeypatch.setattr("pm.plugins_state.dependency_homes", lambda: [default, work])
-    monkeypatch.setattr("sys.stdin", io.StringIO())  # Desktop / scripted `hermes update`: no terminal
+    monkeypatch.setattr("sys.stdin", io.StringIO())  # Desktop / scripted `cybr update`: no terminal
     monkeypatch.setattr(pm_install, "lazy_installs_allowed", lambda: get_hermes_home() == work)
 
     def install(*_a, catalog_name, assume_deps_consent, **_kw):
@@ -244,8 +244,8 @@ def test_unattended_update_refusal_in_one_profile_does_not_skip_the_others(tmp_p
 
 
 def test_startup_hint_installs_into_the_profile_that_printed_it(tmp_path, monkeypatch):
-    """A bare `hermes plugins install` from a shell targets the sticky profile, so the hint an agent
-    started for a named profile (Desktop, gateway, `hermes -p`) prints must carry `-p`."""
+    """A bare `cybr plugins install` from a shell targets the sticky profile, so the hint an agent
+    started for a named profile (Desktop, gateway, `cybr -p`) prints must carry `-p`."""
     from pm import install as pm_install
 
     default, work = _profile_homes(tmp_path, monkeypatch, "work")
@@ -295,8 +295,8 @@ def test_recovery_copy_without_a_catalog_memory_entry_keeps_the_generic_hint(tmp
 
 
 def test_startup_recovery_backs_off_after_a_failed_install(tmp_path, monkeypatch):
-    """A failed agent-start install is not retried by every following process start (each `hermes chat`,
-    cron run, Desktop restart): one failure, then a quiet hour; `hermes update` still retries."""
+    """A failed agent-start install is not retried by every following process start (each `cybr chat`,
+    cron run, Desktop restart): one failure, then a quiet hour; `cybr update` still retries."""
     from pm import install as pm_install
 
     (tmp_path / "config.yaml").write_text("memory:\n  provider: hindsight\n", encoding="utf-8")
@@ -310,7 +310,7 @@ def test_startup_recovery_backs_off_after_a_failed_install(tmp_path, monkeypatch
         monkeypatch.setattr(mig, "_attempted", set())  # a fresh process each time
         assert mig.recover_at_startup("hindsight", say=said.append) is False
     assert attempts == ["hindsight"]
-    assert "`hermes plugins install hindsight`" in said[-1]  # still told memory is off, and the fix
+    assert "`cybr plugins install hindsight`" in said[-1]  # still told memory is off, and the fix
     monkeypatch.setattr(mig, "STARTUP_RETRY_SECONDS", 0.0)
     monkeypatch.setattr(mig, "_attempted", set())
     mig.recover_at_startup("hindsight")

@@ -7,7 +7,7 @@ the manual command. Three things then went wrong after it:
   ``sudo -n``, dumping a polkit/tty error under identical advice;
 * the inventory labelled the unit's MainPID ``manual-serve``, so the user was told to "ask the
   owner to relaunch `hermes dashboard`" for a process systemd owns;
-* the owed follow-up always said "gateways may still run pre-update code … `hermes gateway
+* the owed follow-up always said "gateways may still run pre-update code … `cybr gateway
   restart`", even with every gateway verified current.
 """
 

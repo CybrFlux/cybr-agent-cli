@@ -1,4 +1,4 @@
-"""Regression test for #125112: `hermes update --check` on a narrow clone."""
+"""Regression test for #125112: `cybr update --check` on a narrow clone."""
 
 import subprocess
 from pathlib import Path

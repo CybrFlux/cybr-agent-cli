@@ -1,4 +1,4 @@
-"""Tests for the Linux XDG desktop entry installed by ``hermes desktop``."""
+"""Tests for the Linux XDG desktop entry installed by ``cybr desktop``."""
 
 from __future__ import annotations
 
@@ -84,7 +84,7 @@ def test_install_writes_entry_with_absolute_exec_and_icon(
     values = _parse(entry.read_text(encoding="utf-8"))
 
     # Exec must be the absolute path of the resolved binary. The launcher
-    # runs with a minimal PATH, so a bare `hermes` would not resolve.
+    # runs with a minimal PATH, so a bare `cybr` would not resolve.
     assert values["Exec"] == f"{hermes_bin} desktop"
     assert Path(values["Exec"].split(" ")[0]).is_absolute()
 
@@ -528,7 +528,7 @@ def test_exec_finds_known_wrapper_when_resolver_has_no_candidate(
     """`None` from the resolver must still probe known wrapper locations.
 
     A cold relaunch (argv[0] is not an executable file, e.g. `-c` under
-    `python -m`, and PATH has no `hermes`) makes resolve_hermes_bin return
+    `python -m`, and PATH has no `cybr`) makes resolve_hermes_bin return
     None outright. The early `return primary` that used to fire here skipped
     the durable-wrapper probe, so the persisted Exec flipped to the bare
     `<python> -m hermes_cli.main desktop` module form. Each flip between the

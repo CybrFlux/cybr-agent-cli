@@ -2,7 +2,7 @@
 
 ``--start`` ensures the owner (first launch). A reconnect discovers only, except ``--recover``
 (a bounded slot, ``gatewayClient.ts`` ``OWNER_RECOVERY_LIMIT`` per window) re-ensures whenever the
-owner is not ready: it crashed, ended by its idle exit, was stopped with ``hermes gateway stop``
+owner is not ready: it crashed, ended by its idle exit, was stopped with ``cybr gateway stop``
 while this TUI was open, or an older Cybr Agent's gateway answers (ensure replaces that one). Main's TUI
 ran its own sidecar and never depended on an external daemon, so an open TUI comes back on its own.
 """
@@ -23,7 +23,7 @@ sys.path.insert(0, str(python_root()))
 
 # The terminal verdict's next step: the client stops retrying on it, so the user needs one. A
 # verdict line like the rest, so the TUI echoes it inline (userMessages.ts STDERR_PROBLEM_RE).
-BOOTSTRAP_REMEDY = "gateway unavailable: run `hermes pm repair`, then restart the TUI"
+BOOTSTRAP_REMEDY = "gateway unavailable: run `cybr pm repair`, then restart the TUI"
 
 
 def failure_message(receipt) -> str:

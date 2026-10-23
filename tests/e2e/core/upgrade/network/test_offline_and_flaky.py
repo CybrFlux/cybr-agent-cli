@@ -7,7 +7,7 @@ serving bytes that don't match the pinned digest.
 
 The contract for a failure (``_seed.assert_nothing_changed``): non-zero exit, a message naming
 what failed, no success banner, the checkout / selected PM environment / PM runtime / tool store
-exactly as before, and the next ``hermes`` still starts. For a transient fault the contract is
+exactly as before, and the next `cybr` still starts. For a transient fault the contract is
 that the operation retries within bounds and then succeeds.
 
 Classes: offline update and offline PM provisioning; a release-host outage that ``main`` (which
@@ -30,7 +30,7 @@ from tests.e2e.core.upgrade.network import _seed as S
 
 pytestmark = [
     pytest.mark.platforms("linux"),
-    # Every `hermes update` here targets a throwaway sandboxed install, never the real checkout.
+    # Every `cybr update` here targets a throwaway sandboxed install, never the real checkout.
     pytest.mark.live_system_guard_bypass,
     pytest.mark.skipif(H.sandbox_required_reason() is not None, reason=str(H.sandbox_required_reason())),
     pytest.mark.skipif(N.netns_required_reason() is not None, reason=str(N.netns_required_reason())),
@@ -59,7 +59,7 @@ def test_offline_update_fails_fast_and_changes_nothing(inst):
 
 def test_offline_provisioning_of_a_missing_tool_fails_loudly(inst):
     """The tool store lost an entry (pruned, antivirus, disk cleanup) and the machine is offline:
-    the documented remedy `hermes pm install <tool>` must fail within bounds, name the tool and
+    the documented remedy `cybr pm install <tool>` must fail within bounds, name the tool and
     the download, and leave every other tool alone."""
     with S.tool_missing(inst, "ripgrep") as tool:
         before = inst.state()
@@ -133,4 +133,4 @@ def test_pm_download_retries_then_refuses_a_digest_mismatch(inst, tool_name):
             f"{tool_name}: the failure does not say the download failed verification\n" + r.report(inst))
         assert not (inst.sb.hermes_home / "tools" / tool["entry"]).exists(), (
             f"{tool_name}: unverified bytes were published to the tool store\n" + r.report(inst))
-        S.assert_nothing_changed(inst, before, r, f"`hermes pm install {tool_name}` with a digest mismatch")
+        S.assert_nothing_changed(inst, before, r, f"`cybr pm install {tool_name}` with a digest mismatch")

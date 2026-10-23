@@ -25,7 +25,7 @@ import {
 markOnboardingDecided()
 
 const NOT_CONNECTED =
-  'Cybr Agent is not connected to any AI provider yet. Run `hermes model` to pick one, or `hermes auth add <provider>`.'
+  'Cybr Agent is not connected to any AI provider yet. Run `cybr model` to pick one, or `cybr auth add <provider>`.'
 
 function baseState(overrides: Partial<DesktopOnboardingState> = {}): DesktopOnboardingState {
   return {
@@ -219,7 +219,7 @@ describe('refreshOnboarding', () => {
       }
 
       if (method === 'setup.runtime_check') {
-        return { ok: false, error: 'Cybr Agent is not connected to any AI provider yet. Run `hermes model` to pick one.' } as never
+        return { ok: false, error: 'Cybr Agent is not connected to any AI provider yet. Run `cybr model` to pick one.' } as never
       }
 
       throw new Error(`unexpected gateway method: ${method}`)
@@ -253,7 +253,7 @@ describe('refreshOnboarding', () => {
     }
 
     expect(await refreshOnboarding(onboardingContext(unconfigured))).toBe(false)
-    expect($desktopOnboarding.get().reason).not.toContain('hermes model')
+    expect($desktopOnboarding.get().reason).not.toContain('cybr model')
   })
 
   it('keeps cached providers when onboarding was not re-requested', async () => {

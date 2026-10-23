@@ -1,6 +1,6 @@
 """Tests for the strict gateway command-line matcher.
 
-Regression guard for the Windows ``hermes gateway restart`` silent-outage bug:
+Regression guard for the Windows ``cybr gateway restart`` silent-outage bug:
 the previous loose substring match (``"... gateway" in cmdline``) false-matched
 ``gateway status``/``dashboard`` siblings and unrelated processes such as
 ``python -m tui_gateway``, which let ``restart()`` race a still-draining old
@@ -27,7 +27,7 @@ ACCEPT = [
     "python gateway/run.py",
     "python -m gateway.run",   # module spelling of the dedicated entrypoint
     "hermes-gateway.exe",
-    "hermes gateway",          # bare `hermes gateway` defaults to run
+    "hermes gateway",          # bare `cybr gateway` defaults to run
     "hermes gateway run",
     # profile selector AFTER the `gateway` token (argv is profile-position
     # agnostic — _apply_profile_override strips --profile/-p anywhere)

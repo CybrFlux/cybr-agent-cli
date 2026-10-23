@@ -546,6 +546,6 @@ def gateway_setup():
         _gw()._wizard_post_setup()
     else:
         print()
-        _gw().print_info("No platforms configured. Run 'hermes gateway setup' when ready.")
+        _gw().print_info("No platforms configured. Run 'cybr gateway setup' when ready.")
 
     print()

@@ -10,15 +10,15 @@ Usage:
 
 # hermes_bootstrap must be the very first import — it sets up UTF-8 stdio on
 # Windows (no-op on POSIX). Guarded: after a ``git pull`` / interrupted
-# ``hermes update`` the editable install's ``.pth`` may not list it yet; crashing
-# here would block ``hermes update``.
+# ``cybr update`` the editable install's ``.pth`` may not list it yet; crashing
+# here would block ``cybr update``.
 try:
     import hermes_bootstrap
 except ModuleNotFoundError as exc:
     if exc.name != "hermes_bootstrap":
         raise  # the bootstrap exists but cannot load: skipping it would skip PM activation
 
-# A `hermes update` killed while git was writing the new tree leaves a mix of old and new files that
+# A `cybr update` killed while git was writing the new tree leaves a mix of old and new files that
 # fails at the next import, whichever it is — put the old tree back before importing anything else
 # from the checkout, then rerun the command (this module may itself be one of the new files).
 # ``_early_recovery`` is stdlib-only and imported unguarded on purpose: same package
@@ -430,7 +430,7 @@ _startup_fast.ensure_project_root_on_path()
 # to ~/.hermes/active_profile for the sticky default.
 _PROFILE_NAME_RE = r"^[a-z0-9][a-z0-9_-]{0,63}$"  # mirrors hermes_cli.profiles._PROFILE_ID_RE
 # Set only when -p/--profile was on argv. Sticky active_profile must not count:
-# `hermes desktop` with no flag must not overwrite Desktop's stored profile.
+# `cybr desktop` with no flag must not overwrite Desktop's stored profile.
 _explicit_cli_profile: str | None = None
 
 
@@ -453,7 +453,7 @@ def _looks_like_hermes_invocation() -> bool:
     """False when ``sys.argv`` belongs to a test runner rather than a ``hermes`` run.
 
     pytest's own ``-p no:xdist`` reaches ``_scan_profile_flag`` through ``sys.argv`` at import
-    time; it must stay a silent skip, while a real ``hermes -p 'Work Bot'`` must fail loudly.
+    time; it must stay a silent skip, while a real ``cybr -p 'Work Bot'`` must fail loudly.
     """
     return "pytest" not in (sys.argv[0] or "")
 
@@ -462,7 +462,7 @@ def _exit_invalid_profile_name(value: str) -> None:
     from hermes_cli.profiles import _invalid_profile_name_error
 
     print(f"Error: {_invalid_profile_name_error(value)}", file=sys.stderr)
-    print("Run `hermes profile list` to see your profiles.", file=sys.stderr)
+    print("Run `cybr profile list` to see your profiles.", file=sys.stderr)
     sys.exit(2)
 
 
@@ -475,15 +475,15 @@ def _looks_like_option_value(value: str) -> bool:
 def _scan_profile_flag(argv: list) -> tuple:
     """Find -p/--profile/--profile= in argv -> (name, tokens_consumed, index).
 
-    Historically the flag worked even after the subcommand (`hermes chat -p
+    Historically the flag worked even after the subcommand (`cybr chat -p
     coder`), so scan broadly; stop at ``--`` and at the `mcp add --args`
     passthrough region. The value is normalised (strip + casefold, matching
     ``profiles.normalize_profile_name``) before validation so ``-p Work`` selects
     ``work``. A value that cannot be a profile name is rejected so
     resolve_profile_env never sys.exits on it; the rejection is explained (exit 2)
     only when the flag comes BEFORE the first subcommand token under a real
-    ``hermes`` run — after a subcommand, ``-p`` may belong to that subcommand or a
-    plugin (`hermes kanban ... -p 8080`), and option-looking values (``no:xdist``,
+    `cybr` run — after a subcommand, ``-p`` may belong to that subcommand or a
+    plugin (`cybr kanban ... -p 8080`), and option-looking values (``no:xdist``,
     ``--flag``) are always a silent skip.
     """
     from hermes_cli._parser import top_level_value_flag_sets
@@ -540,7 +540,7 @@ def _under_gateway_supervisor(argv: list) -> bool:
     ``-p <name>`` or pin HERMES_HOME to the profile dir; a bare invocation
     means "the root HERMES_HOME profile". If a supervised default-profile
     child read active_profile, switching the active profile (dashboard,
-    ``hermes profile use``) would silently redirect the default gateway into
+    ``cybr profile use``) would silently redirect the default gateway into
     that profile — adopting its credentials and double-polling a Telegram
     token already owned by that profile's own gateway (#74872).
 
@@ -602,7 +602,7 @@ def _apply_profile_override() -> None:
     # points at a specific profile dir ("profiles" as immediate parent). If it
     # points at the hermes root (systemd hardcodes HERMES_HOME=/root/.hermes)
     # we must still read active_profile — the user may have run
-    # `hermes profile use` and the gateway should honour it (#22502).
+    # `cybr profile use` and the gateway should honour it (#22502).
     hermes_home_env = os.environ.get("HERMES_HOME", "")
     if profile_name is None and hermes_home_env and Path(hermes_home_env).parent.name == "profiles":
         return
@@ -682,7 +682,7 @@ if sys.argv[1:2] == ["pm"]:
 
     raise SystemExit(_pm_main(sys.argv[2:]))
 
-# Windows launcher self-heal — the ``hermes`` command is a COPY of the venv
+# Windows launcher self-heal — the `cybr` command is a COPY of the venv
 # console script staged into the managed bin dir (outside the checkout, since
 # ``hermes update``'s autostash once swept ``<checkout>\bin`` copies off disk;
 # venv\Scripts must stay off PATH as it shadows the user's ``python``).
@@ -693,7 +693,7 @@ if sys.argv[1:2] == ["pm"]:
 # sessions heal the same shared dir.
 # That dir lives OUTSIDE the git checkout precisely because an earlier layout staged the copies at
 # ``<checkout>\bin``, where ``hermes update``'s autostash (``git stash push --include-untracked``) swept
-# them off disk; with the desktop updater's ``--keep-stash`` nothing restored them and ``hermes`` stopped
+# them off disk; with the desktop updater's ``--keep-stash`` nothing restored them and `cybr` stopped
 # resolving in every new terminal (venv\Scripts itself must stay off PATH — it shadows the user's
 # ``python``, #83797). Costs a few stat calls when healthy; gates fail toward inaction so source checkouts
 # are untouched.
@@ -982,7 +982,7 @@ def _read_git_revision_fingerprint(repo_root: Path) -> str | None:
                 return f"git:{ref}:{packed_sha}"
             # Ref name is known but unresolved — still stable across launches,
             # and the version/release fallback in the caller will invalidate
-            # after `hermes update`.
+            # after `cybr update`.
             return f"git:{ref}:unresolved"
         return f"git:HEAD:{head}"
     except OSError:
@@ -1334,11 +1334,11 @@ def _resolve_last_session(source: str = "cli") -> Optional[str]:
     """Look up the most recently-used session ID for a source.
 
     Scoped to the current workspace first (git repo root, else cwd) so
-    ``hermes -c`` from repo A continues repo A's last session rather than the
+    ``cybr -c`` from repo A continues repo A's last session rather than the
     global MRU. Falls back to the unscoped MRU when no session matches the
     current workspace, preserving the old behaviour for fresh directories.
     """
-    # A finite `hermes -z`/`chat -q` run is CLI history too: `hermes -z … --resume latest` chains on it.
+    # A finite `cybr -z`/`chat -q` run is CLI history too: `cybr -z … --resume latest` chains on it.
     if source == "cli":
         from agent.session_source import CLI_FAMILY_SOURCES
         source = sorted(CLI_FAMILY_SOURCES)
@@ -1472,7 +1472,7 @@ def _resolve_continue_arg(args, *, use_tui: bool) -> None:
                     kind = "TUI" if use_tui else "CLI"
                     print(
                         f"No previous {kind} session to continue. Start a new one with "
-                        "`hermes`, or list sessions with `hermes sessions list`.",
+                        "`cybr`, or list sessions with `cybr sessions list`.",
                         file=sys.stderr,
                     )
                     sys.exit(1)
@@ -1638,7 +1638,7 @@ def _start_chat_background_prefetch() -> None:
 
 
 def _first_run_setup_guard(args) -> None:
-    """No provider configured: offer `hermes setup` (TTY) or exit 1 with guidance."""
+    """No provider configured: offer `cybr setup` (TTY) or exit 1 with guidance."""
     print()
     print(
         "It looks like Cybr Agent isn't configured yet -- no API keys or providers found."
@@ -1666,7 +1666,7 @@ def _first_run_setup_guard(args) -> None:
         cmd_setup(args)
         return
     print()
-    print("You can run 'hermes setup' at any time to configure.")
+    print("You can run 'cybr setup' at any time to configure.")
     sys.exit(1)
 
 
@@ -1777,7 +1777,7 @@ def cmd_chat(args):
         # here — e.g. missing resolve_turn_limit / split_model_config_default
         # (#96900). The agent-setup mixin prints this hint too late: HermesCLI
         # construction already failed. Fast-chat launch also goes through
-        # cmd_chat, so this one catch covers `hermes` / `hermes chat`.
+        # cmd_chat, so this one catch covers `cybr` / `cybr chat`.
         from hermes_constants import emit_partial_update_hint
 
         if emit_partial_update_hint(e):
@@ -1935,7 +1935,7 @@ def _resolve_active_provider(config, model_cfg, effective_provider, custom_provi
         else:
             print(
                 f"Warning: Unknown provider '{effective_provider}'. Check 'hermes model' for "
-                "available providers, or run 'hermes doctor' to diagnose config "
+                "available providers, or run 'cybr doctor' to diagnose config "
                 "issues. Falling back to auto provider detection."
             )
     if not active:
@@ -1944,7 +1944,7 @@ def _resolve_active_provider(config, model_cfg, effective_provider, custom_provi
         except AuthError as exc:
             if exc.code == "no_provider_configured":
                 # The picker that is about to open IS the fix; a warning that says
-                # "run `hermes model`" from inside `hermes model` is circular.
+                # "run `cybr model`" from inside `cybr model` is circular.
                 print("No provider is set up yet — pick one below. (Nous Portal works without an API key.)")
             elif effective_provider == "auto":
                 print(f"Warning: {format_auth_error(exc)} Falling back to auto provider detection.")
@@ -1985,7 +1985,7 @@ def _pick_provider(config, active, provider_labels, custom_provider_map):
 def select_provider_and_model(args=None):
     """Core provider selection + model picking logic.
 
-    Shared by ``cmd_model`` (``hermes model``) and the setup wizard
+    Shared by ``cmd_model`` (``cybr model``) and the setup wizard
     (``setup_model_provider`` in setup.py).  Handles the full flow:
     provider picker, credential prompting, model selection, and config
     persistence.
@@ -2086,7 +2086,7 @@ def _detect_venv_python_processes(*, exclude_pids: set[int] | None = None) -> li
 # before swapping code, but a historical caller may first resolve these afterward.
 # Frozen updater surface (PEP 562 ``__getattr__`` below): the frozen
 # ``hermes_cli/update_cmd*.py`` files resolve these names via ``_m().<name>``
-# on hermes_cli.main; importing update_cmd eagerly would cost every ``hermes``
+# on hermes_cli.main; importing update_cmd eagerly would cost every `cybr`
 # invocation ~50-100ms, so they resolve on first read. Nothing else may be
 # added here — internal import paths are not a stable API.
 _FROZEN_UPDATER_SURFACE: dict[str, tuple[str, ...]] = {
@@ -2147,7 +2147,7 @@ def cmd_verify(args):
 
 
 def cmd_security(args):
-    """Dispatch `hermes security <subcmd>`."""
+    """Dispatch `cybr security <subcmd>`."""
     sub = getattr(args, "security_command", None)
     if sub in ("audit", None):
         from hermes_cli.security_audit import cmd_security_audit
@@ -2160,7 +2160,7 @@ def cmd_security(args):
 
 
 def cmd_approvals(args):
-    """Dispatch `hermes approvals <subcmd>`."""
+    """Dispatch `cybr approvals <subcmd>`."""
     from hermes_cli.approvals_suggest import approvals_command
 
     status = approvals_command(args)
@@ -2432,7 +2432,7 @@ def cmd_update(args):
 def _coalesce_session_name_args(argv: list) -> list:
     """Join unquoted multi-word session names after -c/--continue and -r/--resume.
 
-    ``hermes -c Pokemon Agent Dev`` → ``['-c', 'Pokemon Agent Dev']``; tokens
+    ``cybr -c Pokemon Agent Dev`` → ``['-c', 'Pokemon Agent Dev']``; tokens
     are collected until the next flag (``-*``) or known top-level subcommand.
     """
     _SUBCOMMANDS = {
@@ -2487,7 +2487,7 @@ def _dashboard_lifecycle_flags(args, token_file) -> None:
         if not _find_stale_dashboard_pids(scope_home=own_home):
             print("No hermes dashboard processes running for this profile.")
             sys.exit(0)
-        # Reuse the same SIGTERM-grace-SIGKILL path used after `hermes update`;
+        # Reuse the same SIGTERM-grace-SIGKILL path used after `cybr update`;
         # it prints outcomes itself. Exit 1 only if a pid was unkillable — judged
         # from the kill result, not a re-scan: a launchd KeepAlive job respawns
         # its backend on a fresh PID, which is not a failed stop.
@@ -2499,7 +2499,7 @@ def _dashboard_lifecycle_flags(args, token_file) -> None:
 
 def _dashboard_validate_serve_args(args, headless_backend, token_file):
     """Headless-serve argument checks -> ssh_owner_nonce (or None)."""
-    # `hermes serve` is headless/non-interactive: fail closed on a corrupt
+    # `cybr serve` is headless/non-interactive: fail closed on a corrupt
     # config.yaml instead of silently starting on defaults where provider
     # auto-detection can adopt unnamed .env credentials (issue #81952).
     # Same policy + escape hatch as _guard_noninteractive_user_config.
@@ -2530,7 +2530,7 @@ def _dashboard_sanitize_desktop_env(headless_backend) -> None:
     Desktop Electron spawns its backend with HERMES_DESKTOP=1 plus
     HERMES_WEB_DIST=<packaged app.asar[/unpacked]/dist> (and often
     HERMES_SERVE_HEADLESS=1). A shell inheriting those then running
-    `hermes dashboard` would serve the desktop renderer ("Desktop IPC bridge
+    `cybr dashboard` would serve the desktop renderer ("Desktop IPC bridge
     is unavailable", #52945) or disable the SPA. Only Electron-packaged
     WEB_DIST contamination is stripped from browser dashboards — caller-managed
     overrides (dev / custom builds) must still work, while headless `serve`
@@ -2846,7 +2846,7 @@ def _is_tui_chat_launch(args) -> bool:
         return True
     # The chat path decides TUI-vs-classic via _resolve_use_tui (--cli/--tui
     # flags, TTY gate, HERMES_TUI env, display.interface config). Bare
-    # `hermes`/`hermes chat` with a TUI display config was previously missed
+    # `cybr`/`cybr chat` with a TUI display config was previously missed
     # here, so the wrapper pre-warmed its own MCP discovery while the TUI
     # gateway (spawned moments later) ran a second one — an idle stdio MCP
     # server copy held dead for the whole session. Only chat commands can
@@ -2868,7 +2868,7 @@ def _should_background_mcp_startup(args) -> bool:
 
 
 def _chat_runs_at_gateway(args) -> bool:
-    """Every ``hermes`` / ``hermes chat`` turn (classic view, ``-q``, ``-z``, TUI) executes in the
+    """Every `cybr` / ``cybr chat`` turn (classic view, ``-q``, ``-z``, TUI) executes in the
     gateway, which discovers and owns MCP servers itself. Discovery in this client only spawns a
     second copy of every server and holds the cross-process discovery lock the cold-starting gateway
     then waits on (measured 2.0 s with one stdio server) for tools nothing here ever calls."""
@@ -3284,7 +3284,7 @@ def _register_plugin_cli_commands(subparsers) -> None:
 
 
 def _build_cli_parser():
-    """Build the full ``hermes`` argparse tree -> ``(parser, subparsers)``.
+    """Build the full `cybr` argparse tree -> ``(parser, subparsers)``.
 
     Registration ORDER is the ``hermes --help`` order; keep it stable. Groups
     live in ``hermes_cli/subcommands/<group>.py`` with handlers injected so
@@ -3301,7 +3301,7 @@ def _build_cli_parser():
     build_worktree_parser(subparsers)
     build_browser_parser(subparsers)
     build_secrets_parser(subparsers)
-    # OUTBOUND egress firewall; ``hermes proxy`` (gateway group) is the INBOUND one.
+    # OUTBOUND egress firewall; ``cybr proxy`` (gateway group) is the INBOUND one.
     build_egress_parser(subparsers)
     build_migrate_parser(subparsers)
     build_codex_runtime_parser(subparsers)
@@ -3401,7 +3401,7 @@ def _parse_cli_args(parser, subparsers, argv):
     On Python <3.11 argparse fails to route subcommand tokens when the parent
     has nargs='?' optionals (--continue): "unrecognized arguments: model". When
     argv holds a known subcommand token, set subparsers.required=True to force
-    routing; if that fails (``hermes -c model`` — 'model' is the session name)
+    routing; if that fails (``cybr -c model`` — 'model' is the session name)
     fall back to the default behaviour.
     """
     import io as _io

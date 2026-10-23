@@ -1,6 +1,6 @@
-"""``hermes cron tick`` with no live gateway refuses agent jobs instead of spawning one.
+"""``cybr cron tick`` with no live gateway refuses agent jobs instead of spawning one.
 
-The external-scheduler mode (system crontab calling ``hermes cron tick``) used to reach
+The external-scheduler mode (system crontab calling ``cybr cron tick``) used to reach
 ``run_canonical_job`` -> ``connect_gateway`` -> ``ensure_gateway_runtime``, which spawns an
 unmanaged daemon when nothing owns the profile. Headless surfaces refuse rather than spawn:
 the agent job is skipped (not failed), keeps its due instant, and one warning names the fix.

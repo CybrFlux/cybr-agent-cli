@@ -93,7 +93,7 @@ export const enBoot = {
       since: time => `Waiting since ${time}`,
       lastChecked: time => `Last checked ${time}`,
       recoveryHint:
-        'This usually clears in a few minutes. If it does not: quit Cybr Agent, end leftover git or hermes processes (or restart the computer), then open Cybr Agent again.',
+        'This usually clears in a few minutes. If it does not: quit Cybr Agent, end leftover git or cybr processes (or restart the computer), then open Cybr Agent again.',
       checkAgain: 'Check again',
       quit: 'Quit Cybr Agent',
       openLogs: 'Open logs',

@@ -2,7 +2,7 @@
 
 The guest handoff only moves apps; moving a config left on the free tier's route (the welcome model
 on the welcome host) to the account is each sign-in's own completion step, run once the auth-store
-locks are released. Driven against the fake portal ``hermes auth upgrade`` is tested with.
+locks are released. Driven against the fake portal ``cybr auth upgrade`` is tested with.
 """
 
 from __future__ import annotations

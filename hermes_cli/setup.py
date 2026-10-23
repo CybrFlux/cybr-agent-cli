@@ -95,7 +95,7 @@ def print_noninteractive_setup_guidance(reason: str | None = None) -> None:
           "  hermes config set model.base_url http://localhost:8080/v1",
           "  hermes config set model.default your-model-name", None,
           "Or set OPENROUTER_API_KEY (OpenRouter) / OPENAI_API_KEY (OpenAI) in your environment.",
-          "Run 'hermes setup' in an interactive terminal to use the full wizard.", None)
+          "Run 'cybr setup' in an interactive terminal to use the full wizard.", None)
 
 
 def _sanitize_pasted_input(value: str) -> str:
@@ -246,7 +246,7 @@ def run_setup_action_with_navigation(
     label: str, action: Callable[[], None], *, cancelled_message: str = "Setup cancelled."
 ) -> None:
     """Run a setup-style menu flow with Escape and nested Left navigation — for commands such as
-    ``hermes model`` that use the wizard's pickers outside ``run_setup_wizard``."""
+    ``cybr model`` that use the wizard's pickers outside ``run_setup_wizard``."""
     with _setup_navigation_scope():
         try:
             _run_setup_steps([(label, action)])
@@ -375,7 +375,7 @@ def _print_banner(*lines: str) -> None:
 
 
 def setup_model_provider(config: dict, *, quick: bool = False):
-    """Configure the inference provider and default model via the ``hermes model`` flow (one code
+    """Configure the inference provider and default model via the ``cybr model`` flow (one code
     path — any provider added there is available here). *quick* is accepted for the first-time
     quick setup caller; rotation, vision and TTS keep safe defaults either way."""
     from hermes_cli.config import load_config, save_config
@@ -399,7 +399,7 @@ def setup_model_provider(config: dict, *, quick: bool = False):
 
     # Re-sync from disk in place: cmd_model saved via its own load/save cycle and the wizard's
     # final save_config(config) must not clobber it with stale values. Rotation, vision and TTS
-    # keep safe defaults (configure via `hermes auth add` / `hermes setup tts`).
+    # keep safe defaults (configure via `cybr auth add` / `cybr setup tts`).
     config.clear()
     config.update(load_config())
     save_config(config)
@@ -421,7 +421,7 @@ def _apply_default_agent_settings(config: dict):
     save_config(config)
     print_success("Applied recommended defaults:")
     _info("  Max iterations: 150", "  Compression threshold: 0.50",
-          "  Run `hermes setup agent` later to customize.")
+          "  Run `cybr setup agent` later to customize.")
 
 
 def _prompt_number(label: str, current, cast=int):
@@ -608,7 +608,7 @@ def run_setup_wizard(args):
 
 
 def _run_setup_section(config: dict, section: str) -> None:
-    """``hermes setup <section>``: run one SETUP_SECTIONS entry under the banner."""
+    """``cybr setup <section>``: run one SETUP_SECTIONS entry under the banner."""
     entry = next(((label, func) for key, label, func in SETUP_SECTIONS if key == section), None)
     if entry is None:
         print_error(f"Unknown setup section: {section}")
@@ -670,7 +670,7 @@ _FIRST_TIME_MODES = (
 
 def _run_setup_wizard_impl(args):
     """Run the interactive setup wizard: full/quick (auto-detected), ``--portal``, or one
-    ``hermes setup <section>`` from SETUP_SECTIONS."""
+    ``cybr setup <section>`` from SETUP_SECTIONS."""
     from hermes_cli.config import is_managed, managed_error
     if is_managed():
         managed_error("run setup wizard")

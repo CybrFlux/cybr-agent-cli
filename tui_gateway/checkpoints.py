@@ -1,6 +1,6 @@
 """Checkpoint-enablement resolution for TUI-created agents (issue #79625).
 
-Desktop sessions (``hermes serve`` → TUI gateway) never set ``HERMES_TUI_CHECKPOINTS``
+Desktop sessions (``cybr serve`` → TUI gateway) never set ``HERMES_TUI_CHECKPOINTS``
 (that env var is only set by the ``hermes --tui --checkpoints`` CLI path), so agent
 creation previously gated filesystem checkpointing on the env var alone and silently
 ignored ``checkpoints.enabled`` in config.yaml. These helpers resolve enablement the

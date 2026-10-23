@@ -731,7 +731,7 @@ def test_openrouter_env_file_key_survives_exhausted_pool(monkeypatch):
 
     Regression test for #117667: with the pool's OPENROUTER_API_KEY entry benched
     (select() -> None), the terminal resolver read os.environ only, so the documented
-    .env location was skipped and `hermes chat --provider openrouter` failed with
+    .env location was skipped and `cybr chat --provider openrouter` failed with
     "No API key found" until the key was exported in the shell.
     """
     monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "openrouter")
@@ -1323,7 +1323,7 @@ def test_explicit_openrouter_config_mirror_bypasses_pool(monkeypatch):
     assert resolved["api_key"] == "router-key"
     assert resolved.get("credential_pool") is None
 
-    # The canonical URL that `hermes setup` persists is NOT a mirror: the pool must still serve it.
+    # The canonical URL that `cybr setup` persists is NOT a mirror: the pool must still serve it.
     monkeypatch.setattr(rp, "_get_model_config", lambda: {"provider": "openrouter", "base_url": "https://openrouter.ai/api/v1"})
     canonical = rp.resolve_runtime_provider(requested="openrouter")
     assert canonical["api_key"] == "pool-key" and canonical.get("credential_pool") is not None

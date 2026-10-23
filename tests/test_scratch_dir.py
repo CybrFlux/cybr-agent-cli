@@ -177,7 +177,7 @@ class TestScratchDirPermissionPolicy:
 
     def test_effective_home_marker_does_not_govern_another_homes_scratch(self, tmp_path, monkeypatch):
         # The caller's home decides the policy. A boot caller (``export_scratch_tmp_env``) and
-        # ``hermes doctor`` have already resolved theirs, so the marker lookup must not fall back
+        # ``cybr doctor`` have already resolved theirs, so the marker lookup must not fall back
         # to ``get_hermes_home()``: for a sticky profile with HERMES_HOME unset that lookup warns
         # about the default profile on every command, and it is the wrong home to judge by anyway.
         selected = tmp_path / "home"

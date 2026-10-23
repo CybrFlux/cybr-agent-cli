@@ -1,4 +1,4 @@
-"""E2E: ``hermes gateway stop`` inside the s6 image is a PLANNED stop.
+"""E2E: ``cybr gateway stop`` inside the s6 image is a PLANNED stop.
 
 ``S6ServiceManager.stop()`` must find the supervised PID through the real s6
 binaries and write the planned-stop marker before ``s6-svc -d``. Otherwise the
@@ -7,7 +7,7 @@ gateway reads the SIGTERM as an unexpected kill: it exits 1, persists
 and skips the clean-shutdown marker. Unit fakes cannot prove this; only the
 real ``s6-svstat`` shipped in the image can.
 
-Every ``docker exec`` runs as ``hermes`` per the conftest module docstring.
+Every ``docker exec`` runs as `cybr` per the conftest module docstring.
 """
 from __future__ import annotations
 

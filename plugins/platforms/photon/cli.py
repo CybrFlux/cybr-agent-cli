@@ -338,7 +338,7 @@ _COMMANDS = {
 
 
 def gateway_setup() -> None:
-    """Run Photon first-time setup from the unified `hermes gateway setup` wizard (same flow
+    """Run Photon first-time setup from the unified `cybr gateway setup` wizard (same flow
     as ``hermes photon setup``; phone is prompted when stdin is a TTY)."""
     _cmd_setup(argparse.Namespace(
         photon_command="setup", project_name=None, phone=None, first_name=None, last_name=None,

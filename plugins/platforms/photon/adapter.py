@@ -60,7 +60,7 @@ logger = logging.getLogger(__name__)
 _DEFAULT_SIDECAR_PORT = 8789
 _DEFAULT_SIDECAR_BIND = "127.0.0.1"
 _MAX_MESSAGE_LENGTH = 8000  # iMessage caps practical size at ~16 KB; conservative, matches BlueBubbles
-# Out-of-process senders (cron, `hermes send`) need the live sidecar's port + spawn-time
+# Out-of-process senders (cron, `cybr send`) need the live sidecar's port + spawn-time
 # token; persisted once /healthz passes, removed on every stop / failed-start path.
 # --------------------------------------------------------------------------- Sidecar runtime record The
 # gateway persists this record once the sidecar passes its /healthz readiness check, and removes it on every
@@ -238,7 +238,7 @@ def check_requirements() -> bool:
         # cold-installs from the committed lockfile (on hosted images the
         # user has no CLI to run `hermes photon setup`, so the connect path
         # must self-heal). Otherwise keep returning False so
-        # `hermes setup` / status surface the missing-deps state.
+        # `cybr setup` / status surface the missing-deps state.
         if (find_node_executable("npm") or can_prepare) and _dir_writable(_sidecar_dir()):
             return True
         # DEBUG, not WARNING: normal pre-setup state, and check_fn is polled from hot paths.
@@ -263,7 +263,7 @@ def check_requirements() -> bool:
 
 
 def _sidecar_deps_stale() -> bool:
-    """True when node_modules predates the lockfile (`hermes update` rewrites it without
+    """True when node_modules predates the lockfile (`cybr update` rewrites it without
     reinstalling); False if either file is missing."""
     return _lock_newer_than_install(_sidecar_dir())
 
@@ -1006,7 +1006,7 @@ class PhotonAdapter(BasePlatformAdapter):
                     f"{_sidecar_dir()} (see log for the npm error). "
                     f"Run: cd {_sidecar_dir()} && npm ci   (or `hermes photon setup`)",
                     code="SIDECAR_DEPS_MISSING", retryable=False)
-        # `hermes update` bumps the lockfile without reinstalling node_modules; the sidecar
+        # `cybr update` bumps the lockfile without reinstalling node_modules; the sidecar
         # would spawn against stale deps and die on every reconnect.
         if _sidecar_deps_stale():
             logger.warning("[photon] sidecar deps are stale (lockfile newer than install); reinstalling before start")
@@ -1065,7 +1065,7 @@ class PhotonAdapter(BasePlatformAdapter):
             # Retrying can never fix a missing binary (OOF-153).
             raise PhotonSidecarStartupError(
                 f"node binary not found ({self._node_bin!r}) — install Node.js "
-                f"18+ or run `hermes pm install`: {exc}",
+                f"18+ or run `cybr pm install`: {exc}",
                 code="SIDECAR_NODE_MISSING",
                 retryable=False,
             ) from exc
@@ -1712,7 +1712,7 @@ def register(ctx) -> None:
             "Run: hermes photon setup  (logs in via device flow, creates a "
             "Spectrum project, links your phone number, installs the "
             "spectrum-ts sidecar)."),
-        setup_fn=_cli.gateway_setup,  # surfaces Photon in the unified `hermes gateway setup` wizard
+        setup_fn=_cli.gateway_setup,  # surfaces Photon in the unified `cybr gateway setup` wizard
         env_enablement_fn=_env_enablement, cron_deliver_env_var="PHOTON_HOME_CHANNEL",
         standalone_sender_fn=_standalone_send, allowed_users_env="PHOTON_ALLOWED_USERS",
         allow_all_env="PHOTON_ALLOW_ALL_USERS", max_message_length=_MAX_MESSAGE_LENGTH, emoji="📱",

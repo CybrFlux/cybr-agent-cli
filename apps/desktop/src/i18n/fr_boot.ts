@@ -92,7 +92,7 @@ export const frBoot = {
       since: time => `En attente depuis ${time}`,
       lastChecked: time => `Dernière vérification ${time}`,
       recoveryHint:
-        "Cela se règle généralement en quelques minutes. Sinon : quittez Cybr Agent, arrêtez les processus git ou hermes restants (ou redémarrez l'ordinateur), puis rouvrez Cybr Agent.",
+        "Cela se règle généralement en quelques minutes. Sinon : quittez Cybr Agent, arrêtez les processus git ou cybr restants (ou redémarrez l'ordinateur), puis rouvrez Cybr Agent.",
       checkAgain: 'Vérifier à nouveau',
       quit: 'Quitter Cybr Agent',
       openLogs: 'Ouvrir les journaux',

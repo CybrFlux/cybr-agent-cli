@@ -180,7 +180,7 @@ def test_a_store_error_reading_the_policy_falls_back_to_the_row_cwd(tmp_path, mo
 
 @pytest.mark.asyncio
 async def test_resume_recreates_the_removed_classic_worktree(tmp_path, monkeypatch):
-    """Classic ``hermes -w`` runs its session's tools in the tree (frozen policy cwd) while the row
+    """Classic ``cybr -w`` runs its session's tools in the tree (frozen policy cwd) while the row
     keeps main's stamp, the repo root. Quit removes the clean tree; ``-c`` now gets it back."""
     import cli
     from gateway.config import GatewayConfig

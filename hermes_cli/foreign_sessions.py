@@ -305,7 +305,7 @@ def pick_foreign_session(source: Optional[str] = None, *, limit: int = 25) -> Op
 
 
 def run_sessions_import(args, db=None) -> Optional[str]:
-    """`hermes sessions import` entry point. Returns new session id or None."""
+    """`cybr sessions import` entry point. Returns new session id or None."""
     source = getattr(args, "from_source", None)
     path = getattr(args, "path", None)
     if path:

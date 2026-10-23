@@ -70,11 +70,11 @@ def get_project_root() -> Path:
 def code_removal_refusal() -> str | None:
     """Why the uninstaller must not remove this tree's code, or ``None``.
 
-    A git checkout (the install.sh / install.ps1 / `hermes desktop` layout)
+    A git checkout (the install.sh / install.ps1 / `cybr desktop` layout)
     is ours to remove. A sealed tree (no ``.git``) belongs to a steward —
     the Nix store, the bundled desktop app, a Docker image — and only the
     steward removes it. Returns the user-facing refusal text for sealed
-    trees; the text always points at ``hermes uninstall --data`` for the
+    trees; the text always points at ``cybr uninstall --data`` for the
     user-data cleanup that IS allowed everywhere.
     """
     from hermes_cli.steward import sealed_steward, steward_uninstall_message
@@ -201,7 +201,7 @@ def remove_node_symlinks(hermes_home: Path) -> list:
 
     Historical POSIX installs (``scripts/install.sh`` before pm owned the
     Node runtime) symlinked node/npm/npx into the same directory as the
-    ``hermes`` command:
+    `cybr` command:
 
     - ``/usr/local/bin/`` on root FHS installs (Linux, uid 0)
     - ``~/.local/bin/`` otherwise (the common non-root case)
@@ -238,7 +238,7 @@ def uninstall_gateway_service():
     - Linux: user + system systemd services (with proper DBUS env setup)
     - macOS: launchd plists
     - Windows: Scheduled Task + Startup-folder fallback, via ``gateway_windows``
-    - All platforms: standalone ``hermes gateway run`` processes
+    - All platforms: standalone ``cybr gateway run`` processes
     """
     import platform
     stopped_something = False
@@ -538,7 +538,7 @@ def remove_windows_bin_launchers(*, windows: bool | None = None) -> list[Path]:
     console scripts, staged onto PATH by first-run repair) — pm keeps uv in
     its own store entry, so nothing shared lives here and the whole dir goes.
     Every uninstall mode deletes the code checkout, so a surviving launcher
-    would dangle: ``hermes`` in a new terminal resolves and then errors on
+    would dangle: `cybr` in a new terminal resolves and then errors on
     its missing venv target, which reads worse than command-not-found.
 
     A launcher that IS this process's own trampoline is mandatory-locked
@@ -688,7 +688,7 @@ def run_data_uninstall(args):
 def run_gui_uninstall(args):
     """GUI-only uninstall: remove the Chat GUI, leave the agent + data intact.
 
-    Mirrors ``hermes uninstall --gui``. Removes the desktop app's built
+    Mirrors ``cybr uninstall --gui``. Removes the desktop app's built
     artifacts, the packaged app bundle (best-effort), and the Electron
     userData dir — nothing under ``$HERMES_HOME`` config/sessions/.env, and
     never the Python agent or its venv.
@@ -940,7 +940,7 @@ def _rmtree_if_exists(path: Path) -> bool:
 
 def remove_dashboard_launchd_jobs() -> list[Path]:
     """macOS: boot out and delete every launchd job whose ``ProgramArguments`` runs a
-    ``hermes dashboard`` / ``hermes serve`` backend, returning the removed plist paths.
+    ``cybr dashboard`` / ``cybr serve`` backend, returning the removed plist paths.
 
     The gateway uninstall only reaches the gateway label, so a dashboard/serve
     LaunchAgent survives a full uninstall and launchd keeps respawning its backend.

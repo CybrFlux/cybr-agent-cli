@@ -360,7 +360,7 @@ class TestSendMessageTool:
 
     def test_missing_media_is_reported_to_the_caller_and_hermes_send_exits_nonzero(self, tmp_path, monkeypatch):
         """#115908: a MEDIA path that does not exist on the host was dropped with only a host-side
-        warning while ``hermes send`` printed success:true and exited 0. The surviving attachment is
+        warning while ``cybr send`` printed success:true and exited 0. The surviving attachment is
         still sent; the payload names the drop and the CLI exit code follows it."""
         from hermes_cli.send_cmd import _emit_result
 
@@ -1497,7 +1497,7 @@ class TestSendViaAdapterStandaloneFallback:
     """Coverage for the out-of-process plugin-platform send path.
 
     When the gateway runner is not in this process (e.g. ``hermes cron``
-    runs separately from ``hermes gateway``), ``_send_via_adapter`` should
+    runs separately from ``cybr gateway``), ``_send_via_adapter`` should
     fall through to the plugin's ``standalone_sender_fn`` registered on
     its ``PlatformEntry``.  Without the hook, the existing error string
     is returned (with a more helpful tail).

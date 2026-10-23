@@ -286,7 +286,7 @@ def _loaded_launchd_backend_jobs(
     plist_dirs: list[tuple[str, Path]] | None = None,
 ) -> list[tuple[str, str, list[str], int | None]]:
     """``(domain, label, program_arguments, live_pid)`` for every LOADED launchd job whose
-    ``ProgramArguments`` is a ``hermes dashboard`` / ``hermes serve`` backend. macOS only (empty
+    ``ProgramArguments`` is a ``cybr dashboard`` / ``cybr serve`` backend. macOS only (empty
     elsewhere). Reads the plists (unreadable/malformed ones are skipped) and asks ``launchctl print``
     per candidate label — a job that is not loaded in any domain is not returned, so an operator's
     stale plist never claims a process."""
@@ -408,7 +408,7 @@ def _respawnable_command_for_current_install(argv: list[str]) -> list[str]:
     script, so the kernel recorded a manual backend as ``[<old venv python>, <launcher>, dashboard,
     ...]``. The takeover then rewrote that launcher into a POSIX shell shim, and replaying the
     captured argv verbatim asks the old interpreter to parse a shell script (#124778). This
-    checkout's own ``hermes`` entry script stays Python, so it and every other shape replay unchanged.
+    checkout's own `cybr` entry script stays Python, so it and every other shape replay unchanged.
     """
     root = Path(__file__).resolve().parents[1]
     if (len(argv) > 2 and os.path.basename(argv[0]).startswith("python")
@@ -419,7 +419,7 @@ def _respawnable_command_for_current_install(argv: list[str]) -> list[str]:
 
 
 def _respawn_dashboard_processes(commands: list[list[str]]) -> list[list[str]]:
-    """Respawn manually-started dashboards after ``hermes update``, detached, logging to
+    """Respawn manually-started dashboards after ``cybr update``, detached, logging to
     ``logs/dashboard-restart.log``; returns the argvs that failed to spawn. Callers pre-filter via
     ``_filter_dashboard_respawn_candidates`` (no Desktop ``--port 0`` backends, capped per profile).
 
@@ -661,7 +661,7 @@ def _maybe_setup_dashboard_auth_interactively(args) -> None:
     print()
     print("  How do you want to authenticate the dashboard?")
     print("    [1] Username & password (quickest; for a trusted LAN / VPN)")
-    print("    [2] OAuth via Nous Portal (run `hermes dashboard register`)\n    [3] Cancel\n")
+    print("    [2] OAuth via Nous Portal (run `cybr dashboard register`)\n    [3] Cancel\n")
 
     try:
         choice = input("  Choice [1]: ").strip() or "1"
@@ -828,7 +828,7 @@ def _read_ssh_session_token_file(path: str) -> str:
 def _is_electron_packaged_web_dist(path: str) -> bool:
     """True when *path* is an Electron-packaged renderer dist (``app.asar[.unpacked]/dist``).
 
-    A standalone ``hermes dashboard`` inheriting that ``HERMES_WEB_DIST`` would
+    A standalone ``cybr dashboard`` inheriting that ``HERMES_WEB_DIST`` would
     serve the desktop frontend in the browser ("Desktop IPC bridge is unavailable").
     """
     if not path:
@@ -892,7 +892,7 @@ def _endpoint_conflict(args, record, typed: set) -> str:
 
 
 def _attach_to_host_backend(args, headless_backend: bool) -> None:
-    """Multiplex-only: a second `hermes serve`/`dashboard` attaches to the host backend.
+    """Multiplex-only: a second `cybr serve`/`dashboard` attaches to the host backend.
 
     Exactly ONE backend runs per host and multiplexes every profile, so a second invocation —
     for ANY profile, the default included — reports the live one and exits 0 instead of binding
@@ -903,13 +903,13 @@ def _attach_to_host_backend(args, headless_backend: bool) -> None:
 
     * the owner must ANSWER on its recorded port and identify itself (a record alone cannot see a
       graceful-shutdown window or a foreign listener that inherited the port) — a supervisor or
-      `hermes update` relaunch landing in that window would otherwise exit 0 with NOTHING
+      `cybr update` relaunch landing in that window would otherwise exit 0 with NOTHING
       listening, reporting success for a dead service;
     * an explicitly typed ``--port``/``--host`` the owner cannot serve is a REFUSAL naming the
       owner, never a silent redirect. It exits 78 (EX_CONFIG), the deliberate-refusal code
       ``RestartPreventExitStatus=78`` parks on: exit 1 under ``Restart=always`` was an infinite
       restart loop with nothing listening on the ingress port (#119824);
-    * a `hermes dashboard` user is never handed a headless backend's URL (no SPA behind it).
+    * a `cybr dashboard` user is never handed a headless backend's URL (no SPA behind it).
 
     Returns normally — leaving the caller to BIND — when no owner answers.
     """
@@ -938,8 +938,8 @@ def _attach_to_host_backend(args, headless_backend: bool) -> None:
 
     if not headless_backend and not identity.get("servesSpa"):
         print(f"Refusing to start: this host is already served by {hr.describe(record)}, "
-              "which is a headless `hermes serve` backend with no dashboard UI.")
-        print("  Stop it and run `hermes dashboard`, or use --isolated for a dedicated server.")
+              "which is a headless `cybr serve` backend with no dashboard UI.")
+        print("  Stop it and run `cybr dashboard`, or use --isolated for a dedicated server.")
         sys.exit(GATEWAY_FATAL_CONFIG_EXIT_CODE)
 
     try:

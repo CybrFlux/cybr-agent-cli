@@ -82,7 +82,7 @@ def test_historical_payload_maps_to_takeover_request_schema(tmp_path, desktop, r
 
 @pytest.mark.live_system_guard_bypass
 def test_shipped_post_swap_argv_enters_takeover_before_current_cli(tmp_path):
-    """The 2026.9.21 updater starts HEAD as ``hermes update <flags> --post-swap FILE``.
+    """The 2026.9.21 updater starts HEAD as ``cybr update <flags> --post-swap FILE``.
 
     That command must reach the historical takeover before current launch preparation or
     argparse: both belong to the replacement updater and may require dependencies the old

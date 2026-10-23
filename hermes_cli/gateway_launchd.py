@@ -638,7 +638,7 @@ def launchd_install(force: bool = False, *, start_now: bool = True, force_unit_p
                 from hermes_constants import display_hermes_home
                 print(
                     "⚠ Service definition could not be reloaded with launchd. "
-                    "Run 'hermes gateway install --force' or check "
+                    "Run 'cybr gateway install --force' or check "
                     f"{display_hermes_home()}/logs/launchd-reload.log for details."
                 )
             return
@@ -653,7 +653,7 @@ def launchd_install(force: bool = False, *, start_now: bool = True, force_unit_p
 
     if not load:
         # A job left loaded but idle (a parked clean exit) keeps its old definition, and that is
-        # what `hermes gateway start` would kickstart instead of loading this plist.
+        # what `cybr gateway start` would kickstart instead of loading this plist.
         subprocess.run(
             ["launchctl", "bootout", f"{_gw()._launchd_domain()}/{label}"],
             check=False, timeout=90, **_gw()._CAPTURE_TEXT)
@@ -750,7 +750,7 @@ def launchd_stop():
     gateway_service_owner.refuse_foreign_launchd_plist("stop")
     target = f"{_launchd_domain()}/{get_launchd_label()}"
     _gw()._mark_planned_stop()
-    # bootout unloads the definition so KeepAlive doesn't respawn; `hermes gateway start` re-bootstraps.
+    # bootout unloads the definition so KeepAlive doesn't respawn; `cybr gateway start` re-bootstraps.
     try:
         # Captured: an already-unloaded job (3/113/125) is handled below, so launchctl's own
         # "Boot-out failed: 3" must not print around the ✓ line; e.stderr stays on the raised error.
@@ -808,7 +808,7 @@ def launchd_restart():
             return
         if pid is not None and _gw().probe_gateway_loop_liveness(pid) == _gw().GATEWAY_LOOP_WEDGED:
             # Event loop provably dead: it can't process a graceful shutdown, so a full drain wait
-            # only stalls the restart (and `hermes update`). Bounded SIGTERM → SIGKILL, ~10s.
+            # only stalls the restart (and `cybr update`). Bounded SIGTERM → SIGKILL, ~10s.
             print(f"⚠ Gateway PID {pid} event loop is unresponsive — " "skipping drain and forcing a bounded stop...")
             _gw()._escalate_wedged_gateway(pid)
             pid = None

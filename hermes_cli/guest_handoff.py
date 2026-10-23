@@ -58,7 +58,7 @@ _CLAIMED, _GONE, _RETRY, _FAIL, _REAUTH = "claimed", "gone", "retry", "fail", "r
 _FINAL_CODES = frozenset({"client_not_allowed", "account_locked", "invalid_request", "retry_window_ended"})
 # A plain reason per final code; any other code shows only the generic sentence, never the code.
 _FAILURE_COPY = {
-    "client_not_allowed": "This sign-in can't receive them. Sign in again with `hermes auth add nous`.",
+    "client_not_allowed": "This sign-in can't receive them. Sign in again with `cybr auth add nous`.",
     "account_locked": "This Nous account is locked.",
     "retry_window_ended": "Cybr Agent kept trying for nearly two weeks, then stopped.",
 }
@@ -243,7 +243,7 @@ def _remaining(deadline: float) -> float:
 def _retryable(record: dict[str, Any]) -> bool:
     """A record a run may still attempt: active, or Failed on a code that is not final (an older
     build closed transient failures after 8 attempts; those re-arm here, on any run: a sign-in,
-    ``hermes auth status``, ``hermes auth upgrade``, the retry worker). The retry window is checked
+    ``cybr auth status``, ``cybr auth upgrade``, the retry worker). The retry window is checked
     when the attempt is reserved, so a record past it is closed, not silently skipped."""
     state = record.get("state")
     return state in _ACTIVE or (state == FAILED and record.get("error") not in _FINAL_CODES
@@ -589,7 +589,7 @@ def wire_status(status: dict[str, Any]) -> dict[str, Any]:
 
 
 def status_lines(status: dict[str, Any]) -> list[str]:
-    """User copy for a non-idle handoff (``hermes auth status nous``)."""
+    """User copy for a non-idle handoff (``cybr auth status nous``)."""
     lines = result_lines(status)
     kind = status.get("connectors_kind")
     moved_some = kind in ("moved", "swapped") and status.get("moved_toolkits")

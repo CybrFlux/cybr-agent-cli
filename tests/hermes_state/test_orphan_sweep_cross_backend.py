@@ -1,6 +1,6 @@
 """Regression tests for #94895: startup orphan sweep must respect cross-backend liveness.
 
-Issue: multiple ``hermes serve`` / TUI-gateway processes sharing a single
+Issue: multiple ``cybr serve`` / TUI-gateway processes sharing a single
 ``state.db`` (e.g. one desktop, two ``--isolated`` siblings, one fixed-port
 launchd ``hermes serve``) each run ``sweep_orphaned_sessions()`` at startup.
 Before the fix the sweep's staleness predicate considered ANY inactive

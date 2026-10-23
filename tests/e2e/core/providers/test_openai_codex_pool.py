@@ -1,6 +1,6 @@
 """Codex credential pool: a dead refresh grant retires only the rows tied to that grant.
 
-Tier (stated honestly): REAL ``hermes -z`` processes with ``model.provider: openai-codex``
+Tier (stated honestly): REAL ``cybr -z`` processes with ``model.provider: openai-codex``
 and a seeded two-login pool in ``auth.json``. Two vendor boundaries are faked:
 
 * the ChatGPT Codex Responses backend — ``HERMES_CODEX_BASE_URL`` points at
@@ -14,7 +14,7 @@ and a seeded two-login pool in ``auth.json``. Two vendor boundaries are faked:
   shipped.
 
 The pool is the #120741 layout: login A is the singleton plus its seeded ``device_code`` row
-(fresh), login B is an independently authorized ``manual:device_code`` row (``hermes auth
+(fresh), login B is an independently authorized ``manual:device_code`` row (``cybr auth
 add``) whose access token is about to expire, so every selection defers a refresh of B.
 """
 
@@ -194,7 +194,7 @@ def _pair(account: str, rt: str, ttl: float) -> dict[str, str]:
 
 def _two_logins(tmp_path: Path, a: dict[str, str], b: dict[str, str], token: FakeTokenServer,
                 replies: list[str], bearer: str) -> tuple[list, list[dict[str, Any]], list[dict[str, Any]]]:
-    """Two sequential real ``hermes -z`` turns against the seeded pool; auth.json after each."""
+    """Two sequential real ``cybr -z`` turns against the seeded pool; auth.json after each."""
     runs, stores = [], []
     with FakeResponsesServer([Turn([Message(r)]) for r in replies], api_key=bearer) as codex, \
             socket.socket() as dead:

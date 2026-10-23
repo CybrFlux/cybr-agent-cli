@@ -140,7 +140,7 @@ def hard_kill(proc):
 
 
 def planned_stop(home, proc, desc):
-    """The ``hermes gateway stop`` contract: marker first, then the owner drains itself.
+    """The ``cybr gateway stop`` contract: marker first, then the owner drains itself.
 
     The marker names the gateway's own pid from ``identify`` (what the PID file carries), not
     the Popen handle: a Windows uv venv ``python.exe`` is a trampoline whose pid differs."""

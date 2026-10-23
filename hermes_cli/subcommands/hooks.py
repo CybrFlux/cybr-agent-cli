@@ -1,4 +1,4 @@
-"""``hermes hooks`` subcommand parser."""
+"""``cybr hooks`` subcommand parser."""
 
 from __future__ import annotations
 

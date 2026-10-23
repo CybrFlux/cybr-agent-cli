@@ -1,4 +1,4 @@
-"""Fresh source install on native Windows, then ``hermes update`` HEAD -> NEXT.
+"""Fresh source install on native Windows, then ``cybr update`` HEAD -> NEXT.
 
 Failure class: the first things a new Windows user does. ``install.ps1 -NonInteractive``
 on a clean profile (no git, no Python, no uv on PATH), the first agent launch, then the

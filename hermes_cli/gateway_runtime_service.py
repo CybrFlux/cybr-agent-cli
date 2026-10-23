@@ -245,7 +245,7 @@ def _windows(home: Path, deadline: float) -> ExistingService | None:
         return ExistingService("windows", ("schtasks.exe", "/Run", "/TN", name))
     # A Startup-folder entry (the fallback when Scheduled Task install was declined/blocked) is login
     # persistence only, with no start verb or identity to verify. Starting a stopped owner is the
-    # same detached direct spawn manual `hermes gateway start` uses beside it; the unmanaged path
+    # same detached direct spawn manual `cybr gateway start` uses beside it; the unmanaged path
     # pins the explicit home and refuses a job-bound (no-breakaway) child, and the runtime lock
     # plus host attach arbitrate against the entry firing again at the next login.
     return None

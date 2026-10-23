@@ -1,7 +1,7 @@
 """Seed and reset the real local install the Desktop update suite drives.
 
 The install is made by the real entry points a Linux user runs (``scripts/install.sh`` and then
-``hermes desktop --build-only``) against a local bare origin, inside the upgrade suite's sandbox
+``cybr desktop --build-only``) against a local bare origin, inside the upgrade suite's sandbox
 machinery (``tests/e2e/core/upgrade``). Building it takes minutes, so it is built once per run into
 ``<root>/sb`` and snapshotted; each spec restores the snapshot back into the SAME path (the install
 bakes absolute paths into launchers and PM facts, so a copy elsewhere would not be the same install).

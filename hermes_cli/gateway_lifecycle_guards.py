@@ -1,4 +1,4 @@
-"""Refusals that keep ``hermes gateway`` lifecycle verbs off gateways they must not take down.
+"""Refusals that keep ``cybr gateway`` lifecycle verbs off gateways they must not take down.
 
 Two rules, one per failure that took a production gateway down:
 

@@ -398,7 +398,7 @@ class GatewayChatView:
         self.pending = snapshot.get('pending', [])
         self.model = str((snapshot.get('info') or {}).get('model') or self.model).split('/')[-1]
         if not self.finite:
-            # Bare `hermes -c` in this terminal continues the session it is now on, as the
+            # Bare `cybr -c` in this terminal continues the session it is now on, as the
             # in-process CLI re-wrote its breadcrumb on every session switch.
             from hermes_cli.terminal_breadcrumbs import write_breadcrumb
             await asyncio.to_thread(write_breadcrumb, self.session_id)
@@ -504,7 +504,7 @@ class GatewayChatView:
             # submitting so nothing is left queued for the next interactive resume to find.
             lost = " ".join(self.unknown_admissions())
             return self._detach("Unknown execution blocks this session; nothing was submitted. Resolve it "
-                                f"with `hermes sessions discard {self.session_id} --yes` (or /discard {lost} "
+                                f"with `cybr sessions discard {self.session_id} --yes` (or /discard {lost} "
                                 "interactively; both are prompt.resolve_unknown), then retry.")
         renderer = asyncio.create_task(self.render())
         try:

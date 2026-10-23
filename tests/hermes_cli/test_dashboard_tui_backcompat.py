@@ -1,4 +1,4 @@
-"""Regression test: `hermes dashboard --tui` must not hard-crash.
+"""Regression test: `cybr dashboard --tui` must not hard-crash.
 
 Older Cybr Agent desktop app shells (<= 0.15.x) spawn the backend as::
 

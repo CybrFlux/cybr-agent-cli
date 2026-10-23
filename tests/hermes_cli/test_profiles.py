@@ -471,7 +471,7 @@ class TestCreateProfile:
 # ===================================================================
 
 class TestNoSkillsOptOut:
-    """Tests for `hermes profile create --no-skills` and the opt-out marker."""
+    """Tests for `cybr profile create --no-skills` and the opt-out marker."""
 
     def test_no_skills_writes_marker_and_skips_seeding(self, profile_env):
         profile_dir = create_profile("orchestrator", no_alias=True, no_skills=True)
@@ -496,7 +496,7 @@ class TestNoSkillsOptOut:
 # ===================================================================
 
 class TestBackfillProfileEnvs:
-    """Tests for backfill_profile_envs() — the `hermes update` pass that
+    """Tests for backfill_profile_envs() — the `cybr update` pass that
     gives pre-#44792 profiles (created before .env seeding) their own
     .env, copied from the default install so credentials don't break."""
 
@@ -694,7 +694,7 @@ class TestDeleteProfile:
         assert pids == [101]
 
     def test_backend_scan_matches_shebang_exec_of_hermes_shim(self, profile_env, monkeypatch):
-        """A `hermes` console-script shim spawned directly (e.g. Electron's
+        """A `cybr` console-script shim spawned directly (e.g. Electron's
         findOnPath('hermes') resolution) reports argv[0] as the interpreter
         (python3) and argv[1] as the shim's path -- not "hermes" -- because
         the OS execs the shebang. The scanner must still recognize it so
@@ -1290,7 +1290,7 @@ class TestRenameProfile:
 
 
     def test_migrate_identity_command_repairs_a_failed_live_migration(self, profile_env, capsys):
-        """The failed-live-migration end state must be recoverable: `hermes profile
+        """The failed-live-migration end state must be recoverable: `cybr profile
         migrate-identity <old> <new>` rekeys the durable rows once no gateway holds the store, and
         is idempotent (a second run has nothing left to rekey but still succeeds)."""
         from hermes_cli.profile_cmd import cmd_profile

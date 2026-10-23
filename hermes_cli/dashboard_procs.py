@@ -70,11 +70,11 @@ def _scan_dashboard_processes(*, exclude_pids: set[int] | None = None) -> list[t
     """``(pid, cmdline)`` of running ``dashboard``/``serve`` processes; empty on any scan error.
 
     A forgotten dashboard keeps the old Python backend against the new JS bundle after
-    ``hermes update`` (every API call 401s). *exclude_pids* (Desktop's HERMES_DESKTOP_CHILD_PID
+    ``cybr update`` (every API call 401s). *exclude_pids* (Desktop's HERMES_DESKTOP_CHILD_PID
     backends) are never returned.
 
     *exclude_pids* is an optional set of PIDs that must never be returned. This is used by the Cybr Agent
-    Desktop Electron app to protect its own backend child process: when the desktop spawns ``hermes serve``
+    Desktop Electron app to protect its own backend child process: when the desktop spawns ``cybr serve``
     as a backend and triggers an auto-update, the update must not kill the backend that the desktop itself
     manages. The desktop sets the environment variable ``HERMES_DESKTOP_CHILD_PID`` on the spawned backend
     process; ``_kill_stale_dashboard_processes`` reads it and passes it here. (#37532)
@@ -238,7 +238,7 @@ def _profile_flag_value(argv: list[str]) -> str | None:
 
 def _is_ephemeral_port_zero_backend(argv: list[str]) -> bool:
     """True for Desktop-style ``serve|dashboard --port 0`` backends — replaying them after
-    ``hermes update`` multiplies listening backends because ``--port 0`` binds a fresh port.
+    ``cybr update`` multiplies listening backends because ``--port 0`` binds a fresh port.
 
     See #78821.
     """
@@ -331,7 +331,7 @@ def _filter_dashboard_respawn_candidates(
     (``HERMES_DESKTOP_CHILD_PID``) owns their lifecycle. These are also the PPID-1 orphans that previously
     multiplied across updates because ``--port 0`` always binds a fresh free port. 2. A foreign install's
     backend is owned by that install's supervisor/user. 3. 4. See #78821, #94030.
-    Intentionally does **not** blanket-skip every PPID-1 process: a prior ``hermes update`` respawn detaches
+    Intentionally does **not** blanket-skip every PPID-1 process: a prior ``cybr update`` respawn detaches
     with ``start_new_session=True``, so fixed-port manual backends are reparented to init and must still be
     eligible for the next update's #40449 restart.
     """
@@ -511,8 +511,8 @@ def _posix_descendants(roots: list[int]) -> dict[int, tuple[int, int | None]]:
     """``{pid: (root, start_time)}`` of every dashboard-owned descendant of *roots*, snapshotted
     BEFORE the kill: once the root dies its children are reparented and the PPID link is gone.
     Detached session leaders (see ``_is_detached_session_leader``) are pruned together with their own
-    subtrees. So is the calling process with its subtree and its ancestor chain: ``hermes dashboard
-    --stop`` / ``hermes update`` run from a shell escape inside the hosted Chat TUI are same-session
+    subtrees. So is the calling process with its subtree and its ancestor chain: ``cybr dashboard
+    --stop`` / ``cybr update`` run from a shell escape inside the hosted Chat TUI are same-session
     descendants of the backend, and sweeping them would SIGTERM the caller mid-run (POSIX twin of the
     Windows #98814 hazard). The start-time fingerprint is the PID-reuse guard (same one
     ``_kill_pids_windows`` uses). Empty on scan failure → root-only kill, the historical behaviour.
@@ -610,7 +610,7 @@ def _kill_stale_dashboard_processes(
     restart_managed: bool = False, already_restarted_units: set[str] | None = None,
     scope_home: str | None = None,
 ) -> dict[str, list]:
-    """Kill running ``hermes dashboard`` / ``hermes serve`` processes (update end, ``--stop``).
+    """Kill running ``cybr dashboard`` / ``cybr serve`` processes (update end, ``--stop``).
 
     With ``restart_managed`` (update only) systemd-owned PIDs get their unit restarted after the
     kill (systemd treats our SIGTERM as a clean stop, so ``Restart=on-failure`` never fires) and
@@ -794,7 +794,7 @@ def _detect_concurrent_hermes_instances(
 
 
 def _is_desktop_local_serve_cmdline(command: str) -> bool:
-    """True for the Desktop-local shape ``hermes serve [--isolated] --host 127.0.0.1 --port 0``.
+    """True for the Desktop-local shape ``cybr serve [--isolated] --host 127.0.0.1 --port 0``.
 
     Long-lived headless serves (``--host <tailscale-ip> --port 9119``) must never match —
     those are operator-managed remote backends that legitimately run with ppid 1.
@@ -846,7 +846,7 @@ def _process_ppid(pid: int) -> int | None:
 
 
 # SSH remote-backend lock ownership: ``backend.lock.json`` is written by the Desktop SSH runtime
-# (apps/desktop/electron/remote-lifecycle.ts) for every ``hermes serve`` it spawns. Such a backend
+# (apps/desktop/electron/remote-lifecycle.ts) for every ``cybr serve`` it spawns. Such a backend
 # is legitimate even at ppid 1 (sshd exited); the reap must NEVER kill a PID a valid lock claims
 # — that once killed a production backend. Schema mirrors the writer; mismatches are ignored.
 _LOCKFILE_SCHEMA_VERSION = 2
@@ -957,7 +957,7 @@ def _process_age_seconds(pid: int) -> float:
 def _reap_orphaned_desktop_local_serves(
     *, reason: str = "orphaned desktop-local hermes serve", signal_term=None, signal_kill=None,
     sleep_fn=None, lock_owned_pids_fn=None, process_age_seconds_fn=None) -> dict[str, list]:
-    """Kill leftover Desktop-local ``hermes serve`` backends with no parent. Never raises.
+    """Kill leftover Desktop-local ``cybr serve`` backends with no parent. Never raises.
 
     When Electron dies uncleanly its ``serve --host 127.0.0.1 --port 0`` children are
     reparented to pid 1 with their MCP trees alive; each Desktop boot then stacks a fresh

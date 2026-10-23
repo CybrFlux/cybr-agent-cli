@@ -1,20 +1,20 @@
 """Stamps, receipts and doctor tell the truth about a PM install (PM lifecycle, failure class 3).
 
-One real install, taken through a dependency-changing ``hermes update`` so the selected generation
+One real install, taken through a dependency-changing ``cybr update`` so the selected generation
 is not the installer's. Then:
 
-* every ``hermes`` the install ships agrees on what the install is. The selected generation's own
+* every `cybr` the install ships agrees on what the install is. The selected generation's own
   console script (``<gen>/venv/bin/hermes``) is on PATH for every child a Cybr Agent process spawns
   (``activate_dependencies`` prepends that ``bin``), so the agent's terminal, workers and scripts
-  resolve ``hermes`` to it. It must report the checkout as the install and be able to check for
+  resolve `cybr` to it. It must report the checkout as the install and be able to check for
   updates; it reports the workspace copy instead (gated on #122425 and #122627);
-* ``hermes doctor`` on that healthy install reports nothing wrong with the command installation
-  (#124050 is the false positive class) and ``hermes pm status`` reports the update as a success;
+* ``cybr doctor`` on that healthy install reports nothing wrong with the command installation
+  (#124050 is the false positive class) and ``cybr pm status`` reports the update as a success;
 * real drift is caught and healed: a user uninstalls fastapi (the ``web`` extra the dashboard
-  imports) from the selected environment. ``hermes doctor`` must say so, and ``hermes pm repair``
+  imports) from the selected environment. ``cybr doctor`` must say so, and ``cybr pm repair``
   must bring the dashboard's import back;
 * a dependency update that cannot resolve after the tree moved is an owed follow-up (contract C3,
-  A6): ``hermes update`` exits 0 but says loudly that the dependencies are not installed yet, the
+  A6): ``cybr update`` exits 0 but says loudly that the dependencies are not installed yet, the
   receipt names the ``dependencies`` follow-up, the source-update tail stays armed for the next
   launch, and the previous generation stays selected and working.
 """
@@ -44,7 +44,7 @@ pytestmark = [
 
 
 def _section(doctor_out: str, title: str) -> list[str]:
-    """The lines of one ``◆ <title>`` section of ``hermes doctor`` output."""
+    """The lines of one ``◆ <title>`` section of ``cybr doctor`` output."""
     lines, inside = [], False
     for line in doctor_out.splitlines():
         if line.startswith("◆ "):
@@ -117,7 +117,7 @@ def test_pm_status_receipt_reports_the_successful_update(updated):
     receipt = json.loads(P.ok(sb.cli("pm", "status")).stdout)
     code = receipt.get("exit_code", receipt.get("pm_exit_code"))
     assert code == 0 and receipt.get("outcome") in ("ok", "success"), (
-        f"`hermes pm status` does not report the last (successful) update as a success: {receipt}")
+        f"`cybr pm status` does not report the last (successful) update as a success: {receipt}")
 
 
 @pytest.fixture(scope="module")
@@ -148,7 +148,7 @@ def test_pm_repair_heals_the_drift(drifted):
     assert rp.returncode == 0, "hermes pm repair failed on a drifted environment:\n" + P.diagnostics(sb, rp)
     imports = P.managed_imports(sb, "fastapi", "hermes_cli.web_server")
     assert set(imports.values()) == {"ok"}, (
-        f"`hermes pm repair` exited 0 but the dashboard still cannot import: {imports}\n" + P.diagnostics(sb, rp))
+        f"`cybr pm repair` exited 0 but the dashboard still cannot import: {imports}\n" + P.diagnostics(sb, rp))
 
 
 def test_failed_dependency_update_is_an_owed_followup(updated):
@@ -164,7 +164,7 @@ def test_failed_dependency_update_is_an_owed_followup(updated):
     up = P.update(sb)
     receipt = json.loads(P.ok(sb.cli("pm", "status")).stdout)
     assert up.returncode == 0, (
-        "`hermes update` failed although the code committed; a dependency sync after the tree moved "
+        "`cybr update` failed although the code committed; a dependency sync after the tree moved "
         "is an owed follow-up (A6)\n" + P.diagnostics(sb, up))
     assert I.git("rev-parse", "HEAD", cwd=sb.checkout) == target, "the code update did not land\n" + P.diagnostics(sb, up)
     assert re.search(r"⚠ Update follow-up 'dependencies' did not finish: .*dependencies not installed yet",

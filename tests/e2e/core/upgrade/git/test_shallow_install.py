@@ -1,4 +1,4 @@
-"""Shallow and stale installs through the real ``hermes update``.
+"""Shallow and stale installs through the real ``cybr update``.
 
 N-1's ``scripts/install.sh`` clones ``--depth 1 --single-branch``: that is the checkout every
 N-1 user has. Three installs run concurrently over smart HTTP:
@@ -9,12 +9,12 @@ N-1 user has. Three installs run concurrently over smart HTTP:
   the second must succeed after the first one unshallowed the clone (#124272: the unshallow applied
   ``--filter=tree:0`` to a clone whose objects sit in a non-promisor pack, and the next fetch dies
   in ``pack-objects ... should_include_obj``).
-* ``checked``: the same install after three passive ``hermes update --check`` runs while upstream
+* ``checked``: the same install after three passive ``cybr update --check`` runs while upstream
   moved (each is a depth-1 fetch that appends a graft), then updated to HEAD. The history is
   shared, so the update must not claim orphan divergence (#105951's symptom).
 * ``prefetched``: a HEAD install (non-shallow ``tree:0``) with a local commit, where the user ran
   ``git fetch --depth 1 origin main`` (the documented workaround for slow fetches) before
-  ``hermes update``. The local commit shares history with upstream: it must stay recoverable, and
+  ``cybr update``. The local commit shares history with upstream: it must stay recoverable, and
   the update must not declare orphan divergence (#123346).
 """
 

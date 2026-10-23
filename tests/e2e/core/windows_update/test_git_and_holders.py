@@ -1,11 +1,11 @@
-"""Git and process-holder edges of ``hermes update`` on native Windows.
+"""Git and process-holder edges of ``cybr update`` on native Windows.
 
 Failure class: git on Windows.
 
-* ``install.ps1`` clones with ``--filter=tree:0`` using the Git it pins. ``hermes update``
+* ``install.ps1`` clones with ``--filter=tree:0`` using the Git it pins. ``cybr update``
   must then fetch into that partial clone and land on the new commit. The fetch goes
   through the same pinned Git that has hit ``BUG: builtin/pack-objects.c`` (#124323).
-* ``hermes update --list-venv-holders`` is the read-only twin of the Windows venv-holder
+* ``cybr update --list-venv-holders`` is the read-only twin of the Windows venv-holder
   guard. It must list every live process running from the install's venv and exit 3,
   so automation can stop exactly those PIDs, and print ``[]``/exit 0 once they are gone
   (#123050).
@@ -112,12 +112,12 @@ def test_list_venv_holders_reports_live_holders(journey: Journey) -> None:
     m, pids, run = journey.machine, journey["holders"], journey["list_live"]
     reported = _reported(run)
     assert reported is not None, fail_with(m, "--list-venv-holders printed no JSON list", run)
-    with known_failure(r"^`hermes update --list-venv-holders` did not report the live venv holders "
+    with known_failure(r"^`cybr update --list-venv-holders` did not report the live venv holders "
                        r".*\(rc=0, reported pids \[\]\)",
                        "gated on #123050: --list-venv-holders reads the retired hermes_cli.main stub "
                        "and always prints []"):
         assert run.returncode == VENV_HOLDERS_EXIT and set(pids) <= set(reported), fail_with(
-            m, f"`hermes update --list-venv-holders` did not report the live venv holders {pids} "
+            m, f"`cybr update --list-venv-holders` did not report the live venv holders {pids} "
                f"(rc={run.returncode}, reported pids {reported})", run)
 
 

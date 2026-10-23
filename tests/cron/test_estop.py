@@ -1,8 +1,8 @@
-"""Global emergency stop (`hermes pause` / `hermes resume`) — agent/estop.py.
+"""Global emergency stop (`cybr pause` / `cybr resume`) — agent/estop.py.
 
 The ESTOP sentinel is a resumable pause for NEW work only: cron dispatch,
 kanban dispatch, and new gateway turns are halted while it is engaged; work
-already in flight is never touched. Removing the sentinel (`hermes resume`)
+already in flight is never touched. Removing the sentinel (`cybr resume`)
 restores normal operation with no restart.
 
 Ported from: gastownhall/gastown estop.go (MIT); related prior art: #26778
@@ -342,7 +342,7 @@ def test_profile_gateway_honors_canonical_root_estop(tmp_path, monkeypatch):
     """fleet-analyst-class: HERMES_HOME is a profile dir; pause lives at root.
 
     A process launched with HERMES_HOME=~/.hermes/profiles/fleet-analyst must
-    still treat ~/.hermes/ESTOP as engaged. Otherwise `hermes pause` is not
+    still treat ~/.hermes/ESTOP as engaged. Otherwise `cybr pause` is not
     a global emergency stop (t_7b65ff88).
     """
     root = tmp_path / "hermes-root"

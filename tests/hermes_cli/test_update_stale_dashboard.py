@@ -1,6 +1,6 @@
-"""Tests for the stale-dashboard handling run at the end of ``hermes update``.
+"""Tests for the stale-dashboard handling run at the end of ``cybr update``.
 
-``hermes update`` detects ``hermes dashboard`` processes left over from the
+``cybr update`` detects ``cybr dashboard`` processes left over from the
 previous version and kills them (SIGTERM + SIGKILL grace, or ``taskkill /F``
 on Windows).  Without this, the running backend silently serves stale Python
 against a freshly-updated JS bundle, producing 401s / empty data.

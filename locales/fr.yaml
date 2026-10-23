@@ -3957,7 +3957,7 @@ tips:
   t077: "cybr profile create coder crée un profil isolé qui devient sa propre commande."
   t078: "cybr profile create work --clone copie votre configuration et vos clés actuelles dans un nouveau profil."
   t079: "cybr update synchronise automatiquement les nouvelles skills intégrées vers TOUS les profils."
-  t080: "hermes gateway install installe Cybr Agent comme service système (systemd/launchd)."
+  t080: "cybr gateway install installe Cybr Agent comme service système (systemd/launchd)."
   t081: "cybr memory setup permet de configurer un fournisseur de mémoire externe (Honcho, Mem0, etc.)."
   t082: "cybr webhook subscribe crée des routes webhook événementielles avec validation HMAC."
   t083: "Économisez : cybr tools désactive les outils inutilisés, cybr skills config allège les skills."

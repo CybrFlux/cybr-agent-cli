@@ -95,7 +95,7 @@ export const tr: Translations = {
   status: {
     actionFailed: "İşlem başarısız",
     actionFinished: "Tamamlandı",
-    actionFinishedOwed: "Güncellendi, ancak bekleyen adımlar var (bitirmek için `hermes update` komutunu yeniden çalıştırın)",
+    actionFinishedOwed: "Güncellendi, ancak bekleyen adımlar var (bitirmek için `cybr update` komutunu yeniden çalıştırın)",
     actions: "İşlemler",
     agent: "Agent",
     activeSessions: "Aktif Oturumlar",
@@ -334,7 +334,7 @@ export const tr: Translations = {
       "Kaydedildi — değişikliği uygulamak için ağ geçidini yeniden başlatın.",
     forceReinstall: "Yeniden yüklemeyi zorla (önce mevcut klasörü sil)",
     headline:
-      "Cybr Agent eklentilerini keşfedin, yükleyin, etkinleştirin ve güncelleyin (`hermes plugins` ile eşdeğer).",
+      "Cybr Agent eklentilerini keşfedin, yükleyin, etkinleştirin ve güncelleyin (`cybr plugins` ile eşdeğer).",
     identifierLabel: "Git URL veya owner/repo",
     inactive: "pasif",
     installBtn: "Yükle",

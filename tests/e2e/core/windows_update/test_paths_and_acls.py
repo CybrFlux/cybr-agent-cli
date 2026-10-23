@@ -3,9 +3,9 @@
 Failure class: paths and ACLs.
 
 * ``C:\\Users\\Jörg Ñúñez`` is an ordinary Windows account. ``install.ps1`` must get
-  through the uv ``python-deps`` stage there (#124526), and ``hermes`` must then work and
+  through the uv ``python-deps`` stage there (#124526), and `cybr` must then work and
   update from that profile.
-* After ``hermes update`` the managed toolchain under ``%LOCALAPPDATA%\\hermes\\tools``
+* After ``cybr update`` the managed toolchain under ``%LOCALAPPDATA%\\hermes\\tools``
   must still be executable by a non-elevated process: a logon Scheduled Task or Startup
   entry runs with a standard-user token even when the updating session was elevated
   (#122935). The runner session is elevated, so each tool's DACL is checked (kernel

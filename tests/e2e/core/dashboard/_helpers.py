@@ -1,4 +1,4 @@
-"""Lane-private harness for the dashboard (``hermes dashboard``) E2E suite.
+"""Lane-private harness for the dashboard (``cybr dashboard``) E2E suite.
 
 Every scenario drives the REAL web server as a child process: ``python -m hermes_cli.main dashboard
 --no-open --skip-build --port 0`` with HOME=<tmp>/home and HERMES_HOME=<tmp>/home/.hermes (profiles
@@ -252,7 +252,7 @@ def kill_group(proc: subprocess.Popen, sig: int | None = None) -> None:
 
 
 class Dashboard:
-    """``hermes dashboard`` bound to 127.0.0.1:<ephemeral>, token scraped from index.html."""
+    """``cybr dashboard`` bound to 127.0.0.1:<ephemeral>, token scraped from index.html."""
 
     def __init__(self, sb: Sandbox, log_path: Path, extra_env: dict[str, str] | None = None,
                  argv: tuple[str, ...] = ()) -> None:

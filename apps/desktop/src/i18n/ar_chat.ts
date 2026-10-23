@@ -43,7 +43,7 @@ export const arChat = {
       '/resume': 'استئناف جلسة محفوظة',
       '/details': 'التحكم في مستوى تفاصيل النص',
       '/copy': 'نسخ التحديد أو آخر رسالة من المساعد',
-      '/quit': 'الخروج من hermes',
+      '/quit': 'الخروج من cybr',
       '/start': 'تأكيد طلب بدء المنصة دون إرسال رد',
       '/new': 'بدء محادثة جديدة في تطبيق سطح المكتب',
       '/topic': 'تفعيل مواضيع الرسائل الخاصة في Telegram أو عرضها',
@@ -477,7 +477,7 @@ export const arChat = {
       success: platform => `تم التسليم إلى ${platform}. استأنف هنا في أي وقت.`,
       systemNote: platform => `↻ تم التسليم إلى ${platform} — استأنف هنا في أي وقت.`,
       failed: error => `فشل التسليم: ${error}`,
-      timedOut: 'انتهت المهلة في انتظار البوابة. هل `hermes gateway` قيد التشغيل؟'
+      timedOut: 'انتهت المهلة في انتظار البوابة. هل `cybr gateway` قيد التشغيل؟'
     }
   },
   tips: {

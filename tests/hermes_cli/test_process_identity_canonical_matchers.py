@@ -14,7 +14,7 @@ LOOPBACK = "--host 127.0.0.1 --port 0"
 # (cmdline, holder subcommand, desktop-local reap?, Windows updater "Desktop backend"?). Substring
 # scanners get every "trap" row wrong: "serve" appears inside --preserve-cache / observer.py / a flag
 # value. The updater's kill set additionally requires the Desktop's `-m hermes_cli.main` spawn shape —
-# a user-launched `hermes serve` / `hermes dashboard` is refused on, never tree-killed.
+# a user-launched `cybr serve` / `cybr dashboard` is refused on, never tree-killed.
 CMDLINES = [
     ("python -m hermes_cli.main serve " + LOOPBACK, "serve", True, True),
     ("python -m hermes_cli.main dashboard", "dashboard", False, True),
@@ -69,7 +69,7 @@ def test_profile_liveness_is_the_shared_ladder(tmp_path, monkeypatch):
     assert calls == [(tmp_path / "gateway.pid", False)]
 
 
-# ``hermes serve`` is a substring of ``hermes server``: a terminal multiplexer started as
+# ``cybr serve`` is a substring of ``hermes server``: a terminal multiplexer started as
 # ``herdr --session hermes server`` was SIGTERMed by ``hermes update`` and its unit restarted (#121156).
 DECOY = "tool --name hermes server 30"
 BACKENDS = [

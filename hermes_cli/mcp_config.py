@@ -1,4 +1,4 @@
-"""MCP Server Management CLI — ``hermes mcp`` subcommand."""
+"""MCP Server Management CLI — ``cybr mcp`` subcommand."""
 
 import asyncio
 import contextlib
@@ -440,7 +440,7 @@ def _probe_single_server(
     # Deep transport code (tools/mcp_tool_transport.py::_negotiate_session) reads its OWN
     # session.initialize() bound straight off config["connect_timeout"], independent of the
     # `connect_timeout` param above. Callers that extend the param to give a user time to finish
-    # an OAuth browser flow (e.g. `hermes mcp login`'s 315s) left that inner bound at the
+    # an OAuth browser flow (e.g. `cybr mcp login`'s 315s) left that inner bound at the
     # (unrelated) 60s default, so the still-pending OAuth callback wait got cancelled mid-flow —
     # surfacing as a retry that re-opens a second authorization against the same callback port.
     config["connect_timeout"] = connect_timeout
@@ -732,7 +732,7 @@ def cmd_mcp_remove(args):
     _remove_mcp_server(name)
     _success(f"Removed '{name}' from config")
     # Route OAuth cleanup through MCPOAuthManager so any provider cached in this process (e.g. from
-    # an earlier `hermes mcp test`) is evicted too.
+    # an earlier `cybr mcp test`) is evicted too.
     try:
         from tools.mcp_oauth_manager import get_manager
         get_manager().remove(name)
@@ -892,7 +892,7 @@ def _reauth_oauth_server(name: str, server_config: dict, *, flow: str | None = N
         return False
     if server_config.get("auth") != "oauth":
         _error(f"Server '{name}' is not configured for OAuth (auth={server_config.get('auth')})")
-        _info("Use `hermes mcp remove` + `hermes mcp add` to reconfigure auth.")
+        _info("Use `cybr mcp remove` + `cybr mcp add` to reconfigure auth.")
         return False
 
     oauth_cfg = server_config.get("oauth") or {}
@@ -919,7 +919,7 @@ def _reauth_oauth_server(name: str, server_config: dict, *, flow: str | None = N
     # The probe triggers the OAuth flow (browser redirect + callback capture). Its bound must outlast
     # the oauth.timeout callback window (plus headroom for the token exchange), or a user who raised
     # oauth.timeout still gets cut off at the old fixed floor — matching the GUI re-auth path in
-    # web_server_mcp.py and tui_gateway/mcp_oauth_sessions.py. force_interactive_oauth: `hermes mcp
+    # web_server_mcp.py and tui_gateway/mcp_oauth_sessions.py. force_interactive_oauth: `cybr mcp
     # login` is explicitly user-initiated even when stdin isn't a TTY (desktop / agent-spawned
     # terminals), where _is_interactive() alone would refuse to open a browser.
     try:
@@ -952,7 +952,7 @@ def _reauth_oauth_server(name: str, server_config: dict, *, flow: str | None = N
             ):
                 print(color(f"    {line}", Colors.DIM))
             print()
-            _info("Then re-run `hermes mcp login " + name + "`.")
+            _info("Then re-run `cybr mcp login " + name + "`.")
             return False
         if tools:
             _success(f"Authenticated — {len(tools)} tool(s) available")
@@ -1137,7 +1137,7 @@ _MCP_USAGE = (
 
 
 def mcp_command(args):
-    """Main dispatcher for ``hermes mcp`` subcommands."""
+    """Main dispatcher for ``cybr mcp`` subcommands."""
     action = getattr(args, "mcp_action", None)
     if action in ("picker", "catalog", "install"):
         # Catalog subcommands live in mcp_picker / mcp_catalog; import lazily to keep this module cheap.

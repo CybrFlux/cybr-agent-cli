@@ -37,7 +37,7 @@ _BROWSER_PASSTHROUGH_KEYS: tuple[str, ...] = (
 
 
 def warm_agent_browser_npx_cache(timeout: float = 60.0) -> bool:
-    """Frozen old-updater surface (tests/compat/old_updater_surface.json): a pre-PM ``hermes update``
+    """Frozen old-updater surface (tests/compat/old_updater_surface.json): a pre-PM ``cybr update``
     still running mid-swap imports this from the NEW tree. Nothing is warmed — PM owns the browser
     runtime — and the permanent definition must live here, not behind the revert-scheduled compat
     pointer."""

@@ -1,6 +1,6 @@
 """Serve-kind runtime inventory (#63206, campaign #91277).
 
-A network-bound `hermes serve --host <ip>` powering a remote Desktop used to
+A network-bound `cybr serve --host <ip>` powering a remote Desktop used to
 be invisible to the update pipeline. The spawn ledger's structured launch
 identity (host/port/profile, registered at serve startup) now feeds the
 update inventory and the dashboard process scan.
@@ -135,7 +135,7 @@ def test_inventory_classifies_remote_desktop_ssh_serve_as_its_clients(monkeypatc
 
 def test_hand_started_isolated_serve_stays_manual(monkeypatch):
     """``--isolated`` alone is an opt-out of the host singleton, not remote ownership: a user's own
-    ``hermes serve --isolated`` keeps its manual-serve relaunch."""
+    ``cybr serve --isolated`` keeps its manual-serve relaunch."""
     entry = _ledger_entry(argv="hermes serve --isolated --host 127.0.0.1 --port 9119", isolated=True)
     fake_pi = SimpleNamespace(ledger_entries=lambda **k: [entry], spawner_is_dead=lambda e: None)
     monkeypatch.setitem(sys.modules, "hermes_cli.process_identity", fake_pi)

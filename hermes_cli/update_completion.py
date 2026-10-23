@@ -270,7 +270,7 @@ def settle_lost_completion(request: dict, reason: str) -> dict:
             print(f"  ⚠ Could not record the owed source-update tail: {exc}")
         _report_desktop_build_owed(request, _running_record(request), "the update completion did not finish")
         update_receipt.resume_run_record()  # the child's persisted stages, never this stale snapshot
-        update_receipt.record_followup("completion", reason, retry="the next launch or `hermes update` finishes it")
+        update_receipt.record_followup("completion", reason, retry="the next launch or `cybr update` finishes it")
         parked = not _record_owed_user_action(request)
         if parked:
             print(_owed_user_action(request))  # the completion child that prints it may never have run
@@ -379,7 +379,7 @@ def _complete_selected(request: dict) -> bool:
 
     Each step is independent; a failed one prints ``⚠``, lands on the receipt as a follow-up
     and keeps its own obligation armed (``source-completion-pending`` for the tail, the fleet
-    restart obligation for gateways), so the next launch or ``hermes update`` retries it.
+    restart obligation for gateways), so the next launch or ``cybr update`` retries it.
     Returns False only when the user's local changes were left parked in the stash: nothing
     retries that, so the run is ``partial`` and exits 1 (#122557), never "Update complete".
     """

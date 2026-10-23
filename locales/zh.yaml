@@ -3632,7 +3632,7 @@ tips:
   t077: "cybr profile create coder 创建一个隔离的配置档，它会成为一条独立命令。"
   t078: "cybr profile create work --clone 把你当前的配置和密钥复制到新配置档。"
   t079: "cybr update 会自动把新的内置技能同步到所有配置档。"
-  t080: "hermes gateway install 把 Cybr Agent 设置为系统服务（systemd/launchd）。"
+  t080: "cybr gateway install 把 Cybr Agent 设置为系统服务（systemd/launchd）。"
   t081: "cybr memory setup 让你配置外部记忆提供方（Honcho、Mem0 等）。"
   t082: "cybr webhook subscribe 创建带 HMAC 校验的事件驱动 webhook 路由。"
   t083: "省钱技巧：cybr tools 可禁用不用的工具，cybr skills config 可精简技能。"

@@ -64,9 +64,9 @@ class TestUserSystemdPrivateSocketPreflight:
 class TestSystemdServiceRefresh:
 
     def test_systemd_restart_timeout_prints_status_guidance(self, monkeypatch, capsys):
-        """`hermes gateway restart` must not surface a raw TimeoutExpired traceback.
+        """`cybr gateway restart` must not surface a raw TimeoutExpired traceback.
 
-        The dashboard spawns `hermes gateway restart` in the background; when a
+        The dashboard spawns `cybr gateway restart` in the background; when a
         wedged adapter websocket pushes drain past the 90s CLI timeout, the
         dashboard would previously show a Python traceback (issue #19937
         follow-up: the same failure mode applies to restart, not just stop).
@@ -348,7 +348,7 @@ class TestGeneratedSystemdUnits:
 
     def test_launchd_plist_persists_configured_nofile_soft_limit(self, monkeypatch):
         """The generated plist must carry SoftResourceLimits/NumberOfFiles so a
-        plist rewrite by `hermes gateway start` cannot strip the FD floor and
+        plist rewrite by `cybr gateway start` cannot strip the FD floor and
         reintroduce EMFILE crashes (launchd default soft limit is 256)."""
         from hermes_cli import resource_limits
 
@@ -830,7 +830,7 @@ class TestLaunchdDomainDetection:
 class TestLaunchdUnsupportedFallbackPolicy:
     """A 5/125 launchctl exit must not brand a domain the host is demonstrably managing.
 
-    Regression for the recurrence where ``hermes gateway install --force`` over the LIVE job
+    Regression for the recurrence where ``cybr gateway install --force`` over the LIVE job
     returned EIO (5) — launchctl's answer for an already-loaded label — which
     ``_launchd_degrade_or_raise`` read as "this macOS cannot manage launchd services". It wrote the
     permanent launchd-unsupported marker and started a detached gateway beside the supervised one,
@@ -2218,7 +2218,7 @@ class TestRemoveLegacyHermesUnits:
 
 
 class TestMigrateLegacyCommand:
-    """Tests for the `hermes gateway migrate-legacy` subcommand dispatch."""
+    """Tests for the `cybr gateway migrate-legacy` subcommand dispatch."""
 
 
     def test_gateway_command_migrate_legacy_dispatches(
@@ -2434,7 +2434,7 @@ class TestSystemScopeWizardPreCheck:
         assert gateway_cli._system_scope_wizard_would_need_root() is True
 
     def test_non_root_with_explicit_system_arg_returns_true(self, tmp_path, monkeypatch):
-        # Caller passed system=True explicitly (e.g. ``hermes gateway start --system``).
+        # Caller passed system=True explicitly (e.g. ``cybr gateway start --system``).
         self._setup_units(tmp_path, monkeypatch, system_present=False, user_present=False)
         monkeypatch.setattr(gateway_cli.os, "geteuid", lambda: 1000)
 
@@ -2442,7 +2442,7 @@ class TestSystemScopeWizardPreCheck:
 
 
 class TestGatewayCommandCatchesSystemScopeError:
-    """The direct CLI path (``hermes gateway start --system`` etc.) must
+    """The direct CLI path (``cybr gateway start --system`` etc.) must
     still exit 1 with a clean message when non-root. The top-level
     ``gateway_command`` catches ``SystemScopeRequiresRootError`` and
     converts it back to ``sys.exit(1)``, preserving existing CLI behavior.

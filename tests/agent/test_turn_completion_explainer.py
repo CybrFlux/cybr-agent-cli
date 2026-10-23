@@ -216,9 +216,9 @@ def test_deleted_wal_cause_is_plain_first_steps_not_a_forensic_runbook():
 
 @pytest.mark.parametrize("cause", ["replaced", "deleted_wal", "unknown"])
 def test_persistence_commands_are_pinned_to_the_failing_profile(monkeypatch, tmp_path, cause):
-    """Every copy-pasteable ``hermes`` command in a persistence explanation names the profile
+    """Every copy-pasteable `cybr` command in a persistence explanation names the profile
     whose store failed — a multi-profile backend serves sessions whose state.db is not the
-    process default, and a bare ``hermes`` follows the sticky active_profile (#105887). The
+    process default, and a bare `cybr` follows the sticky active_profile (#105887). The
     corrupt/fts_index causes already did this; replaced/deleted_wal/default did not."""
     from hermes_constants import profile_cli_selector
 

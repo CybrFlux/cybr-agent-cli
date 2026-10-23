@@ -9,8 +9,8 @@ fix (an Enter pressed during startup could save it unseen), so that profile is a
 the reason, and any response (Esc or dismiss included) settles it for good. A collect-only answer
 from before the offer dropped that choice stays decided: nothing is sent, and it is not asked again.
 Desktop paints the offer as a composer strip (``consent-strip.tsx`` over the ``shared_metrics.*``
-RPCs). The terminal asks at the end of every ``hermes setup`` flow and, for a profile that never
-answered, once before an interactive ``hermes`` / ``hermes --tui`` chat (which also covers the
+RPCs). The terminal asks at the end of every ``cybr setup`` flow and, for a profile that never
+answered, once before an interactive `cybr` / ``hermes --tui`` chat (which also covers the
 dashboard's Chat tab, a PTY-hosted TUI). The messaging gateway never asks: a chat participant is
 not the install owner.
 """
@@ -148,7 +148,7 @@ def offer_consent(config: dict | None = None, *, reask: bool = False) -> bool:
 
 
 def offer_consent_if_undecided(config: dict | None = None) -> None:
-    """The end-of-setup offer: every ``hermes setup`` flow funnels through the setup-completed
+    """The end-of-setup offer: every ``cybr setup`` flow funnels through the setup-completed
     record, so this one call covers Quick, Full, Blank Slate, Portal and ``--quick``."""
     from hermes_cli.config import is_managed
     from hermes_cli.setup import is_noninteractive

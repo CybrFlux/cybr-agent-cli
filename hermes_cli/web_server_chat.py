@@ -357,7 +357,7 @@ def _resolve_chat_argv(
     in-memory gateway but is SKIPPED for profile-scoped chats (that gateway runs
     under the dashboard's own profile, so a scoped chat attaches to its profile's gateway);
     ``profile`` scopes the ENTIRE chat by pointing ``HERMES_HOME`` at the profile
-    dir, the same propagation ``hermes -p <name>`` performs. ``workspace_cwd``
+    dir, the same propagation ``cybr -p <name>`` performs. ``workspace_cwd``
     (an already-validated host directory, ``chat_workspaces.resolve_chat_cwd``)
     is the workspace the user picked for a FRESH chat: it becomes ``HERMES_CWD``
     (where a self-spawned gateway starts) and ``HERMES_TUI_CWD`` (what the TUI

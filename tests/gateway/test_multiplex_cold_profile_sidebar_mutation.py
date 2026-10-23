@@ -9,7 +9,7 @@ routing metadata (``?profile=`` and ``body.profile``, exactly what
 ``apps/desktop/src/api/sessions.ts::mutateSessionHttp`` sends) lands on that profile's
 authority, while another served profile holds a live interactive attachment.
 
-The Desktop's endpoint for a served secondary comes from ``hermes -p <name> gateway ensure``
+The Desktop's endpoint for a served secondary comes from ``cybr -p <name> gateway ensure``
 and its ticket is minted through the endpoint's ``control_home`` (the multiplexer root),
 so this test uses that exact discovery + mint path rather than a hand-built socket call.
 """

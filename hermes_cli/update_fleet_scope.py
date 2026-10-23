@@ -1,4 +1,4 @@
-"""Home scoping for ``hermes update``'s fleet restart (#93349).
+"""Home scoping for ``cybr update``'s fleet restart (#93349).
 
 The restart phase enumerates ``hermes-gateway*``/``hermes-serve*`` units, ``ai.hermes.gateway*``
 LaunchAgents and every ``gateway run`` process on the host. Those are HOST-wide namespaces: a

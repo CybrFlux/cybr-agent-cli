@@ -99,7 +99,7 @@ def _render_state_db_stats(stats: dict, holders=None, host_note: str = "") -> li
         detail = "consider enabling sessions.auto_prune in config.yaml to bound growth"
         structural_fts_upgrade = bool(stats.get("fts_storage_upgrade_needed"))
         if stats.get("fts_rebuild_pending") or stats.get("fts_teardown_pending") or structural_fts_upgrade:
-            detail += "; run 'hermes sessions optimize-storage' offline (with the host gateway stopped) to compact FTS storage"
+            detail += "; run 'cybr sessions optimize-storage' offline (with the host gateway stopped) to compact FTS storage"
         lines.append(("warn", f"state.db is large ({_human_bytes(logical)})", f"({detail})"))
     # WAL runaway is deliberately NOT warned here: _state_db_wal already warns above 50 MB and offers --fix.
     return lines
@@ -299,7 +299,7 @@ def _write_health_reason(state_db_path: Path, *, should_fix: bool):
         return _db_opens_cleanly(state_db_path)
     if not should_fix and state_db_path.stat().st_size > _WRITE_PROBE_SNAPSHOT_MAX_BYTES:
         check_info("state.db write-health probe skipped: store is held by a live writer and larger than 1 GB "
-                   "(run 'hermes doctor --fix' to probe it)")
+                   "(run 'cybr doctor --fix' to probe it)")
         return None
     import sqlite3
     import tempfile
@@ -324,11 +324,11 @@ _STATE_DB_REPAIRS = {
     "fts": ("Repaired state.db FTS write health",
             "state.db FTS write-health repair did not recover automatically",
             "state.db FTS write corruption and auto-repair failed — restore from the backup copy beside state.db",
-            "state.db FTS write corruption — run 'hermes doctor --fix' (or 'hermes sessions repair') to rebuild the FTS index"),
+            "state.db FTS write corruption — run 'cybr doctor --fix' (or 'hermes sessions repair') to rebuild the FTS index"),
     "schema": ("Repaired state.db schema ({count} sessions recovered)",
                "state.db schema repair did not recover automatically",
                "state.db schema malformed and auto-repair failed — restore from the backup copy beside state.db",
-               "state.db schema malformed — run 'hermes doctor --fix' (or 'hermes sessions repair') to recover hidden sessions"),
+               "state.db schema malformed — run 'cybr doctor --fix' (or 'hermes sessions repair') to recover hidden sessions"),
 }
 _STATE_DB_STRUCTURAL_ISSUE = (
     "state.db structural corruption (canonical tables/indexes damaged, not the FTS index) — an FTS rebuild "
@@ -416,7 +416,7 @@ def _state_db_stats(issues: list, state_db_path: Path) -> None:
             check_warn(_text, _detail)
             if "auto_prune" in _detail:
                 issues.append("state.db is large — enable sessions.auto_prune in config.yaml"
-                              + (" and run 'hermes sessions optimize-storage' offline (gateway stopped)" if "optimize-storage" in _detail else ""))
+                              + (" and run 'cybr sessions optimize-storage' offline (gateway stopped)" if "optimize-storage" in _detail else ""))
 
 
 def _state_db_wal(f: Finding, should_fix: bool, state_db_path: Path) -> None:
@@ -433,7 +433,7 @@ def _state_db_wal(f: Finding, should_fix: bool, state_db_path: Path) -> None:
             from hermes_state_repair import _exclusive_repair_db_guard, _live_writer_holds_db
             title = f"WAL file is large ({size // (1024*1024)} MB)"
             _SKIP = ("Large WAL file — cannot prove state.db is quiet (stop the profile's gateway first, then "
-                     "run 'hermes doctor --fix' to checkpoint)")
+                     "run 'cybr doctor --fix' to checkpoint)")
             # Honest disjunction (gate C1): a True here means "held OR unprovable" — never assert a live
             # writer as fact.
             if _live_writer_holds_db(state_db_path):
@@ -445,11 +445,11 @@ def _state_db_wal(f: Finding, should_fix: bool, state_db_path: Path) -> None:
             check_warn(title, "(may indicate missed checkpoints)")
             if not should_fix:
                 return f.issues.append(
-                    "Large WAL file — stop the profile's gateway, then run 'hermes doctor --fix' to checkpoint")
+                    "Large WAL file — stop the profile's gateway, then run 'cybr doctor --fix' to checkpoint")
             with _exclusive_repair_db_guard(state_db_path) as (guard, guard_error):
                 if guard is None:
                     check_warn("WAL checkpoint skipped: could not take exclusive ownership of state.db",
-                               f"({guard_error}; stop the profile's gateway and re-run 'hermes doctor --fix')")
+                               f"({guard_error}; stop the profile's gateway and re-run 'cybr doctor --fix')")
                     return f.issues.append(_SKIP)
                 guard.execute("PRAGMA wal_checkpoint(PASSIVE)")
             check_ok(f"WAL checkpoint performed ({size // 1024}K → {wal_size() // 1024}K)")
@@ -667,7 +667,7 @@ def _check_profiles(should_fix: bool, f: Finding) -> None:
                     fix = f"hermes profile alias {alias} --remove" if PROFILE_ID_RE.match(alias) else f"delete {wrapper}"
                     check_warn(f"Orphan alias: {alias} → profile '{_m.group(1)}' no longer exists", f"(remove with: {fix})")
     # Same helper as the multiplex migration preflight, so doctor names the duplicates that make
-    # `hermes gateway migrate --multiplex` refuse (and made pre-multiplex standalone gateways race).
+    # `cybr gateway migrate --multiplex` refuse (and made pre-multiplex standalone gateways race).
     from hermes_cli.gateway_migrate import duplicate_credential_findings
     for line in duplicate_credential_findings():
         check_warn("Duplicate platform credential across profiles", f"({line})")

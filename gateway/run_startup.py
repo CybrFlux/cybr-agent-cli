@@ -974,7 +974,7 @@ class GatewayStartupMixin:
             _adv_msg = gateway_log_message(detect_compromised())
             if _adv_msg:
                 logger.warning("%s", _adv_msg)
-                logger.warning("Run `hermes doctor` on the gateway host for full remediation steps.")
+                logger.warning("Run `cybr doctor` on the gateway host for full remediation steps.")
 
     def _start_log_retired_session_reset(self) -> None:
         """Warn per served profile whose config still declares an idle/daily ``session_reset``,
@@ -1442,7 +1442,7 @@ class GatewayStartupMixin:
                 self._startup_parked_platforms = True
                 logger.error(
                     "%d configured platform(s) failed to start and are parked (fix the reported error, "
-                    "then `hermes gateway restart`): %s. The gateway is DEGRADED — it serves the "
+                    "then `cybr gateway restart`): %s. The gateway is DEGRADED — it serves the "
                     "remaining platform(s) with those unserved.",
                     len(startup_nonretryable_errors), "; ".join(startup_nonretryable_errors),
                 )

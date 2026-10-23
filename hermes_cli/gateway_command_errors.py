@@ -21,13 +21,13 @@ _JOURNAL_HINT = 'journalctl --user -u hermes-gateway --since "5 min ago"'
 
 _SYSTEMCTL_FAILED_LINES = (
     "Could not {verb} the gateway service; systemd reported an error.",
-    "See why with `hermes gateway status --deep` or `{journal}`.",
-    "To reinstall the service run `hermes gateway install --force`.",
+    "See why with `cybr gateway status --deep` or `{journal}`.",
+    "To reinstall the service run `cybr gateway install --force`.",
 )
 
 _NO_SYSTEMCTL_LINES = (
     "This system has no systemd, so Cybr Agent cannot install a background service here.",
-    "Run the gateway directly with `hermes gateway run` (keep it alive with tmux or screen).",
+    "Run the gateway directly with `cybr gateway run` (keep it alive with tmux or screen).",
 )
 
 

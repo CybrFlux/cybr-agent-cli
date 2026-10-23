@@ -1627,7 +1627,7 @@ class TestExplicitOpenaiSelectionError:
 
     When ``_resolve_openai_audio_client_config()`` raises its
     selection-specific ValueError (managed openai-audio gateway unavailable,
-    with the ``hermes tools`` remediation for managed-Nous users), the old
+    with the ``cybr tools`` remediation for managed-Nous users), the old
     boolean probe flattened it into False — the log said "no API key" and
     the transcription result returned the all-provider install hint,
     pointing operators at unrelated setup instead of their managed route.
@@ -1661,7 +1661,7 @@ class TestExplicitOpenaiSelectionError:
              patch("tools.transcription_tools._HAS_FASTER_WHISPER", False), \
              patch(
                  "tools.tool_backend_helpers.nous_tool_gateway_unavailable_message",
-                 lambda what: f"managed route down for {what}; run `hermes tools`",
+                 lambda what: f"managed route down for {what}; run `cybr tools`",
              ):
             from tools.transcription_tools import _dispatch_stt_provider
 

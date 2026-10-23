@@ -652,7 +652,7 @@ gateway:
     admin_only: "⛔ /{command} ist hier nur für Admins. {suffix}"
     owner_hint_env: "fügen Sie die ID zu {env_var} in {home}/.env hinzu und starten Sie das Gateway neu"
     owner_hint_generic: "fügen Sie die ID zur Liste erlaubter Benutzer dieser Plattform hinzu und starten Sie das Gateway neu"
-    owner_notice: "Eine Nachricht des unbekannten {platform}-Benutzers {who} wurde verworfen. Falls das Sie oder jemand sind, dem Sie vertrauen, {allowlist}; oder setzen Sie `unauthorized_dm_behavior: pair` für {platform} in {home}/config.yaml, damit unbekannte Absender einen Kopplungscode erhalten, den Sie mit `hermes pairing approve {platform} <code>` genehmigen können."
+    owner_notice: "Eine Nachricht des unbekannten {platform}-Benutzers {who} wurde verworfen. Falls das Sie oder jemand sind, dem Sie vertrauen, {allowlist}; oder setzen Sie `unauthorized_dm_behavior: pair` für {platform} in {home}/config.yaml, damit unbekannte Absender einen Kopplungscode erhalten, den Sie mit `cybr pairing approve {platform} <code>` genehmigen können."
   picker:
     page_info: " ({start}–{end} von {total})"
   clarify:
@@ -3155,7 +3155,7 @@ cli:
     hermes_models_lack_tools: "Ihnen fehlen die Tool-Calling-Fähigkeiten, die für Agent-Workflows nötig sind. Verwenden Sie besser ein agentisches Modell (Claude, GPT, Gemini, DeepSeek usw.)."
     hermes_models_switch_hint: "Wechseln mit: /model sonnet  oder  /model gpt5"
     project_skills_loaded: "◆ {count} Projekt-Skill(s) aus diesem Repo geladen"
-    project_skills_untrusted: "◆ {count} Projekt-Skill(s) in {root} gefunden, aber nicht geladen — führen Sie `hermes skills trust` aus, um sie zu aktivieren."
+    project_skills_untrusted: "◆ {count} Projekt-Skill(s) in {root} gefunden, aber nicht geladen — führen Sie `cybr skills trust` aus, um sie zu aktivieren."
   command:
     unknown_nothing_sent: "Unbekannter Befehl {command} — nichts wurde gesendet.{hint}"
     did_you_mean_one: "Meinten Sie {suggestion}?"
@@ -3632,7 +3632,7 @@ tips:
   t077: "cybr profile create coder erstellt ein isoliertes Profil, das zu einem eigenen Befehl wird."
   t078: "cybr profile create work --clone kopiert Ihre aktuelle Konfiguration und Ihre Schlüssel in ein neues Profil."
   t079: "cybr update synchronisiert neue mitgelieferte Skills automatisch in ALLE Profile."
-  t080: "hermes gateway install richtet Cybr Agent als Systemdienst ein (systemd/launchd)."
+  t080: "cybr gateway install richtet Cybr Agent als Systemdienst ein (systemd/launchd)."
   t081: "cybr memory setup lässt Sie einen externen Memory-Anbieter konfigurieren (Honcho, Mem0 usw.)."
   t082: "cybr webhook subscribe erstellt ereignisgesteuerte Webhook-Routen mit HMAC-Validierung."
   t083: "Kosten sparen: cybr tools deaktiviert ungenutzte Tools, cybr skills config reduziert die Skills."

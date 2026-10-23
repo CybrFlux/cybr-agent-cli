@@ -3,7 +3,7 @@
 When init dies waiting for a cross-process auth lock — the profile auth-store lock or the shared
 Nous store lock, both on the ``resolve_nous_access_token`` init path (#124533) — the cause is
 contention with another hermes process (a dashboard or a slow credential refresh), so the generic
-/model / `hermes setup` hints would send the user re-checking credentials that are fine.
+/model / `cybr setup` hints would send the user re-checking credentials that are fine.
 """
 
 from __future__ import annotations

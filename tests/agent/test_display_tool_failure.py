@@ -64,7 +64,7 @@ class TestDetectToolFailureTerminal:
         result = json.dumps({
             "output": "", "exit_code": -1, "status": "degraded",
             "reason": "Docker daemon is not reachable at unix:///var/run/docker.sock",
-            "retry_hint": "Start Docker, or run `hermes setup terminal` to switch to Local, then retry",
+            "retry_hint": "Start Docker, or run `cybr setup terminal` to switch to Local, then retry",
             "error": "Terminal backend degraded: Docker daemon is not reachable at unix:///var/run/docker.sock",
         })
         is_failure, suffix = _detect_tool_failure("terminal", result)

@@ -200,7 +200,7 @@ def _windows_git_in_checkout(root: Path) -> bool | None:
     """Whether any git (``git.exe``, a dashed ``git-<sub>.exe``) works in ``root``; None when unknowable.
 
     Works in: its cwd, a path argument or a ``GIT_DIR``-style variable is inside the checkout or
-    its git dir, compared by path components (``hermes-backup`` is not inside ``hermes``). Scoped to
+    its git dir, compared by path components (``hermes-backup`` is not inside `cybr`). Scoped to
     the checkout: a system-wide check would keep the lock whenever any editor or terminal elsewhere
     runs git, which on Windows is most of the time. A git whose cwd cannot be read keeps the lock.
     """
@@ -561,7 +561,7 @@ def prune_stale_shallow_grafts(repo_root: Path) -> int:
     Every ``git fetch --depth 1`` appends the fetched tip to ``.git/shallow`` as a new
     graft and never removes the previous one, so a long-lived shallow installer checkout
     accumulates one graft per update check (57 observed in the wild). The stale grafts
-    break ``merge-base`` and push ``hermes update`` into the orphan-divergence reset path
+    break ``merge-base`` and push ``cybr update`` into the orphan-divergence reset path
     on every run. Keep only the boundaries that still protect referenced tips (HEAD,
     FETCH_HEAD, and every ref tip): the dropped commits are already unreachable and their
     objects are left for ``git gc``. Fetch reflogs naming a dropped graft are expired

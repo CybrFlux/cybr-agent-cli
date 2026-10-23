@@ -35,7 +35,7 @@ def _home(tmp_path: Path, name: str = "home", *, env: str = "", config: str = ""
 
 # The uncommented platform_toolsets block cli-config.yaml.example carried (the homeassistant row from
 # 1aa7badb3c until fb9fc8a3dd). The installers (install.sh, install.ps1, the Docker hook) and
-# `hermes doctor` seed config.yaml from that file, so the block alone says nothing about use.
+# `cybr doctor` seed config.yaml from that file, so the block alone says nothing about use.
 _EXAMPLE_PLATFORM_TOOLSETS = (
     "platform_toolsets:\n"
     "  cli: [hermes-cli]\n"
@@ -253,7 +253,7 @@ def test_gateway_start_outcome_waits_for_the_first_agent(tmp_path, monkeypatch):
 
 
 def test_the_migration_installs_once_so_a_removal_sticks(tmp_path, monkeypatch):
-    """At most one automatic install per home: after `hermes plugins remove`, neither `hermes update`
+    """At most one automatic install per home: after `cybr plugins remove`, neither `cybr update`
     nor startup reinstalls it. Until an install succeeds (catalog miss, failed install) it retries."""
     import hermes_cli.memory_provider_migration as mpm
     import pm.install
@@ -274,7 +274,7 @@ def test_the_migration_installs_once_so_a_removal_sticks(tmp_path, monkeypatch):
     assert lcm.migrate_home(home, install=install, say=quiet) == ["homeassistant"]
 
     import shutil
-    shutil.rmtree(plugin)  # `hermes plugins remove homeassistant`
+    shutil.rmtree(plugin)  # `cybr plugins remove homeassistant`
     assert lcm.migrate_home(home, install=install, say=quiet) == []
     monkeypatch.setenv("HERMES_HOME", str(home))
     monkeypatch.setattr(pm.install, "lazy_installs_allowed", lambda: True)
@@ -285,7 +285,7 @@ def test_the_migration_installs_once_so_a_removal_sticks(tmp_path, monkeypatch):
 
 def test_a_failed_startup_install_backs_off_and_reports_one_line(tmp_path, monkeypatch):
     """With the catalog or git unreachable, only the first agent start in a while pays the network
-    round trip, and its notice is one line naming the cause; `hermes update` always retries."""
+    round trip, and its notice is one line naming the cause; `cybr update` always retries."""
     import hermes_cli.memory_provider_migration as mpm
     import pm.install
     home = _home(tmp_path, env="HASS_TOKEN=abc\n")
@@ -303,7 +303,7 @@ def test_a_failed_startup_install_backs_off_and_reports_one_line(tmp_path, monke
     assert len(said) == 1 and "\n" not in said[0] and "Could not resolve host: github.com" in said[0]
     assert "plugins install homeassistant" in said[0]
 
-    lcm._attempted.clear()  # the next `hermes chat` process
+    lcm._attempted.clear()  # the next `cybr chat` process
     assert lcm.recover_at_startup(say=said.append) == []
     assert lookups == ["homeassistant"] and len(said) == 1
     assert lcm.migrate_home(home, install=failing, say=said.append) == []
@@ -366,11 +366,11 @@ def test_spotify_in_use_is_a_stored_login_or_the_toolset(tmp_path, auth_json, co
 
 
 def test_old_spotify_commands_point_at_the_plugin(tmp_path, monkeypatch):
-    """`hermes auth spotify` / `hermes spotify` name the new command and how to get it for this home."""
+    """`cybr auth spotify` / `hermes spotify` name the new command and how to get it for this home."""
     home = _home(tmp_path)
     monkeypatch.setenv("HERMES_HOME", str(home))
     hint = lcm.moved_command_hint("hermes auth", "spotify", "status")
-    assert "`hermes auth status spotify` is now `hermes spotify status`" in hint
+    assert "`cybr auth status spotify` is now `hermes spotify status`" in hint
     assert "plugins install spotify" in hint
     assert "plugins install spotify" in lcm.moved_command_hint("hermes", "spotify")
     (home / "plugins" / "spotify").mkdir(parents=True)  # installed but disabled
@@ -379,7 +379,7 @@ def test_old_spotify_commands_point_at_the_plugin(tmp_path, monkeypatch):
 
 
 def test_old_mcp_serve_spelling_names_the_plugin_command(tmp_path, monkeypatch, capsys):
-    """`hermes mcp serve` (what MCP client configs launch) exits 2 with the new spelling and the install
+    """`cybr mcp serve` (what MCP client configs launch) exits 2 with the new spelling and the install
     line on stderr, never on stdout (the MCP wire); once the plugin is installed only the spelling."""
     import sys
 
@@ -392,7 +392,7 @@ def test_old_mcp_serve_spelling_names_the_plugin_command(tmp_path, monkeypatch, 
         parser.parse_args(["mcp", "serve", "--tools"])
     out, err = capsys.readouterr()
     assert exc.value.code == 2 and out == ""
-    assert "`hermes mcp serve` is now `hermes mcp-serve`" in err
+    assert "`cybr mcp serve` is now `cybr mcp-serve`" in err
     assert "plugins install mcp-serve" in err
     (home / "plugins" / "mcp-serve").mkdir(parents=True)
     hint = lcm.moved_command_hint("hermes mcp", "serve")

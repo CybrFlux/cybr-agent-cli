@@ -7,8 +7,8 @@ survive a space and non-ASCII bytes.
 
 One real install through HEAD's ``scripts/install.sh`` with the whole sandbox (HOME, HERMES_HOME,
 TMPDIR) under ``José Müller 漢字 dir``; then a one-shot turn, a new login shell resolving
-``hermes``, an upstream release and ``hermes update``, a turn on the new commit and
-``hermes gateway run``. The symlinked-home shapes live in ``test_paths_symlinked.py`` so the two
+`cybr`, an upstream release and ``cybr update``, a turn on the new commit and
+``cybr gateway run``. The symlinked-home shapes live in ``test_paths_symlinked.py`` so the two
 installs run in parallel.
 """
 

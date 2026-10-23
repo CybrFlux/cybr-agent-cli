@@ -33,10 +33,10 @@ _PARSE_FAILURE_FALLBACK_MSG = {
     "refuse-write": "Nothing was written, so the existing file is preserved."}
 _PARSE_FAILURE_DEFAULTS_MSG = (
     "Cybr Agent is running on default settings until it is fixed, so none of your saved settings are applied.")
-_PARSE_FAILURE_REPAIR_MSG = "Open it with `hermes config edit`, fix {where}, then run `hermes config check`."
+_PARSE_FAILURE_REPAIR_MSG = "Open it with `cybr config edit`, fix {where}, then run `cybr config check`."
 _FIX_PERMS = "Fix the file permissions or move it aside first."
 _FIX_YAML = (
-    "Fix it with `hermes config edit` and check with `hermes config check`, or copy the newest good "
+    "Fix it with `cybr config edit` and check with `cybr config check`, or copy the newest good "
     "file from {backups} over config.yaml.")
 
 
@@ -125,7 +125,7 @@ class FailedConfigRead(dict):
 
 def _read_error_fix(exc: OSError) -> str:
     return _FIX_PERMS if isinstance(exc, PermissionError) else (
-        "Try again; run `hermes config check` if it keeps failing.")
+        "Try again; run `cybr config check` if it keeps failing.")
 
 
 def _refuse_failed_read(config_path: Path, data: Any) -> None:

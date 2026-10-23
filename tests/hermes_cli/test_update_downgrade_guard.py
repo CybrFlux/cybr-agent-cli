@@ -1,4 +1,4 @@
-"""`hermes update` refuses a target that predates the gateway runtime once a state.db holds ledger rows.
+"""`cybr update` refuses a target that predates the gateway runtime once a state.db holds ledger rows.
 
 Downgrading is unsupported (#106742, jquesnelle item 6): the older release cannot delete or prune
 the sessions with runtime history, so the move is refused before the tree changes and the message
@@ -101,7 +101,7 @@ def test_forward_updates_and_stores_without_ledger_rows_are_never_refused(repo, 
 
 @pytest.mark.parametrize("divergent", [True, False], ids=["beside-history", "in-history"])
 def test_check_holds_a_release_that_update_would_refuse(repo, tmp_path, monkeypatch, capsys, divergent):
-    """`hermes update --check` must neither offer nor promise a move back to a release the update then
+    """`cybr update --check` must neither offer nor promise a move back to a release the update then
     refuses (#139099): one cut beside this checkout's history, or one it already contains."""
     from types import SimpleNamespace
 

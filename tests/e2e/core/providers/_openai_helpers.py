@@ -1,6 +1,6 @@
 """Shared harness for the OpenAI-dialect provider wire-conformance suite.
 
-Every test drives REAL Cybr Agent processes (``hermes -z`` oneshot, ``--resume``, the
+Every test drives REAL Cybr Agent processes (``cybr -z`` oneshot, ``--resume``, the
 ``tui_gateway`` stdio server) against a loopback fake of the vendor HTTP API
 (``tests/fakes/providers``) and asserts on the next wire request Cybr Agent sends, the
 user-visible answer, and persisted ``state.db`` rows. Homes are hermetic: a fake HOME
@@ -209,7 +209,7 @@ def hermes_argv(*args: str) -> list[str]:
 
 def oneshot(h: Home, prompt: str, *args: str, resume: str | None = None, timeout: float = TURN_TIMEOUT,
             env: dict[str, str] | None = None) -> Run:
-    """One real ``hermes -z`` turn; the usage file names the session for ``--resume``."""
+    """One real ``cybr -z`` turn; the usage file names the session for ``--resume``."""
     usage_file = h.root / f"usage-{time.monotonic_ns()}.json"
     argv = ["-z", prompt, "--usage-file", str(usage_file), *args]
     if resume:

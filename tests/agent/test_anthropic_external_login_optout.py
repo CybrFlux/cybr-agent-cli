@@ -3,7 +3,7 @@
 Claude Code's OAuth refresh token is single-use: once Cybr Agent borrows and refreshes it, Cybr Agent and
 Claude Code hold one token family and whichever refreshes first logs the other out. With the opt-out
 set, Cybr Agent must neither read nor refresh ``~/.claude/.credentials.json``, must drop the pool row an
-earlier adopting process persisted, and must say so in ``hermes auth list``.
+earlier adopting process persisted, and must say so in ``cybr auth list``.
 """
 from __future__ import annotations
 

@@ -1,9 +1,9 @@
 """Import-class cron failures name gateway code skew when it exists (#95294).
 
-Field incident: an interrupted `hermes update` (pull done, restart never ran)
+Field incident: an interrupted `cybr update` (pull done, restart never ran)
 left the gateway on stale code for two days; every agent cron job failed with
 `ImportError: cannot import name 'user_originated_turn_view'` and the operator
-had no way to know the fix was one `hermes gateway restart`. The failure
+had no way to know the fix was one `cybr gateway restart`. The failure
 summarizer runs inside the gateway process, which knows its own boot
 fingerprint — when boot SHA != disk HEAD, the delivered error must say so and
 name the command.

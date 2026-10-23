@@ -68,7 +68,7 @@ export const chromeEn = {
       resume: 'switch live or resume past sessions',
       details: 'control transcript detail level',
       copy: 'copy selection or last assistant message',
-      quit: 'exit hermes'
+      quit: 'exit cybr'
     }
   }
 }

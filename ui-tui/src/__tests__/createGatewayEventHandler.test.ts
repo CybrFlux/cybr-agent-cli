@@ -1030,7 +1030,7 @@ describe('createGatewayEventHandler', () => {
     onEvent({
       payload: {
         message:
-          'agent init failed: No LLM provider configured. Run `hermes model` to select a provider, or run `hermes setup` for first-time configuration.'
+          'agent init failed: No LLM provider configured. Run `cybr model` to select a provider, or run `cybr setup` for first-time configuration.'
       },
       type: 'error'
     } as any)

@@ -304,7 +304,7 @@ def _wait_for_pid_exit(pid: int, timeout: float, *, on_progress=None) -> bool:
 
 # --- Wedged-gateway detection + bounded escalation ---------------------------
 # A gateway whose asyncio loop is stalled cannot handle SIGTERM/SIGUSR1, so the drain wait burns
-# its full budget and `hermes update` can deadlock. Two witnesses classify the loop BEFORE any
+# its full budget and `cybr update` can deadlock. Two witnesses classify the loop BEFORE any
 # drain wait: the heartbeat file ``state/gateway.heartbeat`` (rewritten every 30s on a thread, so
 # staleness alone is not proof) and the loop-tick socket ``state/gateway.loop-tick.<pid>.sock``
 # answered by the loop itself; the payload records whether the socket is armed (``loop_tick_socket``).
@@ -318,7 +318,7 @@ def _wait_for_pid_exit(pid: int, timeout: float, *, on_progress=None) -> bool:
 # --- Wedged-gateway detection + bounded escalation (#81642) ----------------- A gateway whose asyncio loop
 # is stalled (e.g. an in-loop compression pass, #72707) cannot process SIGTERM/SIGUSR1 shutdown: the drain
 # wait then burns the full drain budget (180s by default), warns "still running after 180.0s — restart may
-# fail", and `hermes update` can deadlock behind it. The loop publishes a liveness signal precisely for this
+# fail", and `cybr update` can deadlock behind it. The loop publishes a liveness signal precisely for this
 # case: an asyncio task rewrites ``state/gateway.heartbeat`` every 30s (#66892), so a frozen loop stops
 # refreshing the file while a busy-but-alive loop keeps refreshing it. Since #90502 the heartbeat write runs
 # on a thread (a stalling filesystem must not be able to block the loop the watchdog watches), which costs
@@ -527,11 +527,11 @@ def _escalate_wedged_gateway(pid: int, *, term_grace: float = 5.0, kill_wait: fl
 
 
 def _get_ancestor_pids() -> set[int]:
-    """PIDs of this process and its ancestors, so scans never count the invoking ``hermes`` CLI as a gateway.
+    """PIDs of this process and its ancestors, so scans never count the invoking `cybr` CLI as a gateway.
 
     Walks from the current PID up to PID 1 (init) so that process-table scans never match the calling CLI
-    process or any of its parents. This prevents ``hermes gateway status`` from falsely counting the
-    ``hermes`` CLI that invoked it as a running gateway instance (see #13242).
+    process or any of its parents. This prevents ``cybr gateway status`` from falsely counting the
+    `cybr` CLI that invoked it as a running gateway instance (see #13242).
     """
     ancestors: set[int] = set()
     pid = os.getpid()
@@ -570,7 +570,7 @@ def _scan_gateway_pids(
     exclude_pids: set[int], all_profiles: bool = False, include_restart_managers: bool = False
 ) -> list[int]:
     """Best-effort process-table scan for gateway PIDs (backs up a stale/missing PID file; ``--all`` sweeps)."""
-    # Exclude the whole ancestor chain: the invoking CLI (``hermes gateway status``) is not a gateway (#13242).
+    # Exclude the whole ancestor chain: the invoking CLI (``cybr gateway status``) is not a gateway (#13242).
     exclude_pids = exclude_pids | _get_ancestor_pids()
     pids: list[int] = []
     # Strict matcher shared with gateway.status: requires a real ``gateway run`` argv, so
@@ -703,7 +703,7 @@ def _windows_process_listing() -> str | None:
     hides the console window this windowless pythonw backend would flash."""
     # Prefer wmic when present (fast, stable output format). On modern Windows 11 / Win 10 late builds, wmic
     # has been removed as part of the WMIC deprecation — fall back to PowerShell's Get-CimInstance. A spawn
-    # failure or timeout (result is None) trips the fallback. ``hermes update`` hung exactly there on
+    # failure or timeout (result is None) trips the fallback. ``cybr update`` hung exactly there on
     # slow-WMI machines where the full Win32_Process scan exceeds its budget (#87134). bounded_probe_run
     # also hides the console window: this scan runs inside the windowless pythonw.exe gateway/desktop
     # backend, so a bare wmic/powershell spawn would flash a conhost window on every watchdog probe.
@@ -752,7 +752,7 @@ def _filter_venv_launcher_stubs(pids: list[int]) -> list[int]:
 
 
 def find_gateway_pids(exclude_pids: set | None = None, all_profiles: bool = False) -> list:
-    """Find running gateway PIDs for the current profile, or every profile with ``all_profiles`` (``hermes update``)."""
+    """Find running gateway PIDs for the current profile, or every profile with ``all_profiles`` (``cybr update``)."""
     _exclude = set(exclude_pids or set())
     pids: list[int] = []
     if not all_profiles:
@@ -959,7 +959,7 @@ def _capture_gateway_argv(pid: int) -> list[str] | None:
 
 
 def _prepare_profile_gateway_update_restart(profile: str, pid: int) -> str | None:
-    """Choose who relaunches a profile gateway after ``hermes update``: ``--external-supervisor`` gateways
+    """Choose who relaunches a profile gateway after ``cybr update``: ``--external-supervisor`` gateways
     exit back to their manager (a detached watcher would race its replacement); otherwise arm the
     profile-derived detached watcher, falling back to replaying the captured command line.
 
@@ -997,7 +997,7 @@ def launch_detached_profile_gateway_restart(profile: str, old_pid: int) -> bool:
 GATEWAY_RESTART_WATCHER_TIMEOUT_S = 120
 """How long the detached restart watcher waits for the old PID to exit before giving up.
 
-``hermes update``'s post-relaunch liveness check budgets against this: the watcher spawns the new
+``cybr update``'s post-relaunch liveness check budgets against this: the watcher spawns the new
 gateway only AFTER the old PID is gone, so a verification window shorter than this can expire
 before the relaunch it is verifying has even started (#107002).
 """
@@ -1359,7 +1359,7 @@ def _wait_for_systemd_service_restart(
                 if gateway_state == "degraded":
                     # Serving, but a configured platform is parked or retrying: a real restart, not a
                     # failure — say so instead of waiting out the timeout and reporting one.
-                    print(f"⚠ {scope_label} gateway is DEGRADED — see `hermes gateway status`")
+                    print(f"⚠ {scope_label} gateway is DEGRADED — see `cybr gateway status`")
                 return True
             if gateway_state == "startup_failed":
                 reason = (runtime_state or {}).get("exit_reason") or "startup failed"
@@ -1613,7 +1613,7 @@ def _print_gateway_process_mismatch(snapshot: GatewayRuntimeSnapshot) -> None:
     else:
         print("⚠ Gateway process is running for this profile, but the service is not active")
         print(pids_line)
-        print("  This is usually a manual foreground/tmux/nohup run, so `hermes gateway`")
+        print("  This is usually a manual foreground/tmux/nohup run, so `cybr gateway`")
         print("  can refuse to start another copy until this process stops.")
 
 
@@ -1658,7 +1658,7 @@ def _print_unserved_shared_ingress(profile: str | None) -> None:
 
 
 def _print_other_profiles_gateway_status() -> None:
-    """Print other profiles' running gateways at the bottom of ``hermes gateway status``."""
+    """Print other profiles' running gateways at the bottom of ``cybr gateway status``."""
     try:
         from hermes_cli.profiles import get_active_profile_name
         current = get_active_profile_name()
@@ -3727,7 +3727,7 @@ def systemd_stop(system: bool = False):
     except subprocess.TimeoutExpired:
         print(
             f"Gateway {_service_scope_label(system)} service is still stopping after 90s; "
-            "check `hermes gateway status` or logs for final shutdown state."
+            "check `cybr gateway status` or logs for final shutdown state."
         )
         return
     print(f"✓ {_service_scope_label(system).capitalize()} service stopped")
@@ -3837,7 +3837,7 @@ def _systemd_reset_and_run(action: str, *, system: bool, previous_pid) -> None:
     except subprocess.TimeoutExpired:
         print(
             f"Gateway {_service_scope_label(system)} service is still restarting after 90s; "
-            "check `hermes gateway status` or logs for final state."
+            "check `cybr gateway status` or logs for final state."
         )
         return
     _wait_for_systemd_service_restart(system=system, previous_pid=previous_pid)
@@ -4102,7 +4102,7 @@ def _served_by_another_host_gateway(profile_name: str | None = None):
     """The host gateway serving ``profile_name`` when it is NOT this home's own process.
 
     The owner must never be guarded out of restarting itself: a refusal keyed on "something serves
-    you" would make `hermes gateway restart` impossible for the profile that launched the host
+    you" would make `cybr gateway restart` impossible for the profile that launched the host
     process. Guards want "ANOTHER process already serves you", which is this.
     """
     gateway = host_multiplexer_serving(profile_name)
@@ -4153,7 +4153,7 @@ def named_profile_served_by_running_multiplexer(profile_name: str | None = None)
             return False
         from hermes_cli.profiles import normalize_profile_name
         # The live gateway's own record wins: the CLI process cannot see an env-only opt-in on the
-        # default profile (`hermes -p X` loads X's .env) and a config edit after start is not live yet.
+        # default profile (`cybr -p X` loads X's .env) and a config edit after start is not live yet.
         # Only a record without the key (pre-multiplex writer) falls through to config derivation.
         recorded = recorded_served_profiles(default_root)
         if recorded is not None:
@@ -4172,11 +4172,11 @@ def _served_profile_needs_no_service() -> bool:
     """Print the "already served" note and return True when a setup flow must not install a standalone
     service: a live multiplexing default gateway already serves this named profile, so the unit/plist it
     would register can only sit dead (the start guard refuses it) or double-bind its platforms.
-    Shared by ``hermes setup gateway`` / ``hermes setup`` / ``hermes import`` (``ensure_gateway_service``)
-    and the ``hermes gateway setup`` wizard. See #111958."""
+    Shared by ``cybr setup gateway`` / ``cybr setup`` / ``cybr import`` (``ensure_gateway_service``)
+    and the ``cybr gateway setup`` wizard. See #111958."""
     if not named_profile_served_by_running_multiplexer():
         # Not served (yet): a named profile still gets no service of its own — same rule and text
-        # as `gateway install`, so `hermes -p X setup` cannot grow a fleet member the verb refuses.
+        # as `gateway install`, so `cybr -p X setup` cannot grow a fleet member the verb refuses.
         return _named_profile_refused_under_multiplexer()
     from hermes_cli.profiles import profile_is_standalone
     if profile_is_standalone(get_hermes_home()):
@@ -4410,9 +4410,9 @@ def _guard_existing_gateway_process_conflict(replace: bool = False) -> None:
         return
 
     print_error(f"A gateway is already running (PID {pid}), so your bots are most likely online already.")
-    print("  Check with `hermes gateway status`.")
-    print("  To restart it: `hermes gateway restart`. To stop it: `hermes gateway stop`.")
-    print("  To replace it from here: `hermes gateway run --replace`.")
+    print("  Check with `cybr gateway status`.")
+    print("  To restart it: `cybr gateway restart`. To stop it: `cybr gateway stop`.")
+    print("  To replace it from here: `cybr gateway run --replace`.")
     sys.exit(1)
 
 
@@ -4585,7 +4585,7 @@ def run_gateway(verbose: int = 0, quiet: bool = False, replace: bool = False, fo
         _ensure_user_systemd_env()
 
     # Refresh the systemd unit on every boot so restart settings stay current even after an
-    # exit-code-75 respawn (stale-code or /restart), which bypasses `hermes gateway restart`.
+    # exit-code-75 respawn (stale-code or /restart), which bypasses `cybr gateway restart`.
     if supports_systemd_services():
         try:
             refresh_systemd_unit_if_needed(system=False)
@@ -5027,7 +5027,7 @@ def _refuse_from_inside_gateway(verb: str, reason: str) -> None:
         print_error(
             f"Refusing to {verb} the gateway from inside the gateway process.\n"
             f"This command was blocked to prevent {reason}.\n"
-            f"Use `hermes gateway {verb}` from a shell outside the running gateway."
+            f"Use `cybr gateway {verb}` from a shell outside the running gateway."
         )
         sys.exit(1)
 
@@ -5495,7 +5495,7 @@ def _cmd_restart(args):
             pass
 
     # Linger only explains a FAILED systemd unit restart. Without an installed unit the
-    # detached run below is the restart; bailing here left `hermes gateway restart` a
+    # detached run below is the restart; bailing here left `cybr gateway restart` a
     # silent exit-0 no-op on any Linux login session (Desktop read it as success).
     if kind == "systemd" and supports_systemd_services():
         linger_ok, _detail = get_systemd_linger_status()
@@ -5540,7 +5540,7 @@ def _cmd_restart(args):
     start_restart_replacement(args, force=force)
 
 
-# ``hermes gateway status`` hints for a manually-run / stopped gateway, keyed by host kind.
+# ``cybr gateway status`` hints for a manually-run / stopped gateway, keyed by host kind.
 _STATUS_RUNNING_HINTS = {
     "termux": ("Termux note:", "  Android may stop background jobs when Termux is suspended"),
     "wsl": (

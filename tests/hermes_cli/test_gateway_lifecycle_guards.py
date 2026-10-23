@@ -227,7 +227,7 @@ def test_sudo_system_stop_checks_the_units_home_not_roots(tmp_path, monkeypatch,
 
 @pytest.mark.parametrize("verb", ["stop", "restart"])
 def test_host_served_profile_refuses_before_unserving_its_live_turns(tmp_path, monkeypatch, capsys, verb):
-    """``hermes -p coder gateway stop|restart`` on a profile the host serves unserves it in the host,
+    """``cybr -p coder gateway stop|restart`` on a profile the host serves unserves it in the host,
     which Stops its executing turns: the live-work policy applies first, scoped to that profile."""
     from gateway import control_socket
     from hermes_cli import gateway_profile_lifecycle as gpl

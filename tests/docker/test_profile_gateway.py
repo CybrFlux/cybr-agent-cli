@@ -2,7 +2,7 @@
 
 Multiplex-only (#118273, #118433): ONE gateway per container serves every profile. ``hermes
 profile create`` still registers the profile's s6 slot (so ``--force`` has something to drive),
-but ``hermes -p <profile> gateway start`` without ``--force`` refuses, names the escape, and
+but ``cybr -p <profile> gateway start`` without ``--force`` refuses, names the escape, and
 leaves the slot's want-state DOWN. ``--force`` is the only path to a second, supervised
 per-profile gateway, and that path keeps working (its slot wants up, and stop takes it down).
 
@@ -10,7 +10,7 @@ NB: The harness profile has no model/auth configured. A ``--force``-started supe
 process may spin up (svstat ``up``) or exit fast and be throttled (``down …, want up``). We
 assert the *want* intent the lifecycle command set, NOT the supervised process's health.
 
-Every ``docker exec`` here runs as the unprivileged ``hermes`` user (via
+Every ``docker exec`` here runs as the unprivileged `cybr` user (via
 :func:`docker_exec_sh` in conftest); see the conftest module docstring.
 """
 from __future__ import annotations

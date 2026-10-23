@@ -222,7 +222,7 @@ def test_subprocess_run_setsid_systemctl_blocked():
 
 
 def test_host_gateway_start_blocked_but_container_exec_allowed():
-    """A host-side ``hermes gateway start`` spawns a real runtime; the same words addressed to
+    """A host-side ``cybr gateway start`` spawns a real runtime; the same words addressed to
     a container via ``docker exec`` stay inside it and are the Docker harness's business."""
     with pytest.raises(RuntimeError, match="REAL hermes gateway runtime"):
         subprocess.run(["hermes", "-p", "p", "gateway", "start"], check=False)

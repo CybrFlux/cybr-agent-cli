@@ -17,7 +17,7 @@ from gateway import runtime_bootstrap_windows as native
 from hermes_cli import gateway_runtime as runtime
 from hermes_cli.gateway_runtime_cli import ensure_exit_code
 
-# The owner stand-in is a stub ``hermes gateway run`` child that each test reaps itself.
+# The owner stand-in is a stub ``cybr gateway run`` child that each test reaps itself.
 pytestmark = pytest.mark.spawns_gateway_lookalike
 
 

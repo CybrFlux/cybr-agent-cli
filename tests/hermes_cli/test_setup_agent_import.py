@@ -1,9 +1,9 @@
-"""`hermes setup`'s "Coming from another agent?" step: it offers only the agents found on disk, installs
+"""`cybr setup`'s "Coming from another agent?" step: it offers only the agents found on disk, installs
 the agent-importers plugin through the catalog install only after a yes, then runs that plugin's
 import for each pick.
 
 Real step code, a temp HERMES_HOME and a fake HOME; the terminal prompts, the catalog install (network)
-and the child `hermes import-agent` process are stand-ins that record what the step asked for.
+and the child `cybr import-agent` process are stand-ins that record what the step asked for.
 """
 
 from __future__ import annotations

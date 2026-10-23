@@ -1,4 +1,4 @@
-"""``hermes skin`` subcommand parser."""
+"""``cybr skin`` subcommand parser."""
 
 from __future__ import annotations
 

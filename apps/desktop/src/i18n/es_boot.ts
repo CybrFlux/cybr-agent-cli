@@ -89,7 +89,7 @@ export const esBoot = {
       since: time => `Esperando desde ${time}`,
       lastChecked: time => `Última comprobación ${time}`,
       recoveryHint:
-        'Esto suele resolverse en unos minutos. Si no: cierra Cybr Agent, termina los procesos git o hermes que queden (o reinicia el equipo) y vuelve a abrir Cybr Agent.',
+        'Esto suele resolverse en unos minutos. Si no: cierra Cybr Agent, termina los procesos git o cybr que queden (o reinicia el equipo) y vuelve a abrir Cybr Agent.',
       checkAgain: 'Comprobar de nuevo',
       quit: 'Salir de Cybr Agent',
       openLogs: 'Abrir registros',

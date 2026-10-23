@@ -1,4 +1,4 @@
-"""``hermes computer-use screen`` — the Bot Desktop screen a profile's ``computer_use`` drives on a
+"""``cybr computer-use screen`` — the Bot Desktop screen a profile's ``computer_use`` drives on a
 headless Linux gateway host, viewable from Cybr Agent Desktop. ``status`` / ``start`` / ``stop`` /
 ``install`` mirror the Desktop pane's controls for ops shells and cloud images."""
 
@@ -95,7 +95,7 @@ def _screen_install(args) -> int:
     if missing:
         print("Bot Desktop: still missing " + ", ".join(missing))
         return 1
-    print("Bot Desktop: ready. Start with `hermes computer-use screen start` or from Cybr Agent Desktop.")
+    print("Bot Desktop: ready. Start with `cybr computer-use screen start` or from Cybr Agent Desktop.")
     return 0
 
 

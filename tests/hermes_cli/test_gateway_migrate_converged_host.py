@@ -1,4 +1,4 @@
-"""A CONVERGED host is a no-op for ``hermes gateway migrate --multiplex``, run after run.
+"""A CONVERGED host is a no-op for ``cybr gateway migrate --multiplex``, run after run.
 
 Driven through the REAL topology path, not stubbed per-profile PIDs: a live host rendezvous
 record + the per-profile ``gateway_state.json`` the multiplexer stamps, so

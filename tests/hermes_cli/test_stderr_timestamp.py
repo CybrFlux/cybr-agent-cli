@@ -75,7 +75,7 @@ def test_main_timestamps_each_stderr_line(tmp_path):
 
 def test_wrapper_timestamps_child_stdout_into_its_own_stdout(tmp_path):
     """launchd appends the wrapper's stdout to gateway.log; a raw print() there has no stamp,
-    so ``hermes logs gateway --since`` can never filter it out."""
+    so ``cybr logs gateway --since`` can never filter it out."""
     stdout_log = tmp_path / "gateway.log"
     error_log = tmp_path / "gateway.error.log"
     code = (

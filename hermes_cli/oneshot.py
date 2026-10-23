@@ -1,8 +1,8 @@
 """Oneshot (-z) mode: send a prompt, get the final content block, exit.
 
-Toolsets = explicit --toolsets, else the user's "cli" toolsets from `hermes tools`. Rules /
+Toolsets = explicit --toolsets, else the user's "cli" toolsets from `cybr tools`. Rules /
 memory / AGENTS.md / preloaded skills = same as a normal chat turn. Approvals are auto-bypassed
-(HERMES_YOLO_MODE=1). Model/provider mirror `hermes chat`: both optional; only --model → auto-detect
+(HERMES_YOLO_MODE=1). Model/provider mirror `cybr chat`: both optional; only --model → auto-detect
 the provider; only --provider → error (ambiguous).
 """
 
@@ -134,7 +134,7 @@ def _build_preloaded_skills_prompt(skills: object = None) -> str | None:
         if not loaded_skills:
             raise ValueError(format_missing_skills(missing_skills))
         logging.warning(
-            "Skipping %s. Continuing with: %s. List available skills with `hermes skills list`.",
+            "Skipping %s. Continuing with: %s. List available skills with `cybr skills list`.",
             format_missing_skills(missing_skills),
             ", ".join(loaded_skills),
         )
@@ -275,7 +275,7 @@ def run_oneshot(
     # Non-interactive by definition — an approval prompt would hang forever.
     os.environ["HERMES_YOLO_MODE"] = "1"
     os.environ["HERMES_ACCEPT_HOOKS"] = "1"
-    # Same finite-chat marker as `hermes chat -q` (cli.py): the session-source resolver uses it to drop an
+    # Same finite-chat marker as `cybr chat -q` (cli.py): the session-source resolver uses it to drop an
     # inherited tui/desktop transport label, and delegate dispatch to route detached results inline.
     os.environ["HERMES_SINGLE_QUERY_SESSION"] = "1"
 
@@ -442,7 +442,7 @@ def _load_resume_target(session_db, resume: Optional[str]) -> tuple[Optional[str
     ``session_meta`` rows dropped. An unknown session raises (the user passed an explicit id;
     silently starting a fresh session is the resume-dropped failure mode this exists to fix —
     see #105892). An empty stored transcript still returns the resolved id: the turn replays
-    nothing but is recorded under the requested session — ``hermes -z "hello" -c <title>
+    nothing but is recorded under the requested session — ``cybr -z "hello" -c <title>
     --create-if-missing`` must fill the titled session it created, not mint a fresh id
     (same contract as the interactive /resume of an empty session).
 
@@ -588,7 +588,7 @@ def _run_agent(
             session_id=resume_sid,
             credential_pool=runtime.get("credential_pool"),
             fallback_model=get_fallback_chain(cfg) or None,
-            # The resolved provider's request body (a custom entry's extra_body), as `hermes chat` passes it.
+            # The resolved provider's request body (a custom entry's extra_body), as `cybr chat` passes it.
             request_overrides=runtime.get("request_overrides"),
             ephemeral_system_prompt=skills_prompt,
             reasoning_config=reasoning_config,

@@ -1,6 +1,6 @@
-"""The `hermes profile purge-identity` retry path: dispatched, and honest about failure.
+"""The `cybr profile purge-identity` retry path: dispatched, and honest about failure.
 
-`hermes profile delete` reports a pending identity settlement when it cannot purge and names this
+`cybr profile delete` reports a pending identity settlement when it cannot purge and names this
 command as the retry — so the command must actually reach a handler, and must fail loudly when the
 settlement still cannot be made. Regression for the delete side of #111926.
 """

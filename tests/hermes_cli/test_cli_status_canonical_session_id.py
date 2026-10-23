@@ -4,7 +4,7 @@ Main printed the ``YYYYMMDD_HHMMSS_<hex>`` id it minted itself. Under the one ga
 session row's only id is the canonical ``local-`` + sha256 receipt identity (``local_identity``);
 no legacy alias exists to print. ``/status`` shows that full id because it is the value every
 other surface uses for the same session: the exit epilogue's ``hermes --resume <id>``, the TUI
-and gateway ``/status``, ``hermes sessions list`` and ``state.db``. A shortened or reformatted
+and gateway ``/status``, ``cybr sessions list`` and ``state.db``. A shortened or reformatted
 id would be one more spelling that a user copies and the resolver may not accept.
 """
 

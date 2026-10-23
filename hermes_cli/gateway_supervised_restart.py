@@ -1,4 +1,4 @@
-"""``hermes gateway restart`` for a gateway whose supervisor Cybr Agent did not install.
+"""``cybr gateway restart`` for a gateway whose supervisor Cybr Agent did not install.
 
 A custom launchd agent / systemd unit / any KeepAlive-style manager running ``gateway run
 --external-supervisor`` owns the respawn. The manual fallback in ``_cmd_restart`` (SIGTERM, then a
@@ -126,7 +126,7 @@ def refuse_restart_of_service_managed_gateway(pid: int | None) -> None:
     _print_lines(
         "",
         f"✗ Gateway (PID {pid}) is managed by systemd unit {unit}.",
-        "  `hermes gateway restart` cannot restart it from here: the fallback would",
+        "  `cybr gateway restart` cannot restart it from here: the fallback would",
         "  kill a live gateway and spawn an unsupervised replacement in this shell's",
         "  cgroup while the unit keeps failing against the stolen lock.",
         "  Restart it through its unit instead:",

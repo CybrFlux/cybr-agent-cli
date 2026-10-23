@@ -491,7 +491,7 @@ def test_anthropic_dashboard_oauth_is_removed_and_external():
 
 def test_accounts_offers_every_oauth_provider_from_catalog():
     """PARITY CONTRACT: every accounts-tab provider in the unified catalog (the
-    `hermes model` universe) must be offered by /api/providers/oauth. This keeps
+    `cybr model` universe) must be offered by /api/providers/oauth. This keeps
     the desktop Accounts tab in lockstep with the CLI picker — no provider the
     CLI can sign into may be missing from the GUI.
     """
@@ -503,7 +503,7 @@ def test_accounts_offers_every_oauth_provider_from_catalog():
     for d in provider_catalog():
         if d.tab == "accounts":
             assert d.slug in offered, (
-                f"{d.slug} is an accounts-tab provider in `hermes model` but is "
+                f"{d.slug} is an accounts-tab provider in `cybr model` but is "
                 f"missing from the desktop Accounts tab (/api/providers/oauth)"
             )
 
@@ -552,7 +552,7 @@ def test_xai_dashboard_poller_seeds_single_entry_and_clears_suppression(tmp_path
     singleton only; the seed is the single source of truth.
 
     Suppression: an interactive dashboard login must also clear any
-    ``device_code`` suppression left by a prior ``hermes auth remove
+    ``device_code`` suppression left by a prior ``cybr auth remove
     xai-oauth``.
     """
     from hermes_cli import auth as auth_mod
@@ -575,7 +575,7 @@ def test_xai_dashboard_poller_seeds_single_entry_and_clears_suppression(tmp_path
         encoding="utf-8",
     )
 
-    # Prior `hermes auth remove xai-oauth` left the source suppressed.
+    # Prior `cybr auth remove xai-oauth` left the source suppressed.
     auth_mod.suppress_credential_source("xai-oauth", "device_code")
     assert auth_mod.is_source_suppressed("xai-oauth", "device_code") is True
 

@@ -1,9 +1,9 @@
 """A named profile cannot create a NEW standalone gateway — multiplexer running or not (#109417).
 
-One gateway per host serves every profile. ``hermes -p X gateway install|start`` used to refuse only
+One gateway per host serves every profile. ``cybr -p X gateway install|start`` used to refuse only
 while a live multiplexer already served X; on a host with no multiplexer running (or one that had not
 rescanned yet) it wrote a brand-new per-profile unit. Now every named profile is refused without
-``--force`` and pointed at ``hermes gateway install`` (default) / ``hermes gateway migrate --multiplex``;
+``--force`` and pointed at ``cybr gateway install`` (default) / ``cybr gateway migrate --multiplex``;
 ``--force`` stays the one escape and a ``--force``-installed service stays startable without it. The
 dashboard ``/api/gateway/start`` twin (``multiplexed_profile_refusal``) applies the same rule.
 """

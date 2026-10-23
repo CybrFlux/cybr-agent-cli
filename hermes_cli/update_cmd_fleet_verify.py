@@ -1,4 +1,4 @@
-"""Post-restart fleet verification for ``hermes update`` (``update_cmd_fleet`` sibling).
+"""Post-restart fleet verification for ``cybr update`` (``update_cmd_fleet`` sibling).
 
 After the restart phase: compare every live gateway's stamped code against the checkout, reconcile
 the pre-update plan against what the restart did, keep the restart owed (a ``gateway_restart``
@@ -214,7 +214,7 @@ def _split_unaccounted(outcomes) -> tuple[bool, set]:
 # part below starts with it and the gateway part always comes first (#141071).
 SERVE_ONLY_REASON_PREFIX = "serve/dashboard "
 _GATEWAY_OWED_REASON = "gateways may still run pre-update code or were stopped without a successor"
-_GATEWAY_RECOVERY = "; recover with `hermes gateway restart`"
+_GATEWAY_RECOVERY = "; recover with `cybr gateway restart`"
 
 
 def _owed_restart_reason(restart, stopped, *, gateway_owed: bool, stale_serves: set, down_serves: set) -> str:
@@ -237,7 +237,7 @@ def _owed_restart_reason(restart, stopped, *, gateway_owed: bool, stale_serves: 
     if down_serves:
         parts.append(
             f"{SERVE_ONLY_REASON_PREFIX}process(es) {', '.join(map(str, sorted(down_serves)))} were stopped during the"
-            " update and not brought back; relaunch `hermes serve` / `hermes dashboard`")
+            " update and not brought back; relaunch `cybr serve` / `cybr dashboard`")
     if stale_serves - down_serves:
         parts.append(
             f"{SERVE_ONLY_REASON_PREFIX}process(es) {', '.join(map(str, sorted(stale_serves - down_serves)))} still run"
@@ -404,7 +404,7 @@ def _verify_fleet_after_update(restart, *, _pre_update_plan, _windows_gateway_re
     if restart.incomplete:
         # Code is committed (contract C3): a gateway that may still run stale modules is a
         # follow-up, never a failed update. The fleet obligation stays armed, every CLI start
-        # warns about it, and the next `hermes update` retries the restart.
+        # warns about it, and the next `cybr update` retries the restart.
         from hermes_cli.update_receipt import record_followup
         stopped = sorted(getattr(restart, "stopped_unmapped_pids", None) or ())
         record_followup("gateway_restart", _owed_restart_reason(
@@ -434,4 +434,4 @@ def _verify_fleet_after_update(restart, *, _pre_update_plan, _windows_gateway_re
         maybe_auto_migrate_after_update()
     except (Exception, SystemExit) as exc:  # health: allow BLE001 -- a SystemExit here must not fail a committed update
         logger.warning('Multiplex auto-migration after update failed: %s', exc)
-        print(f"  ⚠ Gateway multiplex migration did not finish: {exc} (run `hermes gateway migrate` later)")
+        print(f"  ⚠ Gateway multiplex migration did not finish: {exc} (run `cybr gateway migrate` later)")

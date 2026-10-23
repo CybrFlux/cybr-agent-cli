@@ -1,4 +1,4 @@
-"""``hermes doctor`` names the Relay plugin files the runtime actually loads.
+"""``cybr doctor`` names the Relay plugin files the runtime actually loads.
 
 Relay discovers user and system ``plugins.toml`` files outside the Cybr Agent home, so doctor is the one
 Cybr Agent surface that shows a user which files apply. It must agree with what initialization loads.

@@ -1,8 +1,8 @@
-"""GW-1 (#134889): `hermes pause` holds every gateway turn, interactive ones included.
+"""GW-1 (#134889): `cybr pause` holds every gateway turn, interactive ones included.
 
 Since #106742 every local turn is a gateway turn, so the emergency stop holding CLI, TUI and Desktop
 turns is the stop working as designed. What every surface must get is the same named refusal
-(``agent.estop.paused_reply``: the reason and "run `hermes resume`"), and a turn already running
+(``agent.estop.paused_reply``: the reason and "run `cybr resume`"), and a turn already running
 when the pause lands must finish. Real GatewayRunner + authority + WS API, loopback model.
 """
 import json
@@ -51,7 +51,7 @@ def test_resume_lets_the_next_turn_run(receipt):
 
 
 def test_pause_help_and_docs_say_interactive_turns_are_held_too():
-    """The decided contract is documented where operators read it (`hermes pause --help`, the CLI
+    """The decided contract is documented where operators read it (`cybr pause --help`, the CLI
     reference): interactive CLI, TUI and Desktop turns are gateway turns and are held too."""
     import argparse
     from hermes_cli.subcommands.pause import build_pause_parser

@@ -1,9 +1,9 @@
 """Multiplex-only reporting: one host gateway serving N profiles must be reported as such.
 
 Invariants (all fail on origin/main):
-* ``hermes -p <served> cron status`` names the HOST gateway as the ticker and never tells the
+* ``cybr -p <served> cron status`` names the HOST gateway as the ticker and never tells the
   user to start a second process.
-* ``hermes -p <served> doctor`` reports the single host gateway + its roster, not
+* ``cybr -p <served> doctor`` reports the single host gateway + its roster, not
   "Per-profile gateways: up/total", and still checks the HOST systemd unit's linger.
 * the state.db holder line names the shared host process and the profiles it serves.
 """

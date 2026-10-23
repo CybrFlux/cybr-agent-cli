@@ -1203,7 +1203,7 @@ export const ruOverrides = {
       sshKeyTitle: 'Файл ключа',
       sshKeyDesc: 'Путь к закрытому ключу. Пусто = ssh-agent или ~/.ssh/config.',
       sshHermesPathTitle: 'Путь к Cybr Agent (необязательно)',
-      sshHermesPathDesc: 'Полный путь к бинарнику hermes на удалённой машине. Пусто = автоопределение.',
+      sshHermesPathDesc: 'Полный путь к бинарнику cybr на удалённой машине. Пусто = автоопределение.',
       sshHermesPathPlaceholder: 'автоопределение',
       sshTestConnection: 'Проверить SSH',
       sshConnect: 'Подключиться',
@@ -1492,7 +1492,7 @@ export const ruOverrides = {
     edit: 'Изменить',
     archive: 'В архив',
     skillArchivedTitle: 'Навык в архиве',
-    skillArchivedMessage: 'Восстановить через hermes curator restore.',
+    skillArchivedMessage: 'Восстановить через cybr curator restore.',
     hub: {
       searchPlaceholder: 'Поиск в хабе навыков',
       search: 'Поиск',
@@ -2589,7 +2589,7 @@ export const ruOverrides = {
       '/resume': 'Возобновить сохранённый сеанс',
       '/details': 'уровень детализации транскрипта',
       '/copy': 'скопировать выделенное или последнее сообщение ассистента',
-      '/quit': 'выйти из hermes',
+      '/quit': 'выйти из cybr',
       '/start': 'Подтвердить запуск платформы без ответа',
       '/new': 'Начать новый чат в приложении',
       '/topic': 'Включить или просмотреть темы личных сообщений Telegram',
@@ -3859,7 +3859,7 @@ export const ruOverrides = {
       success: platform => `Передаём в ${platform}. Возобновите здесь в любой момент.`,
       systemNote: platform => `↻ Передано в ${platform} — возобновите здесь в любой момент.`,
       failed: error => `Передача не удалась: ${error}`,
-      timedOut: 'Превышено время ожидания шлюза. Выполняется ли `hermes gateway`?'
+      timedOut: 'Превышено время ожидания шлюза. Выполняется ли `cybr gateway`?'
     }
   },
   errors: {

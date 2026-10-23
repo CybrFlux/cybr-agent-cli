@@ -4,7 +4,7 @@ The installer is HEAD's own copy, run the way the documented one-liner runs it (
 stdin at EOF, setup wizard skipped) inside the bwrap sandbox with an empty fake HOME that has
 only a fresh distro's dotfiles. Its git clone is redirected to a local bare clone of this
 checkout (``_install_helpers``); uv comes from the host's warm cache. After the install the
-user's shell resolves ``hermes`` from ``~/.local/bin`` (the installer wires PATH into the
+user's shell resolves `cybr` from ``~/.local/bin`` (the installer wires PATH into the
 shell rc), ``hermes --version`` answers from the installed checkout, and a one-shot turn reaches
 the (fake) provider and is persisted.
 
@@ -53,7 +53,7 @@ def _path_lines(sb: I.Sandbox) -> dict[str, int]:
 
 
 def _login_shell_hermes(sb: I.Sandbox) -> str:
-    """Resolve `hermes` the way a new login shell would: PATH comes only from the rc files."""
+    """Resolve `cybr` the way a new login shell would: PATH comes only from the rc files."""
     env = dict(sb.env)
     env["PATH"] = "/usr/local/bin:/usr/bin:/bin"
     bash = shutil.which("bash")

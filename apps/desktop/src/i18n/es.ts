@@ -515,7 +515,7 @@ export const esOverrides = {
       'Tu paquete se subió de forma privada. Comparte el enlace de abajo en tu hilo de soporte para que el equipo pueda ver tus registros.',
     failedTitle: 'Error al subir',
     failedHint:
-      'También puedes ejecutar `hermes debug share --nous` desde una terminal, o `hermes debug share --local` para mostrar el informe sin subirlo.',
+      'También puedes ejecutar `cybr debug share --nous` desde una terminal, o `cybr debug share --local` para mostrar el informe sin subirlo.',
     handoffLead: 'Continúa la conversación en:',
     links: {
       github: 'Issues de GitHub',
@@ -2431,7 +2431,7 @@ export const esOverrides = {
     edit: 'Editar',
     archive: 'Archivar',
     skillArchivedTitle: 'Skill archivado',
-    skillArchivedMessage: 'Puedes restaurarlo con hermes curator restore.',
+    skillArchivedMessage: 'Puedes restaurarlo con cybr curator restore.',
     tabPlugins: 'Plugins',
     plugins: {
       agentTitle: 'Plugins del agente',
@@ -3760,7 +3760,7 @@ export const esOverrides = {
       '/resume': 'Reanudar una sesión guardada',
       '/details': 'controlar el nivel de detalle de la transcripción',
       '/copy': 'copiar selección o último mensaje del asistente',
-      '/quit': 'salir de hermes',
+      '/quit': 'salir de cybr',
       '/start': 'Confirmar los pings de inicio de la plataforma sin responder',
       '/new': 'Iniciar un chat nuevo de escritorio',
       '/topic': 'Activar o inspeccionar las sesiones por tema de los MD de Telegram',
@@ -4105,9 +4105,9 @@ export const esOverrides = {
     versionDetailsDistributionDesktopMsix: 'Aplicación de escritorio (MSIX)',
     versionDetailsDistributionDesktopInstaller: 'Aplicación de escritorio (instalador)',
     versionDetailsDistributionSourceInstaller: 'Código fuente (script de instalación)',
-    versionDetailsDistributionSourceInstallerDesktop: 'Código fuente (script de instalación) + hermes desktop',
+    versionDetailsDistributionSourceInstallerDesktop: 'Código fuente (script de instalación) + cybr desktop',
     versionDetailsDistributionSource: 'Código fuente',
-    versionDetailsDistributionSourceDesktop: 'Código fuente + hermes desktop',
+    versionDetailsDistributionSourceDesktop: 'Código fuente + cybr desktop',
     versionDetailsDistributionStore: 'Microsoft Store',
     versionDetailsRuntime: 'Entorno de ejecución',
     versionDetailsRuntimeEmbedded: 'Entorno de ejecución integrado',

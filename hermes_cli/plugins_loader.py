@@ -216,7 +216,7 @@ class PluginLoaderMixin:
         """Subscribe to "a discovery sweep loaded plugins this process did not have": fires from INSIDE
         :meth:`discover_and_load` (never emitted by an install RPC) with one
         ``{name, key, activated_now, deferred}`` summary per NEWLY loaded plugin — every plugin at boot,
-        just the newcomer after a mid-run ``hermes plugins install/enable``, Desktop / dashboard /
+        just the newcomer after a mid-run ``cybr plugins install/enable``, Desktop / dashboard /
         ``plugins.manage`` install-enable-update, a tool-triggered force re-discovery or the gateway's
         ``reload-plugins`` verb (all of which run ``discover_plugins(force=True)``; a non-forced call
         short-circuits on ``_discovered`` and never fires). See
@@ -265,7 +265,7 @@ class PluginLoaderMixin:
     def _register_deferred_platform(self, manifest: PluginManifest) -> None:
         """Register a lazy loader for a bundled platform: the adapter imports only when the
         ``platform_registry`` is first asked for it; a placeholder ``LoadedPlugin`` keeps it visible in
-        ``hermes plugins list`` until then."""
+        ``cybr plugins list`` until then."""
         from hermes_cli.plugins import LoadedPlugin
         lookup_key = manifest_key(manifest)
         loaded = LoadedPlugin(manifest=manifest, enabled=True, deferred=True)
@@ -340,13 +340,13 @@ class PluginLoaderMixin:
     def _register_deferred_platform_tools(self, manifest: PluginManifest, loaded: LoadedPlugin) -> None:
         """Register a deferred platform's *client* tools without its adapter. Deferring the plugin would
         otherwise defer its outbound tools too, so CLI/TUI processes (which never materialize platforms)
-        would miss them in ``hermes tools`` / ``platform_toolsets``. Opt-in is explicit via ``provides_tools``;
+        would miss them in ``cybr tools`` / ``platform_toolsets``. Opt-in is explicit via ``provides_tools``;
         tools live in a ``tools`` submodule so ``__init__`` stays import-light.
 
         A platform plugin can ship two independent things: an inbound adapter (heavy — it imports the
         platform SDK) and outbound client tools the agent calls like any other tool. Deferring the plugin
         defers both, so in a CLI/TUI process the client tools never register at all: ``resolve_toolset()``
-        returns ``[]``, the toolset is missing from the ``hermes tools`` checklist, and even an explicit
+        returns ``[]``, the toolset is missing from the ``cybr tools`` checklist, and even an explicit
         ``platform_toolsets`` entry is dropped because the key is unknown. The same tools work in
         gateway/web processes only because those materialize every platform at startup (issue #78050).
         Opting in is explicit: the manifest must declare ``provides_tools`` (the field the plugin list and
@@ -409,7 +409,7 @@ class PluginLoaderMixin:
                 registered,
             )
         except (Exception, SystemExit) as exc:
-            # Tools registered before the raise are live: credit them or `hermes plugins list` under-reports
+            # Tools registered before the raise are live: credit them or `cybr plugins list` under-reports
             # (and _load_plugin's later diff would miss them too). Never break discovery (the platform stays
             # deferred), but a broken tools.py IS the symptom, so warn — and say where it failed first.
             partial, total = _credit(), len(declared)
@@ -629,7 +629,7 @@ class PluginLoaderMixin:
         def _keys(kind: str) -> list[str]:
             return [r.key for r in registrations if r.kind == kind]
 
-        # Discovery-time tools predate registration_start; credit them back or `hermes plugins list`
+        # Discovery-time tools predate registration_start; credit them back or `cybr plugins list`
         # under-reports once the deferred adapter materializes.
         predeclared = [t for t in self._predeclared_tools.pop(plugin_key, []) if t in self._plugin_tool_names]
         loaded.tools_registered = predeclared + [k for k in _keys("tool") if k not in predeclared]

@@ -210,7 +210,7 @@ def _read_browser_cfg() -> dict:
 
 
 def _use_gateway(browser_cfg: dict) -> bool:
-    """True when the browser section selects the Nous Tool Gateway — by the current ``hermes tools``
+    """True when the browser section selects the Nous Tool Gateway — by the current ``cybr tools``
     picker row (``cloud_provider: nous``) or the pre-picker ``use_gateway: true`` flag. Reading only
     the legacy flag missed every picker-configured gateway, and the direct-API branch it fell into
     holds no credentials in managed mode (#108310)."""
@@ -287,7 +287,7 @@ def default_downgrade_notice() -> Optional[str]:
             stamp.touch()
             os.utime(stamp, (now, now))
         return ("browser-harness is missing from Cybr Agent's Python environment — using the built-in browser tools. "
-                "Run `hermes update` to re-sync it, or set `browser.backend: off` in config.yaml to silence this.")
+                "Run `cybr update` to re-sync it, or set `browser.backend: off` in config.yaml to silence this.")
     except Exception as e:  # pragma: no cover — a notice must never break startup
         logger.debug("browser-use downgrade notice failed: %s", e)
         return None
@@ -407,7 +407,7 @@ def _resolve_lightpanda_cdp(env: dict, task_id: Optional[str], session_name: str
     err = _export_session_cdp(
         env, _get_session_info, _backend_cache_key(task_id, session_name, sidecar),
         lambda e: (f"Lightpanda could not be started: {e} Set browser.engine to auto "
-                   "to use local Chrome, or switch backends via `hermes tools` → Browser Automation."),
+                   "to use local Chrome, or switch backends via `cybr tools` → Browser Automation."),
         "Lightpanda session returned no CDP endpoint. Set browser.engine to auto to use local Chrome.",
     )
     if err is None:
@@ -462,7 +462,7 @@ def _resolve_managed_chromium_cdp(env: dict, task_id: Optional[str], session_nam
     cdp = str(((res or {}).get("data") or {}).get("cdpUrl") or "") if (res or {}).get("success") else ""
     if not cdp:
         return (f"The local browser could not be started: {(res or {}).get('error') or 'agent-browser returned no CDP endpoint'} "
-                "Run `hermes tools` → Browser Automation to (re)install Chromium, or switch backends.")
+                "Run `cybr tools` → Browser Automation to (re)install Chromium, or switch backends.")
     cdp = _reach_sandbox_cdp(cdp)
     _set_cdp_env(env, cdp)
     env[_PRIVATE_BROWSER_SENTINEL] = "1"  # one Chromium per cache key: nothing to share a tab with
@@ -539,7 +539,7 @@ def _resolve_backend_cdp(env: dict, task_id: Optional[str], session_name: str = 
     err = _export_session_cdp(
         env, _session_info, _backend_cache_key(task_id, session_name),
         lambda e: (f"Cloud browser provider {provider_name} failed to provide a session: {e}. "
-                   "Fix the provider configuration or switch backends via `hermes tools` → Browser Automation."),
+                   "Fix the provider configuration or switch backends via `cybr tools` → Browser Automation."),
         f"Cloud browser provider {provider_name} returned no CDP endpoint, so Browser Use mode "
         "cannot drive it. Switch to the built-in browser tools for this provider.",
     )
@@ -792,7 +792,7 @@ def browser_exec(code: str, session: str = "", timeout_s: int = _DEFAULT_TIMEOUT
     cmd = _find_cli()
     if not cmd:
         return tool_error("browser-harness is missing from Cybr Agent's Python environment. "
-                          "Run `hermes update` to re-sync it.")
+                          "Run `cybr update` to re-sync it.")
 
     env = _base_subprocess_env()
     if session:
@@ -966,7 +966,7 @@ BROWSER_EXEC_SCHEMA = {
     "name": "browser_exec",
     # Static fallback description, used only when the managed CLI is unavailable
     "description": (_HEADER_BASE + _HELPERS_DIGEST
-                    + "\n\n(The browser-use CLI is not installed yet. Install it with `hermes tools` (Browser Automation → Browser Use).)"),
+                    + "\n\n(The browser-use CLI is not installed yet. Install it with `cybr tools` (Browser Automation → Browser Use).)"),
     "parameters": {
         "type": "object",
         "properties": {

@@ -1,4 +1,4 @@
-"""``hermes journey`` — what Cybr Agent has learned, on a timeline."""
+"""``cybr journey`` — what Cybr Agent has learned, on a timeline."""
 
 from __future__ import annotations
 

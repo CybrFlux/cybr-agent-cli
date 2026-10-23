@@ -466,7 +466,7 @@ class TuiBackend:
 
 
 class ServeBackend(TuiBackend):
-    """The real Desktop backend: ``hermes serve --port 0`` with the JSON-RPC surface on ``/api/ws``.
+    """The real Desktop backend: ``cybr serve --port 0`` with the JSON-RPC surface on ``/api/ws``.
 
     ``HERMES_DESKTOP=1`` marks it app-spawned, which is also what runs the cron ticker in-process.
     """

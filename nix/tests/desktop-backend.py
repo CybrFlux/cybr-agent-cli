@@ -79,8 +79,8 @@ with tempfile.TemporaryDirectory(prefix="hermes-desktop-backend-") as temporary:
                     output += desktop_log.read_text()
                 assert "WRONG_BACKEND_SELECTED" not in output, output
                 assert child.poll() is None, output
-                # Desktop attaches to `hermes gateway ensure` (the daemon serves the dashboard), so
-                # readiness is Desktop's own attach line, not a spawned `hermes serve` sentinel.
+                # Desktop attaches to `cybr gateway ensure` (the daemon serves the dashboard), so
+                # readiness is Desktop's own attach line, not a spawned `cybr serve` sentinel.
                 if "[backend] Cybr Agent gateway is ready" in output:
                     assert f"[backend] using existing Cybr Agent CLI at {expected}" in output, output
                     print("PASS: packaged desktop selected its pinned backend over the mutable install")

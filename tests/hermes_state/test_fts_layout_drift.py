@@ -126,7 +126,7 @@ def test_fresh_store_is_stamped_on_creation_and_doctor_stays_quiet(tmp_path, mon
 
 
 def _notice_for(db_path: pathlib.Path, monkeypatch) -> str:
-    """Run the `hermes update` notice against *db_path* with the size gate satisfied for state.db only."""
+    """Run the `cybr update` notice against *db_path* with the size gate satisfied for state.db only."""
     from hermes_cli import update_cmd_maint
     import hermes_constants
 

@@ -95,7 +95,7 @@ export const pt: Translations = {
   status: {
     actionFailed: "Ação falhou",
     actionFinished: "Concluído",
-    actionFinishedOwed: "Atualizado, mas ainda pendente (execute `hermes update` novamente para concluir)",
+    actionFinishedOwed: "Atualizado, mas ainda pendente (execute `cybr update` novamente para concluir)",
     actions: "Ações",
     agent: "Agente",
     activeSessions: "Sessões ativas",
@@ -335,7 +335,7 @@ export const pt: Translations = {
       "Salvo — reinicie o gateway para aplicar a alteração.",
     forceReinstall: "Forçar reinstalação (eliminar pasta existente primeiro)",
     headline:
-      "Descobrir, instalar, ativar e atualizar plugins Cybr Agent (paridade com `hermes plugins`).",
+      "Descobrir, instalar, ativar e atualizar plugins Cybr Agent (paridade com `cybr plugins`).",
     identifierLabel: "URL Git ou owner/repo",
     inactive: "inativo",
     installBtn: "Instalar",

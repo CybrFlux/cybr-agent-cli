@@ -1,4 +1,4 @@
-"""Real ``hermes serve`` backend + WebSocket JSON-RPC clients for the terminal lane E2E suites.
+"""Real ``cybr serve`` backend + WebSocket JSON-RPC clients for the terminal lane E2E suites.
 
 One backend per test module: a real ``python -m hermes_cli.main serve --port 0`` subprocess (the
 exact argv Desktop spawns, see ``apps/desktop/electron/backend-command.ts``) with an isolated
@@ -88,7 +88,7 @@ def _minimal_env(home: Path, hermes_home: Path, token: str, extra: dict[str, str
 
 
 class Backend:
-    """One real ``hermes serve`` process wired to a :class:`FakeLLMServer`."""
+    """One real ``cybr serve`` process wired to a :class:`FakeLLMServer`."""
 
     def __init__(self, root: Path, responder, *, extra_config: str = "", env: dict[str, str] | None = None,
                  aux=None) -> None:

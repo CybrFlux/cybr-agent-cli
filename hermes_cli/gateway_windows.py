@@ -810,7 +810,7 @@ def _spawn_detached(script_path: Path | None = None, home: Path | None = None) -
 
 def _stdin_is_interactive(*, isatty: bool, console_mode_ok: bool | None) -> bool:
     """A human can answer a prompt only on a real console. The Windows CRT reports isatty()==True for
-    every character device — the NUL device included (`hermes gateway start < NUL`, stdin=DEVNULL) — so
+    every character device — the NUL device included (`cybr gateway start < NUL`, stdin=DEVNULL) — so
     isatty must be confirmed by GetConsoleMode accepting the handle (#113977). ``console_mode_ok`` is
     None where that fact does not exist (not Windows) and isatty alone decides."""
     return isatty and console_mode_ok is not False
@@ -883,7 +883,7 @@ def _install_startup_fallback(script_path: Path, start_now: bool, detail: str) -
         # An earlier task survives (UAC declined, access denied on re-create) and still fires at
         # logon; adding the fallback beside it would start the gateway twice (#80569).
         print("⚠ Scheduled Task is still registered — skipped the Startup fallback to avoid a duplicate autostart.")
-        print("  If that task is disabled or broken, run 'hermes gateway uninstall', then install again.")
+        print("  If that task is disabled or broken, run 'cybr gateway uninstall', then install again.")
     else:
         entry = _install_startup_entry(script_path)
         print(f"✓ Installed Windows login item: {entry}")
@@ -1084,7 +1084,7 @@ def _write_start_attestation(pids: list[int], via: str, home: Path | None = None
 
     ``generation`` identifies this marker instance: the update resume token records the generation
     whose death authorized a cold-start, so execution consumes exactly that marker and never a
-    newer one written by a concurrent ``hermes gateway start`` (#110020 review)."""
+    newer one written by a concurrent ``cybr gateway start`` (#110020 review)."""
     try:
         path = _start_attestation_path(home)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -1113,7 +1113,7 @@ def _clear_start_attestation(home: Path | None = None) -> None:
 
 
 # A start attestation older than this is no authority (#110020 review (d)): the marker is a one-shot
-# meant to bridge the seconds between a ✓ and the next ``hermes gateway status``/``update``; a
+# meant to bridge the seconds between a ✓ and the next ``cybr gateway status``/``update``; a
 # historical marker must never later override Desktop ownership into a duplicate gateway (#76129).
 START_ATTESTATION_MAX_AGE_S = 24 * 3600
 # Same slack process_identity uses for psutil create_time comparisons (PID reuse disambiguation).
@@ -1219,7 +1219,7 @@ def attested_death_generation(current_pids: list[int], home: Path | None = None)
     or ``None``.
 
     Read-only twin of :func:`check_start_attestation` for callers that must not consume the
-    one-shot marker — ``hermes update`` consults it to decide whether a Desktop-owned install
+    one-shot marker — ``cybr update`` consults it to decide whether a Desktop-owned install
     still owes a gateway cold-start (#109538) and records the generation in its resume token so the
     execution step consumes exactly the marker it was authorized by. Callers pass the liveness they
     already established (``[]`` after their own discovery came back empty) so the process table is
@@ -1265,7 +1265,7 @@ def _format_attestation_warning(attested: list[int], data: dict) -> str:
         f"⚠ The previous gateway start ({via}, {ts}) reported success, but the "
         f"process (PID {', '.join(map(str, attested))}) died without a clean "
         "shutdown record.",
-        "  This usually means the shell that ran `hermes gateway start` was inside "
+        "  This usually means the shell that ran `cybr gateway start` was inside "
         "a Windows Job Object that killed the gateway on exit (#91675).",
     ]
     hint = _task_run_hint("  Recovery: schtasks /Run /TN {}   (Task Scheduler starts the gateway outside any Job Object)")
@@ -1473,7 +1473,7 @@ def scheduled_task_drift(task_name: str) -> list[str]:
 
 def _print_scheduled_task_drift(task_name: str) -> None:
     """Warn when the registered task predates the current template (status is read-only; the
-    repair runs from ``start()`` / ``hermes update`` via ``reconcile_scheduled_task``)."""
+    repair runs from ``start()`` / ``cybr update`` via ``reconcile_scheduled_task``)."""
     drift = scheduled_task_drift(task_name)
     if drift:
         print(f"⚠ Scheduled Task registration predates the current template ({'; '.join(drift)})")
@@ -1484,7 +1484,7 @@ def reconcile_scheduled_task(task_name: str) -> bool:
     """Re-register the task from the current template when it drifts (#113670) — the Windows sibling
     of ``gateway.py::refresh_systemd_unit_if_needed``. Template hardening (``RestartOnFailure``, logon
     ``Delay``) otherwise only ever reaches fresh installs. False when aligned/unqueryable or when
-    ``schtasks`` refused (typically Access Denied — the elevating ``hermes gateway install`` is the fallback)."""
+    ``schtasks`` refused (typically Access Denied — the elevating ``cybr gateway install`` is the fallback)."""
     drift = scheduled_task_drift(task_name)
     if not drift:
         return False
@@ -1887,5 +1887,5 @@ def restart() -> None:
     if not _wait_for_gateway_ready(timeout_s=15.0):
         raise RuntimeError(
             "Gateway restart did not produce a running gateway process. "
-            "Check logs/gateway.log and run `hermes gateway status`."
+            "Check logs/gateway.log and run `cybr gateway status`."
         )

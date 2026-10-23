@@ -182,7 +182,7 @@ async def test_upgraded_oneshot_and_tool_history_resumes_by_id_and_title_but_sta
 async def test_upgraded_desktop_history_resumes_by_id(tmp_path, monkeypatch):
     """main's Desktop stored its chats with ``source='desktop'``. After the upgrade the native owner
     adopts them by id like ``gui`` history, including the ones stamped with the signed-in Nous
-    account. A served remote backend's login stamp (``hermes serve`` basic auth) adopts for that same
+    account. A served remote backend's login stamp (``cybr serve`` basic auth) adopts for that same
     login only. Any other identity still needs its own authority."""
     from gateway import run
     from gateway.config import GatewayConfig

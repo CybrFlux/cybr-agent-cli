@@ -84,7 +84,7 @@ class TestCollectInventory:
 
     def test_stopped_record_with_recycled_pid_is_not_a_runtime(self, fleet, monkeypatch):
         """#109680: a ``stopped`` record whose PID an unrelated process now holds must not fabricate a
-        gateway the restart phase can never touch (that phantom made `hermes update` exit partial)."""
+        gateway the restart phase can never touch (that phantom made `cybr update` exit partial)."""
         work_home = fleet / "home" / "profiles" / "work"
         _write_state(work_home, 200, gateway_state="stopped")
         monkeypatch.setattr("gateway.status._read_process_cmdline", lambda pid: {

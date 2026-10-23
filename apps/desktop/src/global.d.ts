@@ -83,7 +83,7 @@ declare global {
         sessionId: string,
         opts?: { connectionId?: null | string; profile?: null | string; watch?: boolean }
       ) => Promise<{ ok: boolean; error?: string }>
-      // Resume this session in the user's own terminal emulator (`hermes --tui
+      // Resume this session in the user's own terminal emulator (`cybr --tui
       // --resume <id>`) — the external terminal, not the in-app pane.
       openSessionInTerminal: (
         sessionId: string,
@@ -235,7 +235,7 @@ declare global {
         // Drain/update/restore one Desktop-managed SSH install. External URL
         // and cloud sources are refused without touching their processes.
         updateManaged?: (id: string) => Promise<DesktopManagedConnectionUpdateResult>
-        // Fan out `hermes update` to every eligible registered connection;
+        // Fan out `cybr update` to every eligible registered connection;
         // cloud entries are skipped (platform-managed), each row independent.
         // excludeIds skips connections the caller updates through another
         // path (the everything-update flow's active backend + local client).
@@ -796,7 +796,7 @@ export interface DesktopVersionInfo {
    *  desktop first-launch bootstrap) created it, a manual clone did not. */
   installedByScript?: boolean
   /** sha16 of the canonical install-root path — the per-install channel key and
-   *  the shape `hermes update --install-id` prints. */
+   *  the shape `cybr update --install-id` prints. */
   installId?: string
   /** What this build carries (embedded / light / external) and where an
    *  external backend resolved from. Bundled artifacts run their payload; light
@@ -822,7 +822,7 @@ export type RuntimeSource =
   | { type: 'desktop-app'; root: string | null } // sealed tree stewarded by the desktop bundle
   | { type: 'desktop-bootstrap'; root: string } // canonical install created by the desktop first-launch bootstrap
   | { type: 'unknown' } // no stamp, no .git — provenance cannot be told
-  | { type: 'path'; command: string } // an existing `hermes` CLI found on PATH
+  | { type: 'path'; command: string } // an existing `cybr` CLI found on PATH
   | { type: 'system-python'; command: string } // pip-installed hermes_cli on system Python
   | { type: 'bootstrap' } // nothing usable yet; the first-launch installer runs
 
@@ -899,7 +899,7 @@ export interface DesktopUpdateStatus {
   aheadOfRelease?: boolean
   /** Source stable: the checkout already contains the release, so installing it moves back. */
   rollback?: boolean
-  /** Source stable: `hermes update` would refuse the release (it predates the gateway runtime these
+  /** Source stable: `cybr update` would refuse the release (it predates the gateway runtime these
    *  session stores use), so it is held instead of offered. */
   held?: 'downgrade'
   targetSha?: string
@@ -923,7 +923,7 @@ export interface DesktopUpdateApplyResult {
   message?: string
 
   /** True when no staged updater exists (CLI install) and the user should run
-   *  `hermes update` themselves. `command` is the exact line to run. */
+   *  `cybr update` themselves. `command` is the exact line to run. */
   manual?: boolean
   command?: string
   hermesRoot?: string

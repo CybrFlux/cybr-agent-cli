@@ -545,7 +545,7 @@ def test_completion_retry_backoff_and_cap(tmp_path, monkeypatch):
 @pytest.mark.platforms("posix")
 def test_capped_completion_attempts_leave_marker_for_explicit_update(source_launch, tmp_path, capsys):
     """Past the retry cap a launch must NOT re-run the tail; it keeps the pending marker
-    and points the operator at `hermes update` instead of burning another doomed attempt."""
+    and points the operator at `cybr update` instead of burning another doomed attempt."""
     root, store_python, _ = source_launch
     from hermes_cli.venv_sync import (
         _completion_attempts_path,

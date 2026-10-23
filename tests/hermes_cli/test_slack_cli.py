@@ -115,7 +115,7 @@ class TestSlackManifestArgparse:
 
 
 class TestSlackFullManifest:
-    """Generated full Slack app manifest used by `hermes slack manifest`."""
+    """Generated full Slack app manifest used by `cybr slack manifest`."""
 
 
 

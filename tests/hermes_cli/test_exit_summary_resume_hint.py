@@ -55,7 +55,7 @@ class TestExitSummaryResumeHint:
         assert "hermes --resume 20260524_000001_abc123 -p dev" in out
 
     def test_resume_hint_includes_profile_flag_on_title_hint_too(self, capsys, tmp_path):
-        """When a session title is available, the `hermes -c "title"` hint
+        """When a session title is available, the `cybr -c "title"` hint
         must also include the `-p` flag for non-default profiles.
         """
         cli_obj = _make_cli()
@@ -71,7 +71,7 @@ class TestExitSummaryResumeHint:
 
     def test_resume_hint_falls_back_when_profile_lookup_fails(self, capsys):
         """If `get_active_profile_name` raises (e.g. profiles module
-        missing during ``hermes update`` mid-flight), fall back to no
+        missing during ``cybr update`` mid-flight), fall back to no
         flag rather than crashing the exit summary.
         """
         cli_obj = _make_cli()

@@ -6,7 +6,7 @@ must ignore:
 * a different, standalone Python on PATH ahead of anything Cybr Agent installed (#123185);
 * the pre-PM in-tree ``hermes-agent\\venv`` an older install left behind (#123965, #123972).
 
-After ``hermes update`` neither the gateway the user starts through ``hermes.exe`` nor a
+After ``cybr update`` neither the gateway the user starts through ``hermes.exe`` nor a
 CLI turn may add the stale venv to ``sys.path`` or publish it to its children, with the
 standalone Python first on PATH. The stale venv carries a ``.pth`` hook that
 drops a ``<pid>`` marker whenever any process adds its site dir, so "loaded the stale

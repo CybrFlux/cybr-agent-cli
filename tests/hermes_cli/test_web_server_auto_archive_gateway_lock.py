@@ -1,4 +1,4 @@
-"""Invariant: `hermes serve`'s opportunistic auto-archive never opens a WRITABLE
+"""Invariant: `cybr serve`'s opportunistic auto-archive never opens a WRITABLE
 SessionDB for a profile whose gateway is live (#110405).
 
 The gateway stand-in is a real subprocess: it takes the same ``flock(LOCK_EX)`` on

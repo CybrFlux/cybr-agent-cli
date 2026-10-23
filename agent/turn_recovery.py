@@ -374,7 +374,7 @@ def _print_anthropic_401_diagnostics(agent: Any, key: Any) -> None:
         _plines(
             agent,
             "   Auth method: Microsoft Entra ID (httpx event hook)",
-            "   Run `hermes doctor` for credential-chain diagnostics, or",
+            "   Run `cybr doctor` for credential-chain diagnostics, or",
             "   `az login` if your developer session expired.",
         )
     else:
@@ -391,7 +391,7 @@ def _print_anthropic_401_diagnostics(agent: Any, key: Any) -> None:
         f"     • Check ANTHROPIC_TOKEN in {_dhh}/.env for Cybr Agent-managed OAuth/setup tokens",
         f"     • Check ANTHROPIC_API_KEY in {_dhh}/.env for API keys or legacy token values",
         "     • For API keys: verify at https://platform.claude.com/settings/keys",
-        "     • Cybr Agent login (OAuth): run 'hermes auth add anthropic' to sign in again, then retry",
+        "     • Cybr Agent login (OAuth): run 'cybr auth add anthropic' to sign in again, then retry",
         "     • Inspect what Cybr Agent holds: hermes auth list anthropic",
         "     • Legacy cleanup: hermes config set ANTHROPIC_TOKEN \"\"",
         "     • Clear stale keys: hermes config set ANTHROPIC_API_KEY \"\"",
@@ -901,7 +901,7 @@ def _print_nonretryable_auth_guidance(
             _vlines(
                 agent,
                 "   💡 xAI OAuth token was rejected (HTTP 401). To fix:",
-                "      re-authenticate with xAI Grok OAuth (SuperGrok / Premium+) from `hermes model`.",
+                "      re-authenticate with xAI Grok OAuth (SuperGrok / Premium+) from `cybr model`.",
             )
         else:  # nous
             _vlines(
@@ -1510,7 +1510,7 @@ def free_tier_cooldown_ends_turn(agent: Any, api_error: Exception, base_url: Any
     sits through. The free tier's pause is service-wide: a 600 s retry met a second 429 while its
     1069 s window ran, so the caller ends the attempt cycle now (fallback, or the reset time and
     the sign-in / model doors). Every other provider, and every unattended run (cron, messaging,
-    ``hermes chat -q``), waits out its ``Retry-After``: a paid bucket reopens on time, and
+    ``cybr chat -q``), waits out its ``Retry-After``: a paid bucket reopens on time, and
     ``fallback.min_switch_reset_seconds`` relies on that wait."""
     from agent.retry_utils import LIVE_RETRY_WAIT_CAP_S, provider_retry_after_seconds
     from agent.session_source import is_attended

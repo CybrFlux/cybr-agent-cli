@@ -66,7 +66,7 @@ def _live_system_guard(request, monkeypatch):
       • pty.spawn
       • asyncio.create_subprocess_exec / create_subprocess_shell
     A mutating systemctl verb is refused against every Cybr Agent unit
-    (``hermes``/``hermes-*``: gateway, dashboard, serve, any profile).
+    (`cybr`/``hermes-*``: gateway, dashboard, serve, any profile).
     Subprocess inspection looks at the WHOLE command string (not just
     tokens[0]), so ``bash -c "systemctl restart hermes-dashboard"``,
     ``sudo systemctl ...``, ``env systemctl ...``, ``setsid systemctl ...``
@@ -314,7 +314,7 @@ def _live_system_guard(request, monkeypatch):
         probes) launch the bare ``python -m gateway.run`` module entry with an explicit ``env``
         that re-homes BOTH ``HERMES_HOME`` and ``HOME`` away from the developer's account. Such a
         child resolves no developer unit or config, holds no live port, and is reaped by its
-        test: the orphan class the guard exists for is the ``hermes gateway run|start|restart``
+        test: the orphan class the guard exists for is the ``cybr gateway run|start|restart``
         CLI spawn against the real home, which the fixtures never use."""
         if not isinstance(env, dict):
             return False
@@ -395,7 +395,7 @@ def _live_system_guard(request, monkeypatch):
             raise RuntimeError(
                 f"tests/conftest.py live-system guard: blocked "
                 f"subprocess.{name}({cmd!r}) — this command would run "
-                "`hermes update` against the real checkout, fetching "
+                "`cybr update` against the real checkout, fetching "
                 "from origin and overwriting repo files (e.g. "
                 "pyproject.toml) mid-test-run. This corrupts every "
                 "subsequent subprocess in the same runner. "

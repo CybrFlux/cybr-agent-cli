@@ -93,7 +93,7 @@ export const deBoot = {
       since: time => `Wartet seit ${time}`,
       lastChecked: time => `Zuletzt geprüft ${time}`,
       recoveryHint:
-        'Das löst sich meist in wenigen Minuten. Falls nicht: Cybr Agent beenden, übrig gebliebene git- oder hermes-Prozesse beenden (oder den Computer neu starten) und Cybr Agent erneut öffnen.',
+        'Das löst sich meist in wenigen Minuten. Falls nicht: Cybr Agent beenden, übrig gebliebene git- oder cybr-Prozesse beenden (oder den Computer neu starten) und Cybr Agent erneut öffnen.',
       checkAgain: 'Erneut prüfen',
       quit: 'Cybr Agent beenden',
       openLogs: 'Logs öffnen',

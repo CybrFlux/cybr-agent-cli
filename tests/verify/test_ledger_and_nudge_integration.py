@@ -2,9 +2,9 @@
 
 Covers the closed loop the rescoped PR is about:
 
-- ``hermes verify`` records into the evidence ledger (pass and fail),
+- ``cybr verify`` records into the evidence ledger (pass and fail),
 - a passing run satisfies the verify-on-stop guard,
-- the verify-on-stop nudge names ``hermes verify --json`` when the workspace
+- the verify-on-stop nudge names ``cybr verify --json`` when the workspace
   has a runnable recipe (start command or saved manifest),
 - the CLI's detect path merges ``detect_project_facts`` verify commands the
   recipe missed.
@@ -127,7 +127,7 @@ def test_cli_run_uses_hermes_session_id_env(hermes_home, capsys, monkeypatch):
 
 
 def test_cli_verify_clears_stale_on_editing_session(hermes_home, capsys):
-    """Standalone ``hermes verify`` records under default; the editing session
+    """Standalone ``cybr verify`` records under default; the editing session
     must still see a pass (#103271)."""
     project = _workspace(hermes_home, manifest_recipe={"name": "Fake", "test": ["echo ok"]})
     changed = str(project / "src" / "app.ts")
@@ -160,7 +160,7 @@ def test_passing_verify_run_satisfies_stop_guard(hermes_home, capsys):
 
 
 # ---------------------------------------------------------------------------
-# nudge wording: recipe-aware `hermes verify --json` suggestion
+# nudge wording: recipe-aware `cybr verify --json` suggestion
 # ---------------------------------------------------------------------------
 
 

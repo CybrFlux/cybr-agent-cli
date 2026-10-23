@@ -1,6 +1,6 @@
 """The hand-off's `--gateway` flag, exercised against the real posix script.
 
-`hermes update --gateway` (re)starts the local messaging gateway after the
+`cybr update --gateway` (re)starts the local messaging gateway after the
 update. A Desktop served by a remote gateway (#117529) must not ask for that:
 the restarted local gateway shares the remote host's channel credentials and
 becomes a competing long-poll consumer — Telegram answers the conflict by
@@ -29,7 +29,7 @@ requires_posix_handoff = pytest.mark.skipif(
     reason="posix.sh detaches through /bin/bash and /usr/bin/python3",
 )
 
-# Stands in for `hermes`: answers the `update --help` probe (so --keep-stash
+# Stands in for `cybr`: answers the `update --help` probe (so --keep-stash
 # is kept), and appends every non-help invocation's argv as one JSON line so
 # the tests can inspect exactly what the update was invoked with.
 FAKE_HERMES = """#!/usr/bin/env bash

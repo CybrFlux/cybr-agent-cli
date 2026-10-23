@@ -96,7 +96,7 @@ HERMES_CADUCEUS = """[#A6F000]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀�
 # === Skills scanning ===
 
 # Per-process caches: ``None`` until computed, then a 1-tuple ``(value,)`` so a computed ``None``
-# is distinguishable from "not yet computed". Reset by assigning ``None`` (tests, ``hermes skills``).
+# is distinguishable from "not yet computed". Reset by assigning ``None`` (tests, ``cybr skills``).
 _available_skills_cache: Optional[tuple] = None
 _git_banner_state_cache: Optional[tuple] = None
 _latest_release_cache: Optional[tuple] = None

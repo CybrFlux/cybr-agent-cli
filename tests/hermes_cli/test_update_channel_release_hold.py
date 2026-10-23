@@ -1,6 +1,6 @@
 """A channel whose release predates the gateway runtime holds the install where it is (#140729).
 
-The channel picked that release, the user did not ask to go back: ``hermes update`` reports that
+The channel picked that release, the user did not ask to go back: ``cybr update`` reports that
 the build is newer than the release and holds there, exiting 0, instead of refusing the
 downgrade on every attempt. An explicit ``--branch`` to a pre-runtime commit is still refused.
 """

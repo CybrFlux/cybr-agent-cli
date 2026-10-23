@@ -1,4 +1,4 @@
-"""``hermes plugins update`` plus the provenance verbs around it: ``adopt``, ``trust-update-url`` and the
+"""``cybr plugins update`` plus the provenance verbs around it: ``adopt``, ``trust-update-url`` and the
 read-only ``check-updates``; the dashboard update path shares the same pull/re-clone core.
 
 Sibling of :mod:`hermes_cli.plugins_cmd` (the facade re-exports the names other modules use and is
@@ -83,7 +83,7 @@ def update_one(name: str, target: Path, console, *, interactive: bool = True, fo
     *interactive*; *force* (``--force``) accepts it without asking. A dangerous verdict always blocks.
     Refusals raise :class:`~hermes_cli.plugins_cmd_catalog.RepinConsentRequired` or
     ``PluginOperationError`` with nothing changed; :func:`cmd_update` turns them into exit 1 and
-    ``hermes plugins update`` with no name records them per plugin and moves on.
+    ``cybr plugins update`` with no name records them per plugin and moves on.
     """
     from rich.markup import escape
     from hermes_cli import plugins_cmd_catalog as catalog
@@ -95,7 +95,7 @@ def update_one(name: str, target: Path, console, *, interactive: bool = True, fo
         target,
         lambda rec: (
             f"Plugin '{name}' is pinned to {rec.get('revision')}. To move it, run "
-            f"`hermes plugins install {escape(str(rec.get('source', '<source>')))} --force "
+            f"`cybr plugins install {escape(str(rec.get('source', '<source>')))} --force "
             "--ref <40-character commit SHA>`."),
         lambda: f"Plugin '{name}' was not installed from git (no .git directory). Cannot update.",
         before_pull=lambda: console.print(f"[dim]Updating {name}...[/dim]"),
@@ -118,7 +118,7 @@ def update_one(name: str, target: Path, console, *, interactive: bool = True, fo
             if interactive:
                 _pc()._run_capability_consent(console, plugin_id, declared_caps, context="update")
             else:
-                console.print(f"[yellow]Plugin {plugin_id} has new capabilities; review them with `hermes plugins capabilities {plugin_id}`.[/yellow]")
+                console.print(f"[yellow]Plugin {plugin_id} has new capabilities; review them with `cybr plugins capabilities {plugin_id}`.[/yellow]")
 
     out = output.strip()
     if "Already up to date" in out:
@@ -130,7 +130,7 @@ def update_one(name: str, target: Path, console, *, interactive: bool = True, fo
 
 
 def cmd_update(name: str, *, interactive: bool = True, force: bool = False) -> None:
-    """``hermes plugins update <name> [--force]``: :func:`update_one`, exit 1 on a refusal."""
+    """``cybr plugins update <name> [--force]``: :func:`update_one`, exit 1 on a refusal."""
     from hermes_cli.plugins_cmd_catalog import RepinConsentRequired
     console = _pc()._console()
     target = _pc()._require_installed_plugin(name, _pc()._plugins_dir(), console)
@@ -334,7 +334,7 @@ def dashboard_update_user_plugin(name: str, *, accept_capabilities: bool = False
             target,
             lambda rec: (
                 f"Plugin '{name}' is pinned to {rec.get('revision')}; "
-                f"run `hermes plugins install {rec.get('source', '<source>')} --force "
+                f"run `cybr plugins install {rec.get('source', '<source>')} --force "
                 "--ref <40-character commit SHA>` to move it."),
             lambda: f"Plugin '{name}' is not a git checkout; cannot pull updates.",
             force=force)

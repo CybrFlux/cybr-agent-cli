@@ -6,7 +6,7 @@ its MAIN-vs-MAIN self-check was 15/15 identical. With the rewire merged there is
 diff, so each step here asserts what main's capture showed (the pre-rewire baseline) against the
 current checkout, where the gateway daemon runs the agent, tools and session writes.
 
-One real ``hermes`` (``display.interface: cli``) session in a private tmux server, loopback
+One real `cybr` (``display.interface: cli``) session in a private tmux server, loopback
 ``FakeLLMServer`` keyed on the ``STEPn`` marker in the latest user message (zero spend):
 
 01 startup · 02 markdown · 03a approval modal · 03b approve once → tool reply · 04 read_file ·

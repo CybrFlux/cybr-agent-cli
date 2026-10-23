@@ -313,7 +313,7 @@ def test_a_request_for_another_profile_arms_the_guard(client, homes):
 def test_unnamed_profile_still_means_the_launch_profile_on_a_single_profile_host(
     client, homes, monkeypatch, tmp_path
 ):
-    """A plain ``hermes serve`` has nothing to confuse: `curl` with no profile is unchanged."""
+    """A plain ``cybr serve`` has nothing to confuse: `curl` with no profile is unchanged."""
     from agent.secret_scope import is_multiplex_active
     from hermes_cli import profiles
     from tui_gateway.launch_profile_policy import activate_multi_profile_hosting_eagerly

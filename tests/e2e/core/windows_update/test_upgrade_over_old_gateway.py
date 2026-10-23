@@ -8,7 +8,7 @@ lock, and leave every file the gateway needs usable by the same user without ele
 
 * ``base``: the release before the merge (``d04056d609b``, its first parent), installed with
   ITS OWN ``install.ps1`` from the local origin, exactly what that user ran then.
-* ``hermes update`` to this checkout's HEAD (current main plus nothing but tests).
+* ``cybr update`` to this checkout's HEAD (current main plus nothing but tests).
 
 Two journeys, one per file-level fixture, each on its own fresh profile:
 
@@ -16,7 +16,7 @@ Two journeys, one per file-level fixture, each on its own fresh profile:
   and updates. Afterwards the same user WITHOUT elevation (a UAC filtered-shape token, see
   ``_tokens.py``) must be able to read and write ``gateway.lock`` and the gateway's state, and,
   once the elevated gateway is stopped, start their own gateway on that lock, see it in
-  ``hermes gateway status`` and get a reply.
+  ``cybr gateway status`` and get a reply.
 * ``standard user``: the whole journey under the filtered token: install, old gateway, update,
   new gateway, status, turn.
 """
@@ -254,7 +254,7 @@ def _assert_status_sees(j: Journey, status_key: str, state_key: str, who: str) -
     m, status, state = j.machine, j[status_key], j[state_key]
     line = _status_line(status.stdout)
     assert status.returncode == 0 and line.startswith("✓") and str(_pid(state)) in line, fail_with(
-        m, f"`hermes gateway status` ({who}) does not see the running gateway (pid {_pid(state)}): {line!r}",
+        m, f"`cybr gateway status` ({who}) does not see the running gateway (pid {_pid(state)}): {line!r}",
         status)
 
 
@@ -303,7 +303,7 @@ def test_elevated_upgrade_then_user_gateway_takes_lock(elevated: Journey) -> Non
     m = elevated.machine
     stop = elevated["stop_admin"]
     assert stop.returncode == 0 and elevated["admin_stopped"], fail_with(
-        m, f"`hermes gateway stop` left the elevated gateway (pid {_pid(elevated['new_state'])}) running", stop)
+        m, f"`cybr gateway stop` left the elevated gateway (pid {_pid(elevated['new_state'])}) running", stop)
     elevated["spawn_user"]
     state = elevated["user_state"]
     sha = str(state.get("code_sha") or "")
@@ -312,7 +312,7 @@ def test_elevated_upgrade_then_user_gateway_takes_lock(elevated: Journey) -> Non
     _assert_status_sees(elevated, "user_status", "user_state", "same user, not elevated")
     _assert_turn(elevated, "user_turn", "same user, not elevated")
     assert elevated["stop_user"].returncode == 0 and elevated["user_stopped"], fail_with(
-        m, f"the unelevated `hermes gateway stop` left its gateway (pid {_pid(state)}) running",
+        m, f"the unelevated `cybr gateway stop` left its gateway (pid {_pid(state)}) running",
         elevated["stop_user"])
 
 
@@ -336,5 +336,5 @@ def test_standard_user_status_and_turn_after_update(standard_user: Journey) -> N
     _assert_turn(standard_user, "user_turn", "standard user")
     m = standard_user.machine
     assert standard_user["stop_user"].returncode == 0 and standard_user["user_stopped"], fail_with(
-        m, f"`hermes gateway stop` left the gateway (pid {_pid(standard_user['new_state'])}) running",
+        m, f"`cybr gateway stop` left the gateway (pid {_pid(standard_user['new_state'])}) running",
         standard_user["stop_user"])

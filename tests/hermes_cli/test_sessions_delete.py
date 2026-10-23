@@ -131,7 +131,7 @@ def _run_prune(monkeypatch, capsys, argv_tail, candidates=None, skipped_open=0, 
     return seen, capsys.readouterr().out
 
 def test_sessions_prune_bare_keeps_90_day_default(monkeypatch, capsys):
-    """A truly bare `hermes sessions prune` keeps the implicit 90-day cutoff."""
+    """A truly bare `cybr sessions prune` keeps the implicit 90-day cutoff."""
     import time as _time
 
     filters, _out = _run_prune(monkeypatch, capsys, [])

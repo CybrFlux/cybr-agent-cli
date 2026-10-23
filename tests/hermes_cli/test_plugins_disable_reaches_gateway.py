@@ -1,4 +1,4 @@
-"""``hermes plugins disable`` must reach the running gateway, or say a restart is needed (LC-3).
+"""``cybr plugins disable`` must reach the running gateway, or say a restart is needed (LC-3).
 
 Under one gateway the daemon holds the plugin manager for every session, so "takes effect on next
 session" was false: new sessions kept the disabled plugin's hooks and tools until a restart. The

@@ -1,7 +1,7 @@
 """Shared bits for the dashboard lane's open-issue cells (#120527, #120937).
 
 * ``PtyDashboard``: the lane's ``Dashboard`` harness, but spawned with a pseudo-terminal slave as
-  stdin — the shape of ``hermes serve`` / ``hermes dashboard`` launched from an interactive
+  stdin — the shape of ``cybr serve`` / ``cybr dashboard`` launched from an interactive
   terminal. The master end is held open and never written to (nobody watches that console).
   Teardown SIGKILLs the whole process group: a server wedged in a worker thread never finishes
   a graceful shutdown (the default executor is joined on exit).
@@ -54,7 +54,7 @@ class Issue120937(KnownIssue):
 
 
 class PtyDashboard(Dashboard):
-    """``hermes dashboard`` whose stdin is a pty slave (interactive-terminal launch); ``tty=False``
+    """``cybr dashboard`` whose stdin is a pty slave (interactive-terminal launch); ``tty=False``
     gives the same process with stdin=/dev/null (service / desktop-spawned launch) as a control."""
 
     def __init__(self, sb: Sandbox, log_path: Path, extra_env: dict[str, str] | None = None,

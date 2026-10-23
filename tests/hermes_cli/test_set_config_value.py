@@ -605,7 +605,7 @@ class TestDisplaySkinTouch:
 
     The gateway's skin watcher broadcasts ``skin.changed`` on a signature move
     of (active name, skin-file mtime). Re-affirming the already-configured skin
-    (`hermes config set display.skin X` while it is already X — the recovery
+    (`cybr config set display.skin X` while it is already X — the recovery
     path when a surface missed the original activation) moves NEITHER part, so
     without the touch the explicit apply is invisible to every live surface.
     """
@@ -647,7 +647,7 @@ class TestDisplaySkinTouch:
 # ---------------------------------------------------------------------------
 
 class TestMappingGuard:
-    """``hermes config set <section> <scalar>`` must not silently destroy an
+    """``cybr config set <section> <scalar>`` must not silently destroy an
     existing mapping.  Bare ``model`` is a documented shorthand — redirect to
     ``model.default``.  All other mapping sections are refused without --force.
     """
@@ -819,7 +819,7 @@ class TestMalformedYAMLConfigPreservation:
 
         captured = capsys.readouterr()
         combined = captured.out + captured.err
-        assert "formatting error" in combined and "`hermes config edit`" in combined
+        assert "formatting error" in combined and "`cybr config edit`" in combined
         # Original config must remain intact
         raw = _read_config(_isolated_hermes_home)
         assert raw == self.BROKEN_CONFIG, f"Config was overwritten:\n{raw}"
@@ -835,7 +835,7 @@ class TestMalformedYAMLConfigPreservation:
 
         captured = capsys.readouterr()
         combined = captured.out + captured.err
-        assert "formatting error" in combined and "`hermes config edit`" in combined
+        assert "formatting error" in combined and "`cybr config edit`" in combined
         raw = _read_config(_isolated_hermes_home)
         assert raw == self.BROKEN_CONFIG
 
@@ -845,7 +845,7 @@ class TestMalformedYAMLConfigPreservation:
 # ---------------------------------------------------------------------------
 
 class TestLiteralDotKeyEscaping:
-    """``hermes config set/unset/get`` must not split a key segment on a
+    """``cybr config set/unset/get`` must not split a key segment on a
     literal dot.  Provider names routinely embed version numbers
     (``qwen3.5-397b-wafer``), and before the backslash-escape (#84064)
     ``providers.qwen3.5-397b-wafer.api_key`` silently created a bogus nested

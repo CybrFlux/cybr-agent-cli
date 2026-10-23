@@ -97,7 +97,7 @@ class TestDoctorPlatformHints:
         # The "apt" install method is Termux APT by contract (config.py
         # _UPDATE_COMMAND_BY_METHOD). Deployment kinds are first-class: doctor
         # reports the correct external update command instead of routing an
-        # out-of-place method through the in-place `hermes update` path.
+        # out-of-place method through the in-place `cybr update` path.
         hint = doctor_platform._sqlite_upgrade_hint("apt")
 
         assert "run `pkg upgrade hermes-agent`" in hint
@@ -206,7 +206,7 @@ class TestDoctorToolAvailabilitySummary:
 
 
 class TestDoctorEnvFileEncoding:
-    """Regression for #18637 (bug 3): `hermes doctor` crashed on Windows
+    """Regression for #18637 (bug 3): `cybr doctor` crashed on Windows
     Chinese locale (GBK) because `.env` was read with Path.read_text(encoding="utf-8") which
     defaults to the system locale encoding, not UTF-8."""
 

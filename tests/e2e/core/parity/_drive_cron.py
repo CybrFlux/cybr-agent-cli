@@ -1,16 +1,16 @@
-"""Entrypoint driver for the parity matrix: cron run-now (``hermes cron run <id>``).
+"""Entrypoint driver for the parity matrix: cron run-now (``cybr cron run <id>``).
 
-Follows the driver contract in ``_drive_cli``. ``hermes cron create`` writes the
+Follows the driver contract in ``_drive_cli``. ``cybr cron create`` writes the
 job (``--deliver local``: no platform; ``--workdir``: cron's documented
-per-job cwd/context channel, see ``hermes cron create --help``), then
-``hermes cron run <id>`` executes it: the CLI waits synchronously
+per-job cwd/context channel, see ``cybr cron create --help``), then
+``cybr cron run <id>`` executes it: the CLI waits synchronously
 (``hermes_cli/cron.py::_job_action`` forces the synchronous path) while the turn
 runs in the profile's gateway daemon (``cron.scheduler_authority.run_canonical_job``
 → ``connect_gateway``, which spawns the daemon when none owns the profile) — the
 same agent build the ticker uses — and prints ``Ran now: succeeded.``. The job's
 saved output file (``cron/output/<id>/<ts>.md``, ``## Response`` section) is what
 cron delivers locally, so that is ``final_text``. The daemon outlives the CLI, so
-the surface's shutdown ends with ``hermes gateway stop``.
+the surface's shutdown ends with ``cybr gateway stop``.
 
 Both CLI calls run from the fake HOME, not the project: a scheduled job's
 process cwd is whatever the ticker had, so the workdir is the only channel

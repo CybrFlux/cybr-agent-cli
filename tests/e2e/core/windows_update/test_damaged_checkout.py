@@ -2,8 +2,8 @@
 
 Failure class: a damaged checkout strands the fleet. A killed update or a sync tool can leave
 ``.git`` in place with ``HEAD`` gone; git then says "not a git repository" to every command.
-``hermes update`` pauses the running gateway before it fetches, so the fetch failure used to
-leave the gateway stopped with a promise that "the next `hermes` command restarts them", which no
+``cybr update`` pauses the running gateway before it fetches, so the fetch failure used to
+leave the gateway stopped with a promise that "the next `cybr` command restarts them", which no
 command kept while ``HEAD`` stayed unreadable. The user's way out is rerunning the installer, which
 moves the damaged checkout aside and clones fresh.
 """

@@ -1,4 +1,4 @@
-"""``hermes console`` subcommand parser."""
+"""``cybr console`` subcommand parser."""
 
 from __future__ import annotations
 

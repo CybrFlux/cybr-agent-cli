@@ -1,4 +1,4 @@
-"""Pre-swap gateway pause for ``hermes update`` on Linux and macOS.
+"""Pre-swap gateway pause for ``cybr update`` on Linux and macOS.
 
 Windows pauses its gateways before the fetch (``update_cmd_windows``) because they lock venv
 files. On POSIX nothing is locked, but a gateway that keeps running while git rewrites the tree

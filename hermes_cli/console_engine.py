@@ -827,7 +827,7 @@ _BUILTIN_COMMANDS = (
 
 def run_console_repl(
     *, stdin=None, stdout=None, stderr=None, interactive: bool | None = None) -> int:
-    """Run the local ``hermes console`` REPL."""
+    """Run the local ``cybr console`` REPL."""
     stdin, stdout, stderr = stdin or sys.stdin, stdout or sys.stdout, stderr or sys.stderr
     if interactive is None:
         interactive = bool(getattr(stdin, "isatty", lambda: False)())

@@ -1,4 +1,4 @@
-"""CLI subcommand: ``hermes send`` — pipe text from shell scripts to any configured messaging platform
+"""CLI subcommand: ``cybr send`` — pipe text from shell scripts to any configured messaging platform
 (Telegram, Discord, Slack, Signal, SMS, etc.).
 """
 
@@ -117,7 +117,7 @@ def _list_targets(platform_filter: Optional[str], *, json_mode: bool) -> int:
         return _SUCCESS_EXIT
     if not platforms:
         print("No messaging platforms configured or no channels discovered yet.")
-        print("Set one up with `hermes gateway setup`, or run the gateway once so")
+        print("Set one up with `cybr gateway setup`, or run the gateway once so")
         from hermes_constants import get_default_hermes_root, get_hermes_home, hermes_home_key
         home, root = get_hermes_home(), get_default_hermes_root()
         print(f"channel discovery can populate {home / 'channel_directory.json'}.")
@@ -195,7 +195,7 @@ def cmd_send(args: argparse.Namespace) -> None:
     """Entry point wired into the top-level argparse dispatcher."""
     _load_hermes_env()  # the downstream gateway config loader reads credentials from os.environ
     if getattr(args, "list_targets", False):  # --list short-circuits everything else
-        # `hermes send --list telegram` lands "telegram" in the `message` positional.
+        # `cybr send --list telegram` lands "telegram" in the `message` positional.
         exit_code = _list_targets(getattr(args, "message", None), json_mode=getattr(args, "json", False))
         sys.exit(exit_code)
     target = (getattr(args, "to", None) or "").strip()
@@ -228,7 +228,7 @@ def cmd_send(args: argparse.Namespace) -> None:
     if subject:
         message = f"{subject}\n\n{message.lstrip()}"
 
-    # Lazy import keeps `hermes send --help` fast (no tool registry / gateway config stack).
+    # Lazy import keeps `cybr send --help` fast (no tool registry / gateway config stack).
     from tools.send_message_tool import send_message_tool
 
     # Routes to the platform adapter (bot-token path for built-ins, live-adapter path for plugin
@@ -256,7 +256,7 @@ _SEND_ARGUMENTS = (
         "WhatsApp only: add a native participant mention. Repeat for multiple recipients; "
         "bare phone numbers are normalized to JIDs. Include each matching @<number> near the start of the message text."))),
     (("-l", "--list"), dict(dest="list_targets", action="store_true", default=False,
-                            help="List available targets. Optional positional filter: `hermes send --list telegram`.")),
+                            help="List available targets. Optional positional filter: `cybr send --list telegram`.")),
     (("-q", "--quiet"), dict(action="store_true", default=False, help="Suppress stdout on success (exit code only).")),
     (("--json",), dict(action="store_true", default=False, help="Emit raw JSON result instead of human-readable output.")),
 )

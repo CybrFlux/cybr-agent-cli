@@ -89,7 +89,7 @@ def test_host_record_rung_names_the_roster_and_a_runnable_restart(served_root, c
 
     Both rungs print a "Scheduler host: the host gateway…" line, so they are only distinguishable
     by their full text — and the remediation they print must actually run for THIS audience:
-    `hermes gateway restart` exits 78 for a served named profile.
+    `cybr gateway restart` exits 78 for a served named profile.
     """
     import os
 
@@ -224,7 +224,7 @@ def test_in_process_ticker_heartbeat_counts_only_while_its_writer_lives(tmp_path
 
 
 def test_named_profile_output_names_the_profile_and_trusts_its_own_ticker(served_root, capsys, monkeypatch):
-    """`hermes -p probe cron list/status` names the inspected profile on every verdict (#99579) and
+    """`cybr -p probe cron list/status` names the inspected profile on every verdict (#99579) and
     answers "is a scheduler ticking THIS home": a fresh heartbeat written into probe's store counts
     even when the default multiplexer's record does not list probe — the serve/Desktop backend ticks
     every local profile without any gateway record (#121881, #99631)."""
@@ -294,7 +294,7 @@ def test_doctor_reports_persisted_dispatch_health(served_root, capsys, dispatch)
     output = capsys.readouterr().out
     expected = {"catch_up": "catch-up", "late": "last fire was late", "forward_error": "loopback unavailable"}
     assert expected[dispatch] in output
-    assert "Review the findings above, then run `hermes cron doctor` again." in output
+    assert "Review the findings above, then run `cybr cron doctor` again." in output
     jobs.mark_job_run(job["id"], success=True)
     if dispatch == "forward_error":
         assert cron_doctor() == 0

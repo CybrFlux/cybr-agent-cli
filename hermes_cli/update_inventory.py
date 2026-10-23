@@ -2,7 +2,7 @@
 
 One read-only pass answering, BEFORE any mutation: which Cybr Agent runtimes run on this machine, how
 each is deployed, which ones this update touches, and how each restarts. Every collector is a
-side-effect-free probe, so ``hermes update --plan`` is safe on a live fleet.
+side-effect-free probe, so ``cybr update --plan`` is safe on a live fleet.
 """
 
 from __future__ import annotations
@@ -210,7 +210,7 @@ def _collect_gateway_runtimes(plan: UpdatePlan, profile_homes: list, seen: set[i
             else:
                 # Verified identity, not bare PID existence: a ``stopped`` record whose PID was recycled
                 # by an unrelated process fabricated a phantom gateway the restart phase could never
-                # touch, so `hermes update` exited partial (#109680).
+                # touch, so `cybr update` exited partial (#109680).
                 pid = live_gateway_pid_for_home(home)
                 if pid is None or pid in seen:
                     continue
@@ -288,7 +288,7 @@ def _is_desktop_ssh_ledger_entry(entry: dict) -> bool:
 
 def _collect_ledger_runtimes(plan: UpdatePlan, seen: set[int]) -> None:
     """Serve/dashboard backends from the spawn ledger — runtimes the gateway collectors can never see
-    (a manual `hermes serve --host <ip>` for a remote Desktop, a long-lived `hermes dashboard`).
+    (a manual `cybr serve --host <ip>` for a remote Desktop, a long-lived `cybr dashboard`).
     ledger_entries() live-verifies (pid, create_time) so PID reuse never fabricates a row. Desktop-
     supervised backends (spawner still alive) restart via the Desktop's own respawn, not ours.
     A backend owned by a loaded launchd job is classified ``launchd`` (kickstart restart, never a
@@ -574,7 +574,7 @@ def report_unaccounted_runtimes(outcomes: list[dict[str, Any]]) -> bool:
         print()
         print("  ⚠ Manual serve restarts deferred to their owner (reminders retained until the old processes exit):")
         for o in manual:
-            print(f"    • {o['kind']} [{o['profile']}] pid {o['pid']}: relaunch `hermes serve` / `hermes dashboard`, or reconnect Desktop for an SSH backend")
+            print(f"    • {o['kind']} [{o['profile']}] pid {o['pid']}: relaunch `cybr serve` / `cybr dashboard`, or reconnect Desktop for an SSH backend")
     deferred = [o for o in outcomes if o.get("outcome") == "deferred" and o.get("mechanism") != "respawn-argv"]
     if deferred:
         # Surfaced but not escalated: the updater has no authority over these, so holding
@@ -616,7 +616,7 @@ def report_unaccounted_runtimes(outcomes: list[dict[str, Any]]) -> bool:
         if any(o.get("kind") in _SERVE_KINDS and not o.get("systemd_unit") for o in missed):
             if sys.platform == "linux":
                 print("      systemctl --user restart hermes-serve.service   # unit-managed serve")
-            print("      relaunch `hermes serve` / `hermes dashboard`")
+            print("      relaunch `cybr serve` / `cybr dashboard`")
     return True
 
 
