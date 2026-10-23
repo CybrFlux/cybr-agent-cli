@@ -45,7 +45,7 @@ without macOS Intel replaces the one shared macOS stable update feed with an
 arm64-only feed, so Intel Macs installed from a desktop bundle get no update
 until a release is cut with `--with macos-intel`. A release without Termux
 leaves the Termux APT channel on its previous release.
-The `Cybr Agent-Setup.dmg` bootstrap installer is built for Apple Silicon only, so
+The `Cybr Agent Setup.dmg` bootstrap installer is built for Apple Silicon only, so
 on an Intel Mac it reports "not supported on this Mac". Intel Macs can install
 the [CLI](./installation.md#linux--macos--wsl2) and run
 `cybr desktop`, or use a `darwin-x64` bundle from a release that included it.

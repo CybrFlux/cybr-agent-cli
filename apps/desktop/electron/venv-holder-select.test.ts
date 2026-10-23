@@ -29,7 +29,7 @@ test('Windows path prefix match is ordinal case-insensitive', () => {
 })
 
 test('excludes external venv holders that are not the hindsight daemon', () => {
-  // a user terminal running the hermes CLI from the venv — must NOT be killed
+  // a user terminal running the cybr CLI from the venv — must NOT be killed
   assert.equal(isHermesOwnedVenvDaemon('C:\\Cybr Agent\\venv\\Scripts\\hermes.exe', 'hermes chat -q "hi"', SCRIPTS), false)
   // an unrelated python script using the venv interpreter
   assert.equal(

@@ -68,7 +68,7 @@ hermes bundles              Skill bundles (one /<name> alias loads several skill
 cybr mcp add NAME (--url or --command) | remove | list | test NAME
 cybr mcp catalog | install NAME     Curated catalog install
 cybr mcp configure NAME             Toggle tool selection
-cybr mcp serve                      Run Cybr Agent as an MCP server
+cybr mcp-serve                      Run Cybr Agent as an MCP server (mcp-serve plugin)
 ```
 Details (transport, tool discovery, catalog): `references/native-mcp.md`.
 
@@ -133,10 +133,10 @@ cybr send                 One-off message through a gateway platform
 cybr pairing / plugins / insights / journey / computer-use
 cybr acp                  ACP server (IDE integration)
 cybr completion bash|zsh|fish
-cybr update / uninstall / claw migrate
+cybr update / uninstall
 ```
 
-Plugin- and provider-supplied subcommands (e.g. `cybr photon setup`) only appear once their plugin is installed/active.
+Plugin- and provider-supplied subcommands (e.g. `cybr photon setup`) only appear once their plugin is installed/active. Importing from OpenClaw, Claude Code, Codex CLI or Cursor (`cybr import-agent <agent>`, plus the older `cybr claw migrate|cleanup`) comes from the `agent-importers` plugin; a fresh `cybr setup` that finds one of those agents offers to install it.
 
 ### Where to Find Things
 

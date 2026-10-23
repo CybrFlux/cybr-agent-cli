@@ -668,7 +668,7 @@ let
       separates the installation from the services, which is the
       Home Manager convention:
 
-        programs.hermes-agent.enable = ${lib.boolToString (value != false)};  # the hermes CLI, and HERMES_HOME for your shells
+        programs.hermes-agent.enable = ${lib.boolToString (value != false)};  # the cybr CLI, and HERMES_HOME for your shells
         programs.hermes-agent.desktop.enable = true;  # the desktop application
 
       `services.hermes-agent` keeps the state, the configuration and

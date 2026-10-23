@@ -73,7 +73,7 @@ The Microsoft Store variant uses its Partner Center package identity and Store
 updates. It does not use the sideload feed. `cybr update` inside either
 bundled runtime does not run Git against package files.
 
-`Cybr Agent-Setup.exe` is a different, bootstrap installer. It provisions a source
+`Cybr Agent Setup.exe` is a different, bootstrap installer. It provisions a source
 checkout through the scripts. Do not confuse it with the self-contained MSIX
 package. See [Updating & Uninstalling](../getting-started/updating.md).
 

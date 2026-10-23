@@ -5,7 +5,7 @@
 # state. Heavy dependencies (tool binaries, browsers, node) are pm's job:
 # `cybr pm install`.
 #
-# Stage protocol kept for Cybr Agent-Setup:
+# Stage protocol kept for Cybr Agent Setup:
 #   --manifest            print the stage list as JSON
 #   --stage NAME [--json] run one stage
 #   --non-interactive     skip stages that need input
@@ -100,7 +100,7 @@ export HERMES_HOME
 INSTALL_LOG="$HERMES_HOME/logs/install.log"
 
 # Same glyphs as the pre-pm installer. Colour only on a terminal, so CI
-# transcripts and the Cybr Agent-Setup driver read plain text.
+# transcripts and the Cybr Agent Setup driver read plain text.
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
     C_RED=$'\033[0;31m' C_GREEN=$'\033[0;32m' C_YELLOW=$'\033[0;33m'
     C_CYAN=$'\033[0;36m' C_MAGENTA=$'\033[0;35m' C_BOLD=$'\033[1m'
@@ -116,7 +116,7 @@ log_error() { printf '%s✗%s %s\n' "$C_RED" "$C_NC" "$1" >&2; }
 # $2: closed failure class for the local install receipt (write_install_receipt).
 fail() { STAGE_REASON="$1"; FAILURE_CLASS="${2:-other}"; log_error "$1"; exit 1; }
 # The last failed run_logged command's own error line (git's "fatal: ..."), so a
-# failure reason -- which Cybr Agent-Setup shows as-is -- names the cause, not just the step.
+# failure reason -- which Cybr Agent Setup shows as-is -- names the cause, not just the step.
 RUN_LOGGED_ERROR=""
 native_detail() { [ -z "$RUN_LOGGED_ERROR" ] || printf ': %s' "$RUN_LOGGED_ERROR"; }
 # Pick the error line from a command's output on stdin: the first fatal:/error:
@@ -200,7 +200,7 @@ print_banner() {
 
 # Interactive runs collapse child-process output (git, uv, pm, the builds)
 # into one status line. CI, --verbose and a non-terminal stdout -- the
-# Cybr Agent-Setup --json driver, E2E transcripts -- keep the full stream those
+# Cybr Agent Setup --json driver, E2E transcripts -- keep the full stream those
 # readers parse.
 quiet_output() {
     [ "$VERBOSE" = true ] && return 1
@@ -230,7 +230,7 @@ run_logged() {
         log "$label"
         local err rc
         err="$(mktemp 2>/dev/null)" || { "$@"; return; }
-        # stderr still streams (Cybr Agent-Setup logs it); a copy names the failure.
+        # stderr still streams (Cybr Agent Setup logs it); a copy names the failure.
         { "$@" 2>&1 1>&3 | tee "$err" >&2; } 3>&1
         rc=${PIPESTATUS[0]}
         [ "$rc" -eq 0 ] || RUN_LOGGED_ERROR="$(error_line < "$err")"
@@ -268,40 +268,40 @@ run_logged() {
 # --- BEGIN GENERATED: bootstrap pins (scripts/gen-bootstrap-pins.py) ---
 # Derived from pm/lock.json. DO NOT EDIT BY HAND:
 # run scripts/gen-bootstrap-pins.py after a pin bump.
-UV_PIN_VERSION="0.12.3"
+UV_PIN_VERSION="0.13.5"
 
 # Sets UV_PIN_URL + UV_PIN_SHA256 for a <os>-<arch> target key.
 uv_bootstrap_pin() {
     case "$1" in
         linux-x64)
-            UV_PIN_URL="https://github.com/astral-sh/uv/releases/download/0.12.3/uv-x86_64-unknown-linux-gnu.tar.gz"
-            UV_PIN_MIRROR="https://hermes-assets.nousresearch.com/upstream/sha256/600cf9a742aca00d292673b16b5acffaa7b8c269a364ad0c2e79498dcb1fe101"
-            UV_PIN_SHA256="600cf9a742aca00d292673b16b5acffaa7b8c269a364ad0c2e79498dcb1fe101"
+            UV_PIN_URL="https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-unknown-linux-gnu.tar.gz"
+            UV_PIN_MIRROR="https://hermes-assets.nousresearch.com/upstream/sha256/f68d291c75783122dad58ab77def0e13f3233f358731db5d6d7e8715603b928f"
+            UV_PIN_SHA256="f68d291c75783122dad58ab77def0e13f3233f358731db5d6d7e8715603b928f"
             ;;
         linux-arm64)
-            UV_PIN_URL="https://github.com/astral-sh/uv/releases/download/0.12.3/uv-aarch64-unknown-linux-gnu.tar.gz"
-            UV_PIN_MIRROR="https://hermes-assets.nousresearch.com/upstream/sha256/bb66cb52e7b1823aed1183630d8d8e5c958840d584a4c55ec10a4cfc168dcca2"
-            UV_PIN_SHA256="bb66cb52e7b1823aed1183630d8d8e5c958840d584a4c55ec10a4cfc168dcca2"
+            UV_PIN_URL="https://github.com/astral-sh/uv/releases/download/0.13.5/uv-aarch64-unknown-linux-gnu.tar.gz"
+            UV_PIN_MIRROR="https://hermes-assets.nousresearch.com/upstream/sha256/4bb69cf95ed13f23713bb7bc09f241896ea0c75b7c557e615a20604b82f9c403"
+            UV_PIN_SHA256="4bb69cf95ed13f23713bb7bc09f241896ea0c75b7c557e615a20604b82f9c403"
             ;;
         linux-x64-musl)
-            UV_PIN_URL="https://github.com/astral-sh/uv/releases/download/0.12.3/uv-x86_64-unknown-linux-musl.tar.gz"
-            UV_PIN_MIRROR="https://hermes-assets.nousresearch.com/upstream/sha256/0643b9fb8c9fb27458e709ce6ff939695013c41975ff7b02d3f3b138d8d4bdb3"
-            UV_PIN_SHA256="0643b9fb8c9fb27458e709ce6ff939695013c41975ff7b02d3f3b138d8d4bdb3"
+            UV_PIN_URL="https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-unknown-linux-musl.tar.gz"
+            UV_PIN_MIRROR="https://hermes-assets.nousresearch.com/upstream/sha256/57ef9d9ccb01fb1bd998df995b0dd221b52f7d7841fbea93f2d4463bf61fb7a9"
+            UV_PIN_SHA256="57ef9d9ccb01fb1bd998df995b0dd221b52f7d7841fbea93f2d4463bf61fb7a9"
             ;;
         linux-arm64-musl)
-            UV_PIN_URL="https://github.com/astral-sh/uv/releases/download/0.12.3/uv-aarch64-unknown-linux-musl.tar.gz"
-            UV_PIN_MIRROR="https://hermes-assets.nousresearch.com/upstream/sha256/fa513fca1eb2913334c944fe9adbdd410274a1cbe8dd05d03699a9eb85311d4e"
-            UV_PIN_SHA256="fa513fca1eb2913334c944fe9adbdd410274a1cbe8dd05d03699a9eb85311d4e"
+            UV_PIN_URL="https://github.com/astral-sh/uv/releases/download/0.13.5/uv-aarch64-unknown-linux-musl.tar.gz"
+            UV_PIN_MIRROR="https://hermes-assets.nousresearch.com/upstream/sha256/7906c79adb21c81abd559841ba76bb1d9af9d791acac7a041b2972e03ae16538"
+            UV_PIN_SHA256="7906c79adb21c81abd559841ba76bb1d9af9d791acac7a041b2972e03ae16538"
             ;;
         darwin-x64)
-            UV_PIN_URL="https://github.com/astral-sh/uv/releases/download/0.12.3/uv-x86_64-apple-darwin.tar.gz"
-            UV_PIN_MIRROR="https://hermes-assets.nousresearch.com/upstream/sha256/4c9f52262a14da336e4a42ed24992d12d0c956acde87619e4611d321dffa602b"
-            UV_PIN_SHA256="4c9f52262a14da336e4a42ed24992d12d0c956acde87619e4611d321dffa602b"
+            UV_PIN_URL="https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-apple-darwin.tar.gz"
+            UV_PIN_MIRROR="https://hermes-assets.nousresearch.com/upstream/sha256/b0f52b0e3945b4107d89024ea38e625683011fbfc05a0d98f9fa2d6dcee28c66"
+            UV_PIN_SHA256="b0f52b0e3945b4107d89024ea38e625683011fbfc05a0d98f9fa2d6dcee28c66"
             ;;
         darwin-arm64)
-            UV_PIN_URL="https://github.com/astral-sh/uv/releases/download/0.12.3/uv-aarch64-apple-darwin.tar.gz"
-            UV_PIN_MIRROR="https://hermes-assets.nousresearch.com/upstream/sha256/546f7f8a6c70ff13a3a9d2bc958db3427298cebf3e0cb756f9177133b7068843"
-            UV_PIN_SHA256="546f7f8a6c70ff13a3a9d2bc958db3427298cebf3e0cb756f9177133b7068843"
+            UV_PIN_URL="https://github.com/astral-sh/uv/releases/download/0.13.5/uv-aarch64-apple-darwin.tar.gz"
+            UV_PIN_MIRROR="https://hermes-assets.nousresearch.com/upstream/sha256/743f85035a1996ecb350659e01cd9faea9709829be09b1b4b03c73eaf3c9cd73"
+            UV_PIN_SHA256="743f85035a1996ecb350659e01cd9faea9709829be09b1b4b03c73eaf3c9cd73"
             ;;
         *)
             UV_PIN_URL=""
@@ -565,7 +565,7 @@ install_macos_git() {
         log_warn "xcode-select --install: $(printf '%s\n' "$_xs" | error_line)"
     fi
     local _remedy="Install Apple's Command Line Tools (run: xcode-select --install), then re-run this installer."
-    # Cybr Agent-Setup drives stages with --json: no stage timeout, a Cancel
+    # Cybr Agent Setup drives stages with --json: no stage timeout, a Cancel
     # button, and these log lines show as progress, so it waits too.
     if [ "$JSON" != true ] && { [ "$NON_INTERACTIVE" = true ] || ! has_terminal; }; then
         fail "git needs Apple's Command Line Tools. $_remedy" git_missing
@@ -711,12 +711,14 @@ stage_repository() {
     local pinned=false channel="" release="" origin
     # An interrupted clone from an older installer can leave a .git with no
     # initial commit, where stash/checkout abort ("You do not have the
-    # initial commit yet", #40998). Move it aside -- never delete it, it may
-    # hold something the user wants -- and clone fresh below.
-    if [ -d "$INSTALL_DIR/.git" ] && ! git -C "$INSTALL_DIR" rev-parse --verify HEAD >/dev/null 2>&1; then
+    # initial commit yet", #40998); a killed update or a sync tool can leave
+    # one git rejects outright (empty HEAD, a gitdir: file pointing nowhere),
+    # where `cybr update` cannot fetch. Move it aside -- never delete it, it
+    # may hold something the user wants -- and clone fresh below.
+    if [ -e "$INSTALL_DIR/.git" ] && ! git -C "$INSTALL_DIR" rev-parse --verify HEAD >/dev/null 2>&1; then
         local broken
         broken="${INSTALL_DIR}.broken-$(date -u +%Y%m%d-%H%M%S)"
-        log_warn "$INSTALL_DIR has no commits (interrupted clone); moving it aside to $broken"
+        log_warn "$INSTALL_DIR is not a usable git checkout (interrupted clone or damaged .git); moving it aside to $broken"
         mv "$INSTALL_DIR" "$broken" || fail "cannot move $INSTALL_DIR aside" filesystem_error
     fi
     if [ -d "$INSTALL_DIR/.git" ]; then

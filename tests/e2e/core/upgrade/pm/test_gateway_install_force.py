@@ -59,7 +59,7 @@ def updated(tmp_path_factory, provider):
     P.configure(sb, provider.base_url)
     installed = P.selected_generation(sb)
     P.publish_dependency_release(origin, root, 1)
-    P.ok(P.update(sb, env=P.lazy_env(sb)), "hermes update failed")
+    P.ok(P.update(sb, env=P.lazy_env(sb)), "cybr update failed")
     assert P.selected_generation(sb) != installed, "harness: the update did not select a new generation"
     return sb
 

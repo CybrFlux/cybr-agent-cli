@@ -51,7 +51,7 @@ pins the checkout to the exact release commit, even when that is older; the
 Desktop names that move as a rollback to the release, and `cybr update --check`
 says the checkout is newer, instead of announcing a new update.
 
-The installers (`install.sh`, `install.ps1` and Cybr Agent-Setup) put a new install
+The installers (`install.sh`, `install.ps1` and Cybr Agent Setup) put a new install
 on the latest stable release too. Re-running one over an install that never
 chose a channel moves it onto that release only when the release descends from
 its checkout. Any other checkout (one that followed `main`, or one already past
@@ -222,6 +222,19 @@ Work that outlives the gateway does not hold the restart either: a cron run alre
 If the maintained updater script is missing (for example after antivirus quarantine), the legacy update forwarder fails instead of reporting a successful hand-off. Repair the installation and review the security software's quarantine report before retrying; do not disable antivirus protection. Before reporting success, the maintained updater checks the CLI import, Windows executable header, ASAR header and packaged main entry, readable renderer HTML with a local module entry, initial module files, and current build stamp. These are minimum artifact checks, not a full dependency audit or an application/backend launch test. Missing Python is reported before waiting for Desktop shutdown; dependency repair is still allowed to run as part of the update. Electron checks maintained handoff prerequisites before stopping backends when that layout is present; genuine legacy-flat updater layouts remain supported, so not every missing updater file is detected before backend shutdown.
 
 On Windows, a Desktop reopened during packaging is stopped again immediately before the staged build is promoted. This cleanup is restricted to executables inside that checkout's Desktop release tree; unrelated installations are not stopped. A remaining lock still makes staged promotion fail rather than bypassing the rename error.
+
+### Fetch fails with `not a git repository`
+
+`cybr update` stops with "This Cybr Agent checkout's git data is damaged" when the install's `.git` folder is still there but git no longer accepts it: a lost or empty `HEAD`, or a `.git` file pointing at a folder that is gone. A killed update, a crash mid-write, or a sync or antivirus tool touching `.git` can leave it that way. No update can fetch on such a checkout. Gateways the update paused are started again on the unchanged code, since nothing was written.
+
+Run the installer again to repair it. It moves the damaged checkout aside as `hermes-agent.broken-<timestamp>` (nothing is deleted) and clones fresh; your config, sessions and other data live outside the checkout and are kept. The error prints the exact command for your checkout. For the default location it is:
+
+- Linux / macOS / WSL2: `curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash`
+- Windows (PowerShell): `iex (irm https://hermes-agent.nousresearch.com/install.ps1)`
+
+A checkout installed somewhere else needs its directory passed again (`bash -s -- --dir <path>` on Linux/macOS, `-InstallDir <path>` on Windows), as in the printed command; without it the installer repairs the default location instead.
+
+Once Cybr Agent works again you can delete the `.broken-*` folder.
 
 ### Fetch fails with `should_include_obj should only be called on existing objects`
 

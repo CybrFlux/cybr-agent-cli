@@ -29,7 +29,7 @@ Bundled packages contain the agent, Python, supported dependencies, and prebuilt
 interfaces. First launch does not build that base runtime. Provider access and
 optional integrations can still require network access.
 
-A `Cybr Agent-Setup` bootstrap installer is different: it downloads a source
+A `Cybr Agent Setup` bootstrap installer is different: it downloads a source
 installation and builds the desktop app. See [Cybr Agent Desktop](../user-guide/desktop.md).
 
 There is no separate remote-only Desktop download. To use Desktop with a Cybr Agent

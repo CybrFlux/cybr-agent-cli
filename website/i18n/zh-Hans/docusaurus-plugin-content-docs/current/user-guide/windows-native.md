@@ -60,7 +60,7 @@ Windows 10 源码安装支持不代表 MSIX 支持 Windows 10。
 Cybr Agent 先下载本地描述文件，再停止自己的后端、退出并等待包替换。
 它不依赖 `ms-appinstaller:` URL 协议。商店版本由 Microsoft Store 更新。
 
-`Cybr Agent-Setup.exe` 是另一种引导安装程序，会下载并配置源码安装。
+`Cybr Agent Setup.exe` 是另一种引导安装程序，会下载并配置源码安装。
 不要把它与自包含 MSIX 混为一谈。
 
 ## 源码安装程序实际做了什么

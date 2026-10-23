@@ -2078,7 +2078,7 @@ Three escape hatches bypass the interactive prompt — any one is sufficient:
 2. `HERMES_ACCEPT_HOOKS=1` environment variable
 3. `hooks_auto_accept: true` in `~/.hermes/config.yaml`
 
-Only a foreground `cybr chat` (or `cybr rl`) ever asks. The gateway, cron, `cybr mcp serve`, `cybr acp` and CI never prompt, even when stdin looks like a terminal (a hidden console from a Windows login-item launcher does), so they need one of these three or an allowlist entry. Otherwise a newly-added hook stays un-registered and a warning names the profile's allowlist file it is missing from (`profiles/<name>/shell-hooks-allowlist.json` for a non-default profile). `cybr gateway run --accept-hooks` (like `HERMES_ACCEPT_HOOKS=1` on the gateway) approves the hooks of every profile that gateway serves, including hooks added after it started.
+Only a foreground `cybr chat` (or `cybr rl`) ever asks. The gateway, cron, `cybr mcp-serve --tools` (the mcp-serve plugin), `cybr acp` and CI never prompt, even when stdin looks like a terminal (a hidden console from a Windows login-item launcher does), so they need one of these three or an allowlist entry. Otherwise a newly-added hook stays un-registered and a warning names the profile's allowlist file it is missing from (`profiles/<name>/shell-hooks-allowlist.json` for a non-default profile). `cybr gateway run --accept-hooks` (like `HERMES_ACCEPT_HOOKS=1` on the gateway) approves the hooks of every profile that gateway serves, including hooks added after it started.
 
 **Script edits are silently trusted.** The allowlist keys on the exact command string, not the script's hash, so editing the script on disk does not invalidate consent. `cybr hooks doctor` flags mtime drift so you can spot edits and decide whether to re-approve.
 

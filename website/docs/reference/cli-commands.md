@@ -93,7 +93,7 @@ The install also ships `hermes-agent`, a minimal runner that sends one query and
 | `cybr journey` (aliases `learning`, `memory-graph`) | Timeline of learned skills + memories over time. |
 | `cybr memory` | Configure external memory provider. Plugin-specific subcommands (e.g. `cybr honcho`) register automatically when their provider is active. |
 | `cybr acp` | Run Cybr Agent as an ACP server for editor integration. |
-| `cybr mcp` | Manage MCP server configurations and run Cybr Agent as an MCP server. |
+| `cybr mcp` | Manage MCP server configurations. Running Cybr Agent as an MCP server is the [mcp-serve plugin](../user-guide/features/mcp.md#running-hermes-as-an-mcp-server). |
 | `cybr connectors` | List, connect, rename and disconnect hosted connector accounts. |
 | `cybr plugins` | Manage Cybr Agent plugins (install, enable, disable, remove). |
 | `cybr portal` | Nous Portal status, subscription link, and Tool Gateway routing. See [Tool Gateway](../user-guide/features/tool-gateway.md). |
@@ -102,8 +102,8 @@ The install also ships `hermes-agent`, a minimal runner that sends one query and
 | `cybr pets` | Browse, install, and select [petdex](../user-guide/features/pets.md) animated pets shown across the CLI, TUI, and desktop app. Subcommands: `list`, `install`, `select`, `show`, `off`, `scale`, `remove`, `doctor`. |
 | `cybr sessions` | Browse, export, prune, rename, and delete sessions. |
 | `cybr insights` | Show token/cost/activity analytics. |
-| `cybr claw` | OpenClaw migration helpers. |
-| `cybr import-agent` | Import a Claude Code (`~/.claude`) or Codex CLI (`~/.codex`) setup. |
+| `cybr claw` | OpenClaw migration (`migrate`, `cleanup`), from the [`agent-importers`](../user-guide/import-from-other-agents.md) plugin; `cybr claw migrate` is the same as `cybr import-agent openclaw`. |
+| `cybr import-agent` | Import an OpenClaw, Claude Code, Codex CLI or Cursor setup (from the [`agent-importers`](../user-guide/import-from-other-agents.md) plugin). |
 | `cybr dashboard` | Launch the web dashboard for managing config, API keys, and sessions. |
 | `cybr serve` | Start the Cybr Agent backend server (headless; powers the desktop app and remote backends). |
 | `hermes desktop` (alias `gui`) | Build and launch the native Electron desktop app. |
@@ -404,6 +404,8 @@ cybr setup [model|tts|terminal|gateway|tools|agent] [--non-interactive] [--reset
 
 **Returning user (already configured):** drops straight into the full reconfigure wizard — every prompt shows your current value as its default, press Enter to keep or type a new value. No menu.
 
+**Coming from another agent:** when the first run finds an OpenClaw, Claude Code, Codex CLI or Cursor setup (`~/.openclaw`, `~/.claude`, `~/.codex`, `~/.cursor`), it first asks **"Import your setup from …?"** (default yes). With more than one found, you then pick which from a checklist. Setup installs the [`agent-importers`](../user-guide/import-from-other-agents.md) plugin from the catalog, unless you already have it, and runs its import for each pick, which shows a preview and asks before changing anything (OpenClaw's allowlisted API keys and bot tokens are included, as the old built-in step did). Nothing found, a no, `--non-interactive` or a setup started by the dashboard: no question and nothing installed. On an already configured install, run `cybr import-agent` instead.
+
 Jump into one section instead of the full wizard:
 
 | Section | Description |
@@ -612,7 +614,7 @@ Common flags for migration subcommands:
 | `--apply` | Rewrite `config.yaml` in-place (default: dry-run, no writes). |
 | `--no-backup` | Skip the timestamped backup of `config.yaml` when applying. |
 
-> Not to be confused with `cybr claw migrate` (one-shot import of OpenClaw configuration into Cybr Agent) — `cybr migrate` is the top-level config-rewrite command.
+> Not to be confused with `cybr import-agent openclaw` (one-shot import of OpenClaw configuration into Cybr Agent) — `cybr migrate` is the top-level config-rewrite command.
 
 
 ## `cybr codex-runtime`
@@ -1431,7 +1433,7 @@ cybr skills search react --source skills-sh
 cybr skills search https://mintlify.com/docs --source well-known
 cybr skills inspect official/security/1password
 cybr skills inspect skills-sh/vercel-labs/json-render/json-render-react
-cybr skills install official/migration/openclaw-migration
+cybr skills install official/mcp/fastmcp
 cybr skills install skills-sh/anthropics/skills/pdf --force
 cybr skills install https://sharethis.chat/SKILL.md                     # Direct URL (+ referenced support files)
 cybr skills install https://example.com/SKILL.md --name my-skill        # Override name when frontmatter has none
@@ -1614,14 +1616,13 @@ See [ACP Editor Integration](../user-guide/features/acp.md) and [ACP Internals](
 cybr mcp <subcommand>
 ```
 
-Manage MCP (Model Context Protocol) server configurations and run Cybr Agent as an MCP server.
+Manage MCP (Model Context Protocol) server configurations. Running Cybr Agent itself as an MCP server moved to the `mcp-serve` plugin (`cybr plugins install mcp-serve`, then `cybr mcp-serve`); `cybr mcp serve` prints that new spelling.
 
 | Subcommand | Description |
 |------------|-------------|
 | *(none)* or `picker` | Interactive catalog picker — browse Nous-approved MCPs and install/enable/disable. |
 | `catalog` | List Nous-approved MCPs (plain text, scriptable). |
 | `install <name>` | Install a catalog entry (e.g. `cybr mcp install deepwiki`). |
-| `serve [-v\|--verbose]` | Run Cybr Agent as an MCP server — expose conversations to other agents. |
 | `add <name> [--url URL] [--command CMD] [--auth oauth\|header] [--args ...]` | Add a custom MCP server with automatic tool discovery. `--args` passes the remaining argv to the stdio command, so put it last. |
 | `remove <name>` (alias: `rm`) | Remove an MCP server from config. |
 | `list` (alias: `ls`) | List configured MCP servers. |
@@ -1805,10 +1806,22 @@ cybr insights [--days N] [--source platform]
 | `--days <n>` | Analyze the last `n` days (default: 30). |
 | `--source <platform>` | Filter by source such as `cli`, `telegram`, or `discord`. |
 
-## `cybr claw`
+## `cybr import-agent`
 
 ```bash
-cybr claw migrate [options]
+cybr plugins install agent-importers   # once; the command comes from this official plugin
+cybr import-agent [openclaw|claude-code|codex|cursor] [options]
+```
+
+Import an **OpenClaw** (`~/.openclaw`), **Claude Code** (`~/.claude`), **OpenAI Codex CLI** (`~/.codex`) or **Cursor** (`~/.cursor`) setup into Cybr Agent: instructions and rules become memory entries, `Bash(...)` permission rules become `command_allowlist`/`approvals.deny`, MCP servers land in `mcp_servers`, and skills are copied. Always previews first. API keys and credentials are never imported, except OpenClaw's allowlisted keys when you pass `--migrate-secrets`. `--sync` re-imports registered Claude Code, Codex and Cursor sources that changed. On a fresh install, `cybr setup` offers to install the plugin and run the import for you when it finds one of these agents.
+
+The command moved out of core into the official `agent-importers` plugin, together with `cybr claw` (OpenClaw migration), whose spelling the plugin keeps. Without the plugin, `cybr import-agent` and `cybr claw` print the install line. See the **[import guide](../user-guide/import-from-other-agents.md)** for options and mapping tables.
+
+### OpenClaw: `cybr import-agent openclaw`
+
+```bash
+cybr import-agent openclaw [options]    # same as the older spelling: hermes claw migrate [options]
+hermes claw cleanup [--source <path>] [--dry-run] [--yes]
 ```
 
 Migrate your OpenClaw setup to Cybr Agent. Reads from `~/.openclaw` (or a custom path) and writes to `~/.hermes`. Automatically detects legacy directory names (`~/.clawdbot`, `~/.moltbot`) and config filenames (`clawdbot.json`, `moltbot.json`).
@@ -1825,7 +1838,9 @@ Migrate your OpenClaw setup to Cybr Agent. Reads from `~/.openclaw` (or a custom
 | `--skill-conflict <mode>` | Handle skill name collisions: `skip` (default), `overwrite`, or `rename`. |
 | `--yes` | Skip the confirmation prompt. |
 
-### What gets migrated
+`cybr claw cleanup` renames leftover OpenClaw directories to `*.pre-migration` once you have migrated (OpenClaw stops working after this; rename them back to undo).
+
+#### What gets migrated
 
 The migration covers 30+ categories across persona, memory, skills, model providers, messaging platforms, agent behavior, session policies, MCP servers, TTS, and more. Items are either **directly imported** into Cybr Agent equivalents or **archived** for manual review.
 
@@ -1837,43 +1852,24 @@ The migration covers 30+ categories across persona, memory, skills, model provid
 
 For the complete config key mapping, SecretRef handling details, and post-migration checklist, see the **[full migration guide](../guides/migrate-from-openclaw.md)**.
 
-### Examples
+#### Examples
 
 ```bash
 # Preview what would be migrated
-cybr claw migrate --dry-run
+cybr import-agent openclaw --dry-run
 
 # Full migration (all compatible settings, no secrets)
-cybr claw migrate --preset full
+cybr import-agent openclaw --preset full
 
 # Full migration including API keys
-cybr claw migrate --preset full --migrate-secrets
+cybr import-agent openclaw --preset full --migrate-secrets
 
 # Migrate user data only (no secrets), overwrite conflicts
-cybr claw migrate --preset user-data --overwrite
+cybr import-agent openclaw --preset user-data --overwrite
 
 # Migrate from a custom OpenClaw path
-cybr claw migrate --source /home/user/old-openclaw
+cybr import-agent openclaw --source /home/user/old-openclaw
 ```
-
-## `cybr import-agent`
-
-```bash
-cybr import-agent [claude-code|codex] [options]
-```
-
-Import a **Claude Code** (`~/.claude`) or **OpenAI Codex CLI** (`~/.codex`) setup into Cybr Agent. Maps `CLAUDE.md`/`AGENTS.md` instructions to memory entries, `Bash(...)` permission allow/deny rules to `command_allowlist`/`approvals.deny`, MCP servers to `mcp_servers` in `config.yaml`, and skill directories into `~/.hermes/skills/`. Always previews before applying; API keys and credentials are never imported.
-
-| Option | Description |
-| --- | --- |
-| `agent` | `claude-code` or `codex` (default: auto-detect). |
-| `--source <path>` | Custom source directory (default: `~/.claude` or `~/.codex`). |
-| `--dry-run` | Preview only — write nothing. |
-| `--overwrite` | Replace conflicting MCP servers / skills (default: skip). |
-| `--yes`, `-y` | Skip confirmation prompts. |
-| `--sync` | Re-import every previously imported source whose files changed since the last import. Prompt-free; combine with `--dry-run` to preview. |
-
-Every successful import registers its source in `~/.hermes/import-sync.json`; `cybr import-agent --sync` then re-imports any registered source whose files changed (a cron-friendly way to keep an imported Claude Code / Codex setup current). See the **[import guide](../user-guide/import-from-other-agents.md)** for the full mapping tables.
 
 ## `cybr serve`
 

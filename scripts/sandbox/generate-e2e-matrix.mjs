@@ -36,7 +36,7 @@ import { fileURLToPath } from 'node:url';
  * strings, so they are types, not conventions.
  *
  * @typedef {'latest'} InstallerVersion
- *   The artifact published on the website right now -- Cybr Agent-Setup.exe has
+ *   The artifact published on the website right now -- Cybr Agent Setup.exe has
  *   no versioned archive yet. Widen this union when one exists.
  * @typedef {'installer-script' | 'installer-script+desktop' | 'desktop-installer' | 'packaged-app'} InstallMethod
  *   installer-script is the platform's one-liner (curl | bash on
@@ -147,7 +147,7 @@ export const SPEC = {
       // registers Start Menu / Desktop shortcuts, so it is a second real
       // path to a hand-launchable app.
       { method: 'installer-script+desktop' },
-      // Website Cybr Agent-Setup.exe, clicked through the GUI.
+      // Website Cybr Agent Setup.exe, clicked through the GUI.
       { method: 'desktop-installer', versions: ['latest'] },
     ],
     update: [
@@ -167,7 +167,7 @@ export const SPEC = {
     install: [
       { method: 'installer-script' },
       { method: 'installer-script+desktop' },
-      // The published Cybr Agent-Setup.dmg from the website, mounted and run.
+      // The published Cybr Agent Setup.dmg from the website, mounted and run.
       { method: 'desktop-installer', versions: ['latest'] },
     ],
     update: [

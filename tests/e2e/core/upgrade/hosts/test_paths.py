@@ -77,7 +77,7 @@ def test_install_update_gateway_and_turn_under_a_non_ascii_spaced_home(odd_home,
                               {"docs/e2e-host-paths-marker.txt": "release 1\n"})
     up = sb.cli("update", "--yes", "--branch", "main", timeout=X.UPDATE_TIMEOUT)
     assert up.returncode == 0 and I.TRACEBACK not in up.stdout + up.stderr, (
-        "hermes update failed under a non-ASCII, spaced HOME:\n" + I.describe(up))
+        "cybr update failed under a non-ASCII, spaced HOME:\n" + I.describe(up))
     assert I.git("rev-parse", "HEAD", cwd=sb.checkout) == target, "update exited 0 but HEAD is not the new release"
     t2 = X.turn(sb, provider, "turn after updating under a non-ASCII home")
     assert not X.reran_completion(t2), "the first launch after a finished update re-ran the completion:\n" + I.describe(t2)

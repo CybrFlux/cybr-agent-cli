@@ -57,7 +57,7 @@ def test_dmg_driver_requires_complete_pm_source_install(tmp_path, missing, expec
         command = mocks / name
         command.write_text(script, encoding="utf-8")
         command.chmod(0o755)
-    app_bin = tmp_path / "Cybr Agent-Setup"
+    app_bin = tmp_path / "Cybr Agent Setup"
     app_bin.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     app_bin.chmod(0o755)
     home = tmp_path / "home"

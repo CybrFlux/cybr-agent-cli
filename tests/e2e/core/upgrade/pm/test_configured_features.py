@@ -95,7 +95,7 @@ def rebuilt(tmp_path_factory, provider):
 
 def test_update_rebuild_keeps_installed_extra_and_mcp(rebuilt):
     sb, up, after = rebuilt["sb"], rebuilt["update"], rebuilt["after_update"]
-    assert up.returncode == 0, "hermes update failed:\n" + P.diagnostics(sb, up)
+    assert up.returncode == 0, "cybr update failed:\n" + P.diagnostics(sb, up)
     assert after["generation"] != rebuilt["before"]["generation"], (
         "harness: the dependency release did not make the update build a new generation\n" + P.diagnostics(sb, up))
     assert after["imports"]["telegram"] == "ok", (

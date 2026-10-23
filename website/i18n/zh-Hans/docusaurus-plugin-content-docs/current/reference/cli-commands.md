@@ -820,7 +820,7 @@ cybr skills search react --source skills-sh
 cybr skills search https://mintlify.com/docs --source well-known
 cybr skills inspect official/security/1password
 cybr skills inspect skills-sh/vercel-labs/json-render/json-render-react
-cybr skills install official/migration/openclaw-migration
+cybr skills install official/mcp/fastmcp
 cybr skills install skills-sh/anthropics/skills/pdf --force
 cybr skills install https://sharethis.chat/SKILL.md                     # 直接 URL（含引用的支持文件）
 cybr skills install https://example.com/SKILL.md --name my-skill        # frontmatter 无名称时覆盖名称
@@ -1093,7 +1093,7 @@ cybr insights [--days N] [--source platform]
 ## `cybr claw`
 
 ```bash
-cybr claw migrate [options]
+hermes claw migrate [options]
 ```
 
 将 OpenClaw 设置迁移到 Cybr Agent。从 `~/.openclaw`（或自定义路径）读取并写入 `~/.hermes`。自动检测旧版目录名（`~/.clawdbot`、`~/.moltbot`）和配置文件名（`clawdbot.json`、`moltbot.json`）。
@@ -1126,19 +1126,19 @@ cybr claw migrate [options]
 
 ```bash
 # 预览将迁移的内容
-cybr claw migrate --dry-run
+hermes claw migrate --dry-run
 
 # 完整迁移（所有兼容设置，不含密钥）
-cybr claw migrate --preset full
+hermes claw migrate --preset full
 
 # 包含 API 密钥的完整迁移
-cybr claw migrate --preset full --migrate-secrets
+hermes claw migrate --preset full --migrate-secrets
 
 # 仅迁移用户数据（不含密钥），覆盖冲突
-cybr claw migrate --preset user-data --overwrite
+hermes claw migrate --preset user-data --overwrite
 
 # 从自定义 OpenClaw 路径迁移
-cybr claw migrate --source /home/user/old-openclaw
+hermes claw migrate --source /home/user/old-openclaw
 ```
 
 ## `cybr dashboard`

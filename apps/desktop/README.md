@@ -9,7 +9,7 @@
 
 **The native desktop app for [Cybr Agent](../../README.md) — the self-improving AI agent from [CybrFlux](https://github.com/CybrFlux).** Same agent, same skills, same memory as the CLI and gateway, in a polished native window — chat with streaming tool output, side-by-side previews, a file browser, voice, and settings, no terminal required. Available for **macOS, Windows, and Linux**.
 
-> **Intel Macs:** the `Cybr Agent-Setup.dmg` bootstrap installer is built for
+> **Intel Macs:** the `Cybr Agent Setup.dmg` bootstrap installer is built for
 > Apple Silicon (arm64) only, so on an Intel Mac it reports "not supported on
 > this Mac". Stable releases build the native `darwin-x64` bundle only when
 > cut with `--with macos-intel`; otherwise install the

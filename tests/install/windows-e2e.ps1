@@ -6,7 +6,7 @@
 # a real update surface -- with every leg driven through the GUI a user
 # actually touches:
 #
-#   INSTALL   - downloads the production Cybr Agent-Setup.exe from the website,
+#   INSTALL   - downloads the production Cybr Agent Setup.exe from the website,
 #               launches it HEADED, and AutoHotkey clicks Install, waits,
 #               then clicks Launch. The real Electron Cybr Agent.exe must appear.
 #               The exe runs EXACTLY as shipped against serve.git, whose
@@ -26,7 +26,7 @@
 #                 update     run `cybr update` from the installed command
 #                            (the CLI route a GUI user might take).
 #                 installer  re-run the bootstrap installer over the
-#                            existing install (download Cybr Agent-Setup.exe
+#                            existing install (download Cybr Agent Setup.exe
 #                            again, AHK clicks Install; lands on HEAD).
 #
 # HOW THE STAGING WORKS (no MITM proxy, no network fakery):
@@ -89,7 +89,7 @@ param(
     [string]$Route = "open-app-update",
 
     # The OLD version: the ref served as `main` while the installer runs,
-    # i.e. what the user starts on. The published Cybr Agent-Setup.exe carries
+    # i.e. what the user starts on. The published Cybr Agent Setup.exe carries
     # no commit pin (Pin { commit: None, branch: "main" }) -- it installs
     # whatever `main` points at, so staging OLD means serving it there.
     # Empty or "auto" = newest release tag in the checkout (the "user on
@@ -109,7 +109,7 @@ param(
 
     [string]$WorkRoot = $(if ($env:HERMES_E2E_WORKROOT) { $env:HERMES_E2E_WORKROOT } else { Join-Path $env:TEMP "hermes-desktop-gui-e2e" }),
 
-    [string]$SetupExeUrl = "https://hermes-assets.nousresearch.com/Hermes-Setup.exe",
+    [string]$SetupExeUrl = "https://hermes-assets.nousresearch.com/Cybr Agent Setup.exe",
 
     # Driver dependencies come from the current checkout lockfile.
     [string]$DriverNode = $env:HERMES_E2E_NODE
@@ -767,7 +767,7 @@ function Save-GuiDriverFailureEvidence([System.Diagnostics.Process]$Installer, [
         Format-Table -AutoSize -Wrap | Out-String -Width 400 |
         Tee-Object -FilePath (Join-Path $OutDir "processes.txt") | Write-Host
     if ($Installer.HasExited) {
-        Write-Host "  Cybr Agent-Setup.exe already exited (code $($Installer.ExitCode) at $($Installer.ExitTime))"
+        Write-Host "  Cybr Agent Setup.exe already exited (code $($Installer.ExitCode) at $($Installer.ExitTime))"
         return
     }
     $Installer.Refresh()
@@ -781,7 +781,7 @@ function Save-GuiDriverFailureEvidence([System.Diagnostics.Process]$Installer, [
 public static extern bool MiniDumpWriteDump(IntPtr hProcess, uint processId, Microsoft.Win32.SafeHandles.SafeFileHandle hFile, uint dumpType, IntPtr exceptionParam, IntPtr userStreamParam, IntPtr callbackParam);
 '@
     }
-    $dumpPath = Join-Path $OutDir "Cybr Agent-Setup.dmp"
+    $dumpPath = Join-Path $OutDir "Cybr Agent Setup.dmp"
     $file = [System.IO.File]::Create($dumpPath)
     try {
         # MiniDumpWithFullMemory | MiniDumpWithHandleData | MiniDumpWithThreadInfo
@@ -791,8 +791,8 @@ public static extern bool MiniDumpWriteDump(IntPtr hProcess, uint processId, Mic
     finally {
         $file.Close()
     }
-    if ($ok) { Write-Host "  Cybr Agent-Setup.exe dump: $dumpPath ($([math]::Round((Get-Item $dumpPath).Length / 1MB, 1)) MB)" }
-    else { Write-Host "  Cybr Agent-Setup.exe dump failed (Win32 error $err)" }
+    if ($ok) { Write-Host "  Cybr Agent Setup.exe dump: $dumpPath ($([math]::Round((Get-Item $dumpPath).Length / 1MB, 1)) MB)" }
+    else { Write-Host "  Cybr Agent Setup.exe dump failed (Win32 error $err)" }
 }
 
 function Save-DesktopScreenshot([string]$OutFile) {
@@ -948,7 +948,7 @@ function Invoke-PhaseStage {
 }
 
 # ----------------------------------------------------------------------------
-# Phase: install-gui -- website Cybr Agent-Setup.exe, headed, AHK-driven
+# Phase: install-gui -- website Cybr Agent Setup.exe, headed, AHK-driven
 # ----------------------------------------------------------------------------
 function Invoke-PhaseInstallGui {
     param(
@@ -963,7 +963,7 @@ function Invoke-PhaseInstallGui {
         $ExpectedSha = $state.old
         $ExpectedLabel = "OLD ($($state.old_ref))"
     }
-    Write-Step "$($Mode.ToUpper()) (GUI): Cybr Agent-Setup.exe from the website, headed, AHK clicks"
+    Write-Step "$($Mode.ToUpper()) (GUI): Cybr Agent Setup.exe from the website, headed, AHK clicks"
     $proof = Join-Path $ProofRoot $(if ($Mode -eq "install") { "install-gui" } else { "update-gui-installer" })
     New-Item -ItemType Directory -Path $proof -Force | Out-Null
 
@@ -988,12 +988,12 @@ function Invoke-PhaseInstallGui {
     ) | Set-Content -LiteralPath (Join-Path $proof "bootstrap-install-script.txt") -Encoding ASCII
     Write-Host "  bootstrap script is scripts/install.ps1 from $ExpectedLabel ($ExpectedSha)"
 
-    $setupExe = Join-Path $WorkRoot "Cybr Agent-Setup.exe"
+    $setupExe = Join-Path $WorkRoot "Cybr Agent Setup.exe"
     if (-not (Test-Path -LiteralPath $setupExe)) {
         Write-Host "  downloading $SetupExeUrl"
         Invoke-WebRequest -Uri $SetupExeUrl -OutFile $setupExe
     }
-    Assert-True ((Get-Item $setupExe).Length -gt 1MB) "Cybr Agent-Setup.exe downloaded ($([math]::Round((Get-Item $setupExe).Length / 1MB, 1)) MB)"
+    Assert-True ((Get-Item $setupExe).Length -gt 1MB) "Cybr Agent Setup.exe downloaded ($([math]::Round((Get-Item $setupExe).Length / 1MB, 1)) MB)"
 
     # AutoHotkey v2, portable zip (no installer, no winget flakes).
     $ahkExe = Join-Path $AhkDir "AutoHotkey64.exe"
@@ -1038,13 +1038,13 @@ function Invoke-PhaseInstallGui {
                 $env:HERMES_SETUP_DEV_REPO_ROOT = $previousSetupSource
             }
         }
-        Write-Host "  Cybr Agent-Setup.exe launched (pid $($installer.Id))"
+        Write-Host "  Cybr Agent Setup.exe launched (pid $($installer.Id))"
 
         # Drive it: Install click -> wait -> Launch click -> Cybr Agent.exe window.
         # Arg 3 lets the AHK script use the installer's own log as the
         # install-finished fallback signal.
         $ahk = Start-Process -FilePath $ahkExe `
-            -ArgumentList (Join-Path $AhkDir "install-and-launch.ahk"), $ahkLog, "Cybr Agent-Setup.exe", (Join-Path $HermesHome "logs\bootstrap-installer.log") `
+            -ArgumentList (Join-Path $AhkDir "install-and-launch.ahk"), $ahkLog, "Cybr Agent Setup.exe", (Join-Path $HermesHome "logs\bootstrap-installer.log") `
             -PassThru
         # Install on a cold runner takes a while; the AHK script's own inner
         # timeout (45 min on the Launch wait) is the effective budget.
@@ -1072,7 +1072,7 @@ function Invoke-PhaseInstallGui {
         if (-not $installer.HasExited) {
             Start-Sleep -Seconds 10
         }
-        Assert-True $installer.HasExited "Cybr Agent-Setup.exe exited after Launch"
+        Assert-True $installer.HasExited "Cybr Agent Setup.exe exited after Launch"
     }
     finally {
         Stop-DesktopRecorder $recorder (Join-Path $proof "desktop-frames")
@@ -1615,7 +1615,7 @@ function Invoke-PhaseUpdate {
             Assert-DesktopArtifact "HEAD"
         }
         "desktop-installer@latest" {
-            # A user re-downloading Cybr Agent-Setup.exe and clicking Install over
+            # A user re-downloading Cybr Agent Setup.exe and clicking Install over
             # the existing install (the GUI twin of re-running the one-liner).
             # Windows has no already-installed fast path, so the full installer
             # UI shows and the same AHK drive applies; install.ps1's repository
@@ -1690,7 +1690,7 @@ function Invoke-PhaseVerifyStamp {
     } finally { $ErrorActionPreference = $prevEap }
     $verdict | ForEach-Object { Write-Host $_ }
     if ($verifyExit -eq 0) { return }
-    # Permanent legacy shape, not a pending fix: the released Cybr Agent-Setup.exe
+    # Permanent legacy shape, not a pending fix: the released Cybr Agent Setup.exe
     # replaces install.ps1's receipt with its own (#124949): "completedAtUnix"
     # (epoch seconds) instead of "completedAt", and a null pinnedCommit when git
     # is not on PATH. #125053 fixed the writer, but the installer .exe is not
@@ -1707,10 +1707,10 @@ function Invoke-PhaseVerifyStamp {
     $setupExeReceipt = $receipt -and ($receipt.PSObject.Properties.Name -contains 'completedAtUnix')
     if ($setupExeReceipt -and $fails.Count -and -not @($fails | Where-Object { $_ -notmatch $legacyOnly }).Count) {
         $unix = $receipt.completedAtUnix
-        Assert-True ((($unix -is [int]) -or ($unix -is [long])) -and $unix -gt 0) "Cybr Agent-Setup.exe receipt completedAtUnix is epoch seconds: '$unix'"
+        Assert-True ((($unix -is [int]) -or ($unix -is [long])) -and $unix -gt 0) "Cybr Agent Setup.exe receipt completedAtUnix is epoch seconds: '$unix'"
         # The receipt cannot vouch for the commit, so the checkout must.
         Assert-True ($head -eq $state.current) "installed checkout is at the expected commit ($($state.current.Substring(0, 12)))"
-        $note = "Cybr Agent-Setup.exe legacy receipt accepted (#124949; the released exe is not rebuilt): $($fails -join '; ')"
+        $note = "Cybr Agent Setup.exe legacy receipt accepted (#124949; the released exe is not rebuilt): $($fails -join '; ')"
         Write-Host "  $note"
         if ($env:GITHUB_STEP_SUMMARY) { Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Value $note -Encoding UTF8 }
         return

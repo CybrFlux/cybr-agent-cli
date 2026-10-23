@@ -113,7 +113,7 @@ def test_update_on_a_read_only_tree_refuses_with_a_reason_and_recovers(world, pr
     out = up.stdout + up.stderr
     assert up.returncode != 0, "hermes update reported success on an install tree it cannot write:\n" + I.describe(up)
     assert I.TRACEBACK not in out, "hermes update crashed on a read-only install tree:\n" + I.describe(up)
-    assert ACTIONABLE.search(out), "hermes update failed on a read-only tree without saying why:\n" + I.describe(up)
+    assert ACTIONABLE.search(out), "cybr update failed on a read-only tree without saying why:\n" + I.describe(up)
     assert world["ro_head"] == world["before"], "a refused update still moved the checkout"
     again = world["rw_update"]
     assert again.returncode == 0 and I.TRACEBACK not in again.stdout + again.stderr, (

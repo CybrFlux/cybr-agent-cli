@@ -27,7 +27,7 @@
 # To use the module:
 #   imports = [ hermes-agent.homeManagerModules.default ];
 #   programs.hermes-agent = {
-#     enable = true;          # the hermes CLI on your PATH
+#     enable = true;          # the cybr CLI on your PATH
 #     desktop.enable = true;  # the Electron application and a launcher
 #   };
 #   services.hermes-agent = {

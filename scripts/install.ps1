@@ -1,6 +1,6 @@
 # Cybr Agent bootstrap: git checkout + venv + hermes command on PATH.
 # Heavy dependencies (tool binaries, browsers, node) are pm's job after
-# this: `cybr pm install`. Stage protocol kept for Cybr Agent-Setup:
+# this: `cybr pm install`. Stage protocol kept for Cybr Agent Setup:
 #   -Manifest             print the stage list as JSON
 #   -Stage NAME [-Json]   run one stage
 #   -NonInteractive       skip stages that need input
@@ -82,17 +82,17 @@ $RepoUrl = if ($env:HERMES_REPO_URL) { $env:HERMES_REPO_URL } else { "https://gi
 # --- BEGIN GENERATED: bootstrap pins (scripts/gen-bootstrap-pins.py) ---
 # Derived from pm/lock.json. DO NOT EDIT BY HAND:
 # run scripts/gen-bootstrap-pins.py after a pin bump.
-$script:UvPinVersion = "0.12.3"
+$script:UvPinVersion = "0.13.5"
 $script:UvPinFiles = @{
     "win32-x64" = @{
-        Url    = "https://github.com/astral-sh/uv/releases/download/0.12.3/uv-x86_64-pc-windows-msvc.zip"
-        MirrorUrl = "https://hermes-assets.nousresearch.com/upstream/sha256/b23350c79e8ad0192b8124af13a0f17e8d4e4549524785e1aef389ae5a06990e"
-        Sha256 = "b23350c79e8ad0192b8124af13a0f17e8d4e4549524785e1aef389ae5a06990e"
+        Url    = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-pc-windows-msvc.zip"
+        MirrorUrl = "https://hermes-assets.nousresearch.com/upstream/sha256/a38b8d1902b7cfbc76b423ba1bb456f623f42064cdc72628b6075b89afd1019a"
+        Sha256 = "a38b8d1902b7cfbc76b423ba1bb456f623f42064cdc72628b6075b89afd1019a"
     }
     "win32-arm64" = @{
-        Url    = "https://github.com/astral-sh/uv/releases/download/0.12.3/uv-aarch64-pc-windows-msvc.zip"
-        MirrorUrl = "https://hermes-assets.nousresearch.com/upstream/sha256/4343217d668727b8a8eb5cad92389a1d2eeead93c89940d1b955ba1bb15462eb"
-        Sha256 = "4343217d668727b8a8eb5cad92389a1d2eeead93c89940d1b955ba1bb15462eb"
+        Url    = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-aarch64-pc-windows-msvc.zip"
+        MirrorUrl = "https://hermes-assets.nousresearch.com/upstream/sha256/09f47edf90726084a70f9426f6e3ca4f46e9bf7cbf23b1716ec64d60b055fae3"
+        Sha256 = "09f47edf90726084a70f9426f6e3ca4f46e9bf7cbf23b1716ec64d60b055fae3"
     }
 }
 
@@ -656,7 +656,7 @@ function Invoke-Native([scriptblock]$Command, [switch]$Utf8Output) {
 
 # Interactive runs collapse child-process output (git, uv, pm, the builds)
 # into one status line. CI, -Verbose and redirected output -- the
-# Cybr Agent-Setup -Json driver, E2E transcripts -- keep the full stream those
+# Cybr Agent Setup -Json driver, E2E transcripts -- keep the full stream those
 # readers parse.
 function Test-QuietOutput {
     if ($env:CI -or $env:GITHUB_ACTIONS -or $env:HERMES_INSTALL_VERBOSE) { return $false }
@@ -671,7 +671,7 @@ function Write-StatusLine([string]$Text, [int]$Width) {
 }
 
 # The error line of a failed command's output: the first fatal:/error: line (git's
-# cause; later ones are generic), else the last non-empty one. Fail reasons carry it, and Cybr Agent-Setup shows the reason
+# cause; later ones are generic), else the last non-empty one. Fail reasons carry it, and Cybr Agent Setup shows the reason
 # as-is, so the screen names the cause (git's "fatal: ...") and not just the step.
 $script:NativeError = $null
 function Select-ErrorLine($Lines) {
@@ -715,7 +715,7 @@ function Invoke-Logged {
     }
     if (-not $logWriter) {
         Log $StatusLabel
-        # stderr stays on stderr (Cybr Agent-Setup logs it); the lines are kept so a
+        # stderr stays on stderr (Cybr Agent Setup logs it); the lines are kept so a
         # failure reason can name the cause.
         # Named -TypeName: a positional New-Object binds to callers' New-Object shims.
         $outputLines = New-Object -TypeName 'System.Collections.Generic.Queue[string]'
@@ -979,13 +979,15 @@ function Stage-Repository {
     if (-not (Ensure-Git)) { Fail "no pinned Git artifact for this Windows architecture" unsupported_platform }
     # An interrupted clone from an older installer can leave a .git with no
     # initial commit, where stash/checkout abort ("You do not have the initial
-    # commit yet", #40998). Move it aside -- never delete it, it may hold
-    # something the user wants -- and clone fresh below.
+    # commit yet", #40998); a killed update or a sync tool can leave one git
+    # rejects outright (empty HEAD, a gitdir: file pointing nowhere), where
+    # `cybr update` cannot fetch. Move it aside -- never delete it, it may
+    # hold something the user wants -- and clone fresh below.
     if (Test-Path (Join-Path $InstallDir ".git")) {
         Invoke-Native { git -C $InstallDir rev-parse --verify HEAD 2>$null } | Out-Null
         if ($LASTEXITCODE) {
             $broken = "$InstallDir.broken-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
-            Write-Warn "$InstallDir has no commits (interrupted clone); moving it aside to $broken"
+            Write-Warn "$InstallDir is not a usable git checkout (interrupted clone or damaged .git); moving it aside to $broken"
             Move-Item -LiteralPath $InstallDir -Destination $broken
         }
     }
@@ -1111,7 +1113,7 @@ function Stage-Repository {
         }
         if ($LASTEXITCODE) { Fail "git checkout failed$(Get-NativeDetail)" git_checkout_failed }
         # --no-stat: across a large gap (v2026.7.1 -> today is ~27k lines) the
-        # diffstat arrives as one burst. Cybr Agent-Setup.exe forwards every line
+        # diffstat arrives as one burst. Cybr Agent Setup.exe forwards every line
         # to its window as a separate event; the burst overflows the Windows
         # posted-message queue (10k), events drop, and the installer's Launch
         # button can then hang on "Launching" forever.

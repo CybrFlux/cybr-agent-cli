@@ -319,7 +319,7 @@ def _desktop_app_bundle() -> Path | None:
     """Locate the locally-built desktop bundle (``apps/desktop/release/mac-<arch>/Cybr Agent.app``), newest first.
 
     The only layout whose ad-hoc re-signed bundle can invalidate TCC grants. ``/Applications/Cybr Agent.app`` is
-    deliberately not probed: it is the separately-signed, certificate-anchored Cybr Agent-Setup launcher.
+    deliberately not probed: it is the separately-signed, certificate-anchored Cybr Agent Setup launcher.
     """
     release_dir = Path(__file__).resolve().parents[1] / "apps" / "desktop" / "release"
     candidates = [p for p in release_dir.glob("mac*/Cybr Agent.app") if p.is_dir()]

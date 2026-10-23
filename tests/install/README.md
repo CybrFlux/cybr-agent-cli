@@ -57,7 +57,7 @@ Each leg with the script drivers has these phases:
 The cheap fixture checks are `tests/scripts/test_source_driver.py` and `tests-js/source-update-observer.test.mjs`. They do not run installers or prove native GUI relaunch. The native packaged-update drivers own automatic-relaunch acceptance. A later driver-owned launch checks chat only after the original update/relaunch assertions pass; it cannot repair a failed handoff. The observer does not change source files, products, dependency selections, or facts.
 
 The Windows `desktop-installer@latest` install downloads the published
-`Cybr Agent-Setup.exe` and drives its GUI with AutoHotkey. The selected update
+`Cybr Agent Setup.exe` and drives its GUI with AutoHotkey. The selected update
 method is a separate axis. App-update methods click the running app's Update
 control; script and CLI methods use their corresponding entry points.
 
@@ -140,7 +140,7 @@ A leg can install a release from months back. The driver must not assume that th
   acceptance](BUNDLED_UPDATES.md) for the manifest and proof contracts.
 - `installer-script`: the platform's one-liner (`curl | bash` on linux and macos, `irm | iex` on windows).
 - `installer-script+desktop`: the same one-liner with its desktop stage opted in (`--include-desktop` / `-IncludeDesktop`). The stage builds the desktop app during the install. On windows it also registers Start Menu and Desktop shortcuts. On linux and macos it builds the app inside the checkout and registers no OS entry point.
-- `desktop-installer@latest`: the published GUI installer (`Cybr Agent-Setup.exe` on windows, `Cybr Agent-Setup.dmg` on macos), driven through the real user flow.
+- `desktop-installer@latest`: the published GUI installer (`Cybr Agent Setup.exe` on windows, `Cybr Agent Setup.dmg` on macos), driven through the real user flow.
 
 ## The two app-update variants
 

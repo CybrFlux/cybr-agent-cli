@@ -36,7 +36,7 @@ iex (irm https://hermes-agent.nousresearch.com/install.ps1)
 **桌面软件包：** MSIX/App Installer 是自包含的软件包，与源码脚本不同。
 它要求 Windows 11 22H2 或更新版本，首次启动无需克隆源码或编译基础运行时。
 打开 `.appinstaller` 文件安装并登记更新源。Microsoft Store 版本由商店更新。
-`Cybr Agent-Setup.exe` 则是下载并配置源码的引导安装程序。
+`Cybr Agent Setup.exe` 则是下载并配置源码的引导安装程序。
 
 macOS 的 DMG 包含应用；将它复制到 Applications 后启动。
 其自动更新使用包含已签名应用的 ZIP。详情见 [桌面指南](../user-guide/desktop.md)。

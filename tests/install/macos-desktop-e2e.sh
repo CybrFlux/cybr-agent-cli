@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Prove a macOS user who installed OLD via the published desktop installer
-# (Cybr Agent-Setup.dmg from the website) can reach HEAD.
+# (Cybr Agent Setup.dmg from the website) can reach HEAD.
 #
 # The macOS sibling of tests/install/windows-e2e.ps1's desktop-installer
 # arm, sharing the staging trick: every git process is pointed at a local
@@ -49,7 +49,7 @@ PHASE="all"
 UPDATE_METHOD=""
 INSTALL_REF=""
 UPDATE_REF=""
-DMG_URL="https://hermes-assets.nousresearch.com/Hermes-Setup.dmg"
+DMG_URL="https://hermes-assets.nousresearch.com/Cybr Agent Setup.dmg"
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --phase)
@@ -182,7 +182,7 @@ phase_install() {
   # shellcheck disable=SC1090
   . "$STATE"
   arm_redirect
-  step "installing OLD ($OLD_REF) via the published Cybr Agent-Setup.dmg"
+  step "installing OLD ($OLD_REF) via the published Cybr Agent Setup.dmg"
 
   # Pair both historical inputs. Today's downloaded install.sh can call helpers
   # absent from OLD (e.g. ensure-rolldown-binding.mjs). Use the published
@@ -196,7 +196,7 @@ phase_install() {
     > "$LOG_DIR/bootstrap-install-script.txt"
   ok "bootstrap script is unmodified scripts/install.sh from $OLD_REF ($OLD_SHA)"
 
-  local dmg="$WORK_ROOT/Cybr Agent-Setup.dmg"
+  local dmg="$WORK_ROOT/Cybr Agent Setup.dmg"
   [ -f "$dmg" ] || curl -fsSL -o "$dmg" "$DMG_URL"
   [ "$(stat -f%z "$dmg")" -gt 1000000 ] || fail "dmg download too small: $(stat -f%z "$dmg") bytes"
   # curl'd files carry no quarantine attr, but belt and braces on a runner.
@@ -225,10 +225,10 @@ phase_install() {
     --install-dir "$INSTALL_DIR" \
     --proof-dir "$LOG_DIR" 2>&1 \
     | ts_prefix > "$LOG_DIR/bootstrap-install.log" || rc=$?
-  log_group "Cybr Agent-Setup (dmg bootstrap) transcript" "$LOG_DIR/bootstrap-install.log"
+  log_group "Cybr Agent Setup (dmg bootstrap) transcript" "$LOG_DIR/bootstrap-install.log"
   local bootstrap_log="$LOG_DIR/bootstrap-logs/bootstrap-installer.log"
   if [ -f "$bootstrap_log" ]; then
-    log_group "Cybr Agent-Setup inner installer log" "$bootstrap_log"
+    log_group "Cybr Agent Setup inner installer log" "$bootstrap_log"
   fi
   hdiutil detach "$mount" >/dev/null 2>&1 || true
   [ "$rc" -eq 0 ] || fail "dmg bootstrap exited $rc; transcript above"
