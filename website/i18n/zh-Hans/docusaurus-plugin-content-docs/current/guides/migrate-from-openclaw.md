@@ -12,13 +12,13 @@ description: "将 OpenClaw / Clawdbot 配置迁移到 Cybr Agent 的完整指南
 
 ```bash
 # 预览后迁移（始终先显示预览，再要求确认）
-hermes claw migrate
+cybr claw migrate
 
 # 仅预览，不做任何更改
-hermes claw migrate --dry-run
+cybr claw migrate --dry-run
 
 # 完整迁移，包含 API 密钥，跳过确认
-hermes claw migrate --preset full --migrate-secrets --yes
+cybr claw migrate --preset full --migrate-secrets --yes
 ```
 
 迁移操作在执行任何更改前，始终会显示完整的导入预览。请检查列表后确认继续。

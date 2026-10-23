@@ -198,7 +198,7 @@ class _CursesBrowser:
             c.start_color()
             c.use_default_colors()
             # 1 selected, 2 header, 3 search, 4 dim, 5 error/delete
-            palette = (c.COLOR_GREEN, c.COLOR_YELLOW, c.COLOR_CYAN, 8 if c.COLORS > 8 else c.COLOR_WHITE, c.COLOR_RED)
+            palette = ((154 if c.COLORS >= 256 else c.COLOR_GREEN), (194 if c.COLORS >= 256 else c.COLOR_GREEN), (191 if c.COLORS >= 256 else c.COLOR_GREEN), 8 if c.COLORS > 8 else c.COLOR_WHITE, c.COLOR_RED)
             for n, color in enumerate(palette, 1):
                 c.init_pair(n, color, -1)
         while True:

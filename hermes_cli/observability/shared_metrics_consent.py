@@ -39,7 +39,7 @@ _OFFER_DESCRIPTION = "\n".join((
     "day. Apart from a one-time install note, data from before you opt in is never",
     "sent.",
     f"Details: {DOCS_URL}",
-    "Change it any time: hermes setup telemetry",
+    "Change it any time: cybr setup telemetry",
 ))
 _REASK_NOTE = "Asking once more: an earlier version could save \"No thanks\" before you saw this question."
 
@@ -135,15 +135,15 @@ def offer_consent(config: dict | None = None, *, reask: bool = False) -> bool:
     )
     if idx < 0 and reask:
         save_consent(False, False, config)
-        print_info("Kept \"No thanks\". Change it any time with `hermes setup telemetry`.")
+        print_info("Kept \"No thanks\". Change it any time with `cybr setup telemetry`.")
         return True
     if idx < 0:
-        print_info("Not answered; Cybr Agent will ask again. Decide any time with `hermes setup telemetry`.")
+        print_info("Not answered; Cybr Agent will ask again. Decide any time with `cybr setup telemetry`.")
         return False
     _, enabled, send = OFFER_CHOICES[idx]
     save_consent(enabled, send, config)
     outcome = "sent to Nous once a day" if send else "off"
-    print_success(f"Shared metrics {outcome}. Change it any time with `hermes setup telemetry`.")
+    print_success(f"Shared metrics {outcome}. Change it any time with `cybr setup telemetry`.")
     return True
 
 

@@ -8,12 +8,13 @@ import os
 import re
 import sys
 
-_SUBCOMMANDS = ('accounts', 'acp', 'add', 'adopt', 'alias', 'approvals', 'approve', 'archive', 'audit', 'auth', 'backup', 'bitwarden', 'browse', 'browser', 'bundles', 'capabilities', 'catalog', 'chat', 'check', 'check-updates', 'checkpoints', 'clean-markers', 'clear', 'clear-pending', 'close-profile', 'codex-runtime', 'completion', 'computer-use', 'config', 'configure', 'connect', 'connectors', 'console', 'create', 'cron', 'curator', 'dashboard', 'debug', 'delete', 'describe', 'desktop', 'diff', 'disable', 'discard', 'disconnect', 'doctor', 'dump', 'edit', 'egress', 'enable', 'enroll', 'ensure', 'env-path', 'export', 'fallback', 'gateway', 'get', 'grant', 'gui', 'hooks', 'import', 'incidents', 'info', 'insights', 'inspect', 'install', 'journey', 'kanban', 'list', 'list-modified', 'login', 'logout', 'logs', 'manifest', 'mcp', 'memory', 'migrate', 'migrate-identity', 'migrate-legacy', 'moa', 'model', 'monitoring', 'notepad', 'off', 'onepassword', 'opt-in', 'opt-out', 'optimize', 'optimize-storage', 'pack', 'pairing', 'path', 'pause', 'peer', 'permissions', 'pets', 'picker', 'pin', 'pinned', 'plugins', 'pm', 'portal', 'post-setup', 'priority', 'profile', 'profiles', 'project', 'prompt-size', 'providers', 'proxy', 'prune', 'publish', 'purge-identity', 'reauth', 'recover', 'refresh', 'register', 'relay', 'reload', 'remove', 'rename', 'repair', 'repair-official', 'repair-profiles', 'repair-prompts', 'repair-routing', 'reset', 'restart', 'restore', 'resume', 'retitle-skills', 'revoke', 'rm', 'run', 'runs', 'screen', 'search', 'secrets', 'security', 'send', 'serve', 'sessions', 'set', 'set-journal-mode', 'setup', 'share', 'show', 'skill', 'skills', 'skin', 'slack', 'snapshot', 'sources', 'start', 'stats', 'status', 'stop', 'subscribe', 'suggest', 'tap', 'test', 'tick', 'tools', 'trust', 'trust-update-url', 'uninstall', 'unpin', 'unset', 'untrust', 'update', 'upgrade', 'usage', 'use', 'validate', 'vault', 'verify', 'webhook', 'whatsapp', 'whatsapp-cloud', 'worktree', 'xai')
+_SUBCOMMANDS = ('accounts', 'acp', 'add', 'adopt', 'alias', 'approvals', 'approve', 'archive', 'audit', 'auth', 'backup', 'bitwarden', 'browse', 'browser', 'bundles', 'capabilities', 'catalog', 'chat', 'check', 'check-updates', 'checkpoints', 'claw', 'clean-markers', 'clear', 'clear-pending', 'close-profile', 'codex-runtime', 'completion', 'computer-use', 'config', 'configure', 'connect', 'connectors', 'console', 'create', 'cron', 'curator', 'dashboard', 'debug', 'delete', 'describe', 'desktop', 'diff', 'disable', 'discard', 'disconnect', 'doctor', 'dump', 'edit', 'egress', 'enable', 'enroll', 'ensure', 'env-path', 'export', 'fallback', 'gateway', 'get', 'grant', 'gui', 'hooks', 'import', 'incidents', 'info', 'insights', 'inspect', 'install', 'journey', 'kanban', 'list', 'list-modified', 'login', 'logout', 'logs', 'manifest', 'mcp', 'memory', 'migrate', 'migrate-identity', 'migrate-legacy', 'moa', 'model', 'monitoring', 'notepad', 'off', 'onepassword', 'opt-in', 'opt-out', 'optimize', 'optimize-storage', 'pack', 'pairing', 'path', 'pause', 'peer', 'permissions', 'pets', 'picker', 'pin', 'pinned', 'plugins', 'pm', 'portal', 'post-setup', 'priority', 'profile', 'profiles', 'project', 'prompt-size', 'providers', 'proxy', 'prune', 'publish', 'purge-identity', 'reauth', 'recover', 'refresh', 'register', 'relay', 'reload', 'remove', 'rename', 'repair', 'repair-official', 'repair-profiles', 'repair-prompts', 'repair-routing', 'reset', 'restart', 'restore', 'resume', 'retitle-skills', 'revoke', 'rm', 'run', 'runs', 'screen', 'search', 'secrets', 'security', 'send', 'serve', 'sessions', 'set', 'set-journal-mode', 'setup', 'share', 'show', 'skill', 'skills', 'skin', 'slack', 'snapshot', 'sources', 'start', 'stats', 'status', 'stop', 'subscribe', 'suggest', 'tap', 'test', 'tick', 'tools', 'trust', 'trust-update-url', 'uninstall', 'unpin', 'unset', 'untrust', 'update', 'upgrade', 'usage', 'use', 'validate', 'vault', 'verify', 'webhook', 'whatsapp', 'whatsapp-cloud', 'worktree', 'xai')
 _RULES = (
     (re.compile(r"(?<![A-Za-z0-9_./~@-])hermes(?= (?:" + "|".join(sorted(map(re.escape, _SUBCOMMANDS), key=len, reverse=True)) + r")(?![A-Za-z0-9_]))"), "cybr"),
     (re.compile(r"(?<![A-Za-z0-9_./~@-])hermes(?= (?:--[a-z]|-[a-z]\b|[{<$%]))"), "cybr"),
     (re.compile(r"`hermes`"), "`cybr`"),
     (re.compile(r"^(usage: |\s+)hermes(?= |$)", re.M), r"\g<1>cybr"),                 # argparse usage lines (prog is "hermes" in code)
+    (re.compile(r"^((?:\x1b\[[0-9;]*m)*(?:usage: |\s+)(?:\x1b\[[0-9;]*m)*)hermes(?=(?:\x1b\[[0-9;]*m)* |$)", re.M), r"\g<1>cybr"),   # the same when argparse colours the program name
     (re.compile(r"^hermes: ", re.M), "cybr: "),                                       # argparse error prefix
     (re.compile(r"^(\s+)hermes(?=\s{2,}\S)", re.M), r"\g<1>cybr"),
     (re.compile(r"(\b(?:[Rr]un|[Uu]se|[Tt]ype|[Ll]aunch|[Ss]tart|[Tt]ry|[Oo]pen)(?::| with| to use)? )hermes(?=[\s.,;:)`'\"]|$)"), r"\g<1>cybr"),
@@ -21,11 +22,46 @@ _RULES = (
 
 
 def translate(text):
+    if "\x1b[" in text:
+        text = _lime(text)
     if "hermes" not in text:
         return text
     for pattern, replacement in _RULES:
         text = pattern.sub(replacement, text)
     return text
+
+
+import atexit
+
+_TRUE = os.environ.get("COLORTERM", "").lower() in ("truecolor", "24bit")
+_LIME = {  # basic foreground code -> (truecolor rgb, 256-colour index)
+    32: ("166;240;0", 154), 33: ("233;255;208", 194), 34: ("139;214;0", 118), 35: ("166;240;0", 154),
+    36: ("212;255;79", 191), 92: ("166;240;0", 154), 93: ("233;255;208", 194), 94: ("139;214;0", 118),
+    95: ("166;240;0", 154), 96: ("212;255;79", 191),
+}
+_SGR = re.compile(r"\x1b\[([0-9;]*)m")
+
+
+def _lime_sgr(match):
+    parts, out, i = match.group(1).split(";"), [], 0
+    while i < len(parts):
+        part = parts[i]
+        if part in ("38", "48") and i + 1 < len(parts):          # extended colour: copy untouched
+            n = 3 if parts[i + 1] == "2" else 1
+            out.extend(parts[i:i + 2 + n]); i += 2 + n; continue
+        code = int(part) if part.isdigit() else -1
+        if code in _LIME:
+            rgb, idx = _LIME[code]
+            out.append("38;2;" + rgb if _TRUE else "38;5;%d" % idx)
+        else:
+            out.append(part)
+        i += 1
+    return "\x1b[" + ";".join(out) + "m"
+
+
+def _lime(text):
+    return _SGR.sub(_lime_sgr, text)
+
 
 
 class _Stream:
@@ -50,6 +86,13 @@ class _Stream:
 def install():
     if os.environ.get("CYBR_NO_BRAND_OUTPUT"):
         return
+    try:
+        if sys.stdout.isatty() and not os.environ.get("NO_COLOR") and os.environ.get("TERM") != "dumb":
+            sys.stdout.write("\x1b]11;#000000\x07")      # black terminal background for the session
+            sys.stdout.flush()
+            atexit.register(lambda: (sys.stdout.write("\x1b]111\x07"), sys.stdout.flush()))
+    except Exception:
+        pass
     for name in ("stdout", "stderr"):
         stream = getattr(sys, name, None)
         if stream is not None and not isinstance(stream, _Stream):

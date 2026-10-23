@@ -4,7 +4,7 @@
 
 export const chromeEn = {
   status: {
-    summoning: 'summoning hermes…',
+    summoning: 'summoning agent…',
     ready: 'ready',
     running: 'running…',
     mcpReloaded: 'MCP reloaded after config change',

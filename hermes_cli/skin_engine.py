@@ -72,7 +72,7 @@ _BUILTIN_SKINS: dict[str, dict[str, Any]] = {
             "status_bar_bg": "#0b0d08", "status_bar_text": "#C0C0C0",
             "status_bar_strong": "#A6F000", "status_bar_dim": "#6B8530",
             "status_bar_good": "#8FBC8F", "status_bar_warn": "#FFD700", "status_bar_bad": "#FF8C00",
-            "status_bar_critical": "#FF6B6B", "session_label": "#DAA520",
+            "status_bar_critical": "#FF6B6B", "session_label": "#7DC000",
             "session_border": "#8B8682", "completion_menu_bg": "#0b0d08",
             "completion_menu_current_bg": "#1C2A0C", "selection_bg": "#243512",
             "shell_dollar": "#4dabf7", "voice_status_bg": "#0b0d08"},
@@ -84,7 +84,7 @@ _BUILTIN_SKINS: dict[str, dict[str, Any]] = {
         "light_colors": {
             "banner_title": "#5C9A00", "banner_accent": "#4F8A00", "banner_dim": "#5E9B00",
             "banner_text": "#2A4A0A", "ui_accent": "#4F8A00", "ui_label": "#487A00",
-            "ui_ok": "#2E7D32", "ui_error": "#C62828", "ui_warn": "#D97706", "prompt": "#5C4718",
+            "ui_ok": "#2E7D32", "ui_error": "#C62828", "ui_warn": "#D97706", "prompt": "#2A4A0A",
             "response_border": "#5C9A00", "session_label": "#487A00", "status_bar_text": "#6F6F6F",
             "status_bar_strong": "#5C9A00", "status_bar_dim": "#7A9A4A",
             "status_bar_good": "#2E7D32", "status_bar_warn": "#C8961E", "status_bar_bad": "#C2410C",

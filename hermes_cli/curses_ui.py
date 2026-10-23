@@ -451,8 +451,8 @@ def _init_colors(curses, extra_color_pairs: bool) -> None:
     if curses.has_colors():
         curses.start_color()
         curses.use_default_colors()
-        curses.init_pair(1, curses.COLOR_GREEN, -1)
-        curses.init_pair(2, curses.COLOR_YELLOW, -1)
+        curses.init_pair(1, (154 if curses.COLORS >= 256 else curses.COLOR_GREEN), -1)
+        curses.init_pair(2, (194 if curses.COLORS >= 256 else curses.COLOR_GREEN), -1)
         try:
             curses.init_pair(4, curses.COLOR_RED, -1)  # "red" gauge segments (usage nearly gone)
         except curses.error:

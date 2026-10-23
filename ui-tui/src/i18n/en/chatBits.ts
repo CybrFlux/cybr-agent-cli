@@ -11,8 +11,8 @@
 export const chatBitsEn = {
   chatBits: {
     branding: {
-      tagFull: 'Nous Research · Messenger of the Digital Gods',
-      tagMid: 'Messenger of the Digital Gods',
+      tagFull: 'CybrFlux · Autonomous Agent',
+      tagMid: 'Autonomous Agent',
       scanningSkills: 'scanning skills',
       moreCategories: (count: number) => `(and ${count} more categories…)`,
       moreToolsets: (count: number) => `(and ${count} more toolsets…)`,

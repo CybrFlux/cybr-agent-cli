@@ -1093,7 +1093,7 @@ cybr insights [--days N] [--source platform]
 ## `cybr claw`
 
 ```bash
-hermes claw migrate [options]
+cybr claw migrate [options]
 ```
 
 将 OpenClaw 设置迁移到 Cybr Agent。从 `~/.openclaw`（或自定义路径）读取并写入 `~/.hermes`。自动检测旧版目录名（`~/.clawdbot`、`~/.moltbot`）和配置文件名（`clawdbot.json`、`moltbot.json`）。
@@ -1126,19 +1126,19 @@ hermes claw migrate [options]
 
 ```bash
 # 预览将迁移的内容
-hermes claw migrate --dry-run
+cybr claw migrate --dry-run
 
 # 完整迁移（所有兼容设置，不含密钥）
-hermes claw migrate --preset full
+cybr claw migrate --preset full
 
 # 包含 API 密钥的完整迁移
-hermes claw migrate --preset full --migrate-secrets
+cybr claw migrate --preset full --migrate-secrets
 
 # 仅迁移用户数据（不含密钥），覆盖冲突
-hermes claw migrate --preset user-data --overwrite
+cybr claw migrate --preset user-data --overwrite
 
 # 从自定义 OpenClaw 路径迁移
-hermes claw migrate --source /home/user/old-openclaw
+cybr claw migrate --source /home/user/old-openclaw
 ```
 
 ## `cybr dashboard`

@@ -1820,8 +1820,8 @@ The command moved out of core into the official `agent-importers` plugin, togeth
 ### OpenClaw: `cybr import-agent openclaw`
 
 ```bash
-cybr import-agent openclaw [options]    # same as the older spelling: hermes claw migrate [options]
-hermes claw cleanup [--source <path>] [--dry-run] [--yes]
+cybr import-agent openclaw [options]    # same as the older spelling: cybr claw migrate [options]
+cybr claw cleanup [--source <path>] [--dry-run] [--yes]
 ```
 
 Migrate your OpenClaw setup to Cybr Agent. Reads from `~/.openclaw` (or a custom path) and writes to `~/.hermes`. Automatically detects legacy directory names (`~/.clawdbot`, `~/.moltbot`) and config filenames (`clawdbot.json`, `moltbot.json`).

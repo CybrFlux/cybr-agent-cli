@@ -116,7 +116,7 @@ class Chat:
 
     def wait_composer(self, term: WsTerm) -> None:
         """The TUI painted its composer prompt and session banner, and its status bar no longer
-        reports a boot phase ("summoning hermes…", "starting agent…"). Profile-agnostic on purpose:
+        reports a boot phase ("summoning agent…", "starting agent…"). Profile-agnostic on purpose:
         which profile answered is judged by the provider/state.db assertions, not by this wait."""
         def ready() -> bool:
             s = term.text()

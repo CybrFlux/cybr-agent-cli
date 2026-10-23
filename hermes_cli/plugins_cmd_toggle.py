@@ -174,7 +174,7 @@ def _run_composite_ui(curses, plugin_keys, plugin_labels, plugin_selected, disab
             curses.start_color()
             curses.use_default_colors()
             gray = 8 if curses.COLORS > 8 else curses.COLOR_WHITE
-            for pair, fg in ((1, curses.COLOR_GREEN), (2, curses.COLOR_YELLOW), (3, curses.COLOR_CYAN), (4, gray)):
+            for pair, fg in ((1, (154 if curses.COLORS >= 256 else curses.COLOR_GREEN)), (2, (194 if curses.COLORS >= 256 else curses.COLOR_GREEN)), (3, (191 if curses.COLORS >= 256 else curses.COLOR_GREEN)), (4, gray)):
                 curses.init_pair(pair, fg, -1)
 
     def _attr(base, pair):
